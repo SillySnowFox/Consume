@@ -16,12 +16,6 @@ import Type.ValueType;
 @:bitmap("../img/logo_m_notext.png") class LogoMNoText extends BitmapData { }
 @:bitmap("../img/logo_f_notext.png") class LogoFNoText extends BitmapData { }
 
-//Arrows
-/* Unused
-@:bitmap("../img/Arrow.png") class Arrow extends BitmapData { }
-@:bitmap("../img/ArrowLine.png") class ArrowLine extends BitmapData { }
-*/
-
 //Named Character images
 @:bitmap("../img/kyra.png") class KyraAvi extends BitmapData { }
 
