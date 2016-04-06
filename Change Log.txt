@@ -1,0 +1,598 @@
+Visit the forums and say Hi! http://dancingfoxstudios.com/phpBB3/
+Support the game on Pateron! https://www.patreon.com/SillySnowFox?ty=h
+
+v0.37
+
+New
+
+ * Players can now collect and view keys.
+ * Cover charge detection is now in place in the club. Consume is having a special, no cover charge!
+ * Ann will now correctly give you your gym keycard when you sign up
+ * DEBUG MENU: Quest stages can be set directly. WARNING: will not give out related keys.
+ * 
+
+Changes
+
+ * Changed the way the conversation system flags work, making them much more dynamic and expandable
+ * Fixed empty tooltips.
+ * 
+ 
+Bugfixes
+
+ * Fixed a crash in the conversaion system
+ * 
+
+ 
+v0.36
+
+Changes
+
+ * Disabled the items button after using the toilet for now.
+
+Bugfixes
+
+ * Fixed an issue with loading new species data that was causing crashes.
+ * Corrected a crash after using the toilet.
+ * Corrected a crash when loading with prey in your stomach.
+
+
+v0.35
+
+New
+
+ * Basic scat scene back in place. Framework for more detailed scenes in place.
+
+Bugfixes
+
+ * Fixed a crash relating to digesting prey with scat turned off.
+ * Fixed messages doubling up when the player posses doorway-filling attributes.
+ * More changes to the fat checking. Hopefully the overflow issues are fixed now.
+
+
+v0.34
+
+New
+
+ * Added click effect to buttons
+ 
+Changes
+
+ * Removed in-game load button, return to the main menu to load.
+ 
+Bugfixes
+
+ * Changed fat data type to uint from int. Should fix the negitive fat issue, assuming it's an overflow error.
+ * Replaced a 1 with an i that was causing the description link to not clear off the buttons.
+
+
+v0.33
+
+New
+
+ * NPCs now appear with a brief description of them.
+ * NPCs can have perks.
+ * Hunting in Consume is active, sex will come later.
+ * Digestion is working
+
+
+v0.32
+
+New
+
+ * Updated FAQ
+ * Random NPCs can now be generated
+ * Begin working on NPCs and conversations
+ * Added keys to the game
+ 
+
+Changes
+
+ * Lightened the color of the disabled buttons
+
+
+v0.31
+
+New
+
+ * Added checks for large parts
+ * Added buttons to scroll the output field.
+ * Rebuilt the rooms to the new system.
+ 
+Changes
+
+Bugfixes
+
+ * Corrected an error when creating female characters preventing players from moving.
+ * Corrected an issue when accessing saved data causing a crash.
+
+v0.30
+
+New
+
+ * Rewrote most of the game's engine code including; character creation, movement, quests, items, rooms, exits, saving and loading.
+  * Still to redo; inventory, combat, dialog and stores.
+ * New save system can be used from anywhere in the game you can access the options menu (you'll find it there as well) It will save your current location and you will reload there.
+  * Reloading while in a game is possible but hasn't yet been fully tested, so may be buggy
+	
+v0.29
+
+New
+
+ * Began rewriting the game from the ground up.
+ * Added three new buttons to the playfield.
+ * 
+
+Changes
+
+ * Changed species to objects from an array.
+ * 
+ 
+Bugfixes
+
+ *
+
+
+v0.28
+
+New
+
+ * Began adding support for perks/non-oral forms of vore.
+
+Bugfixes
+
+ * Fixed players not gaining lactation.
+
+
+Changes v0.27
+
+New
+
+ * Added the Consume logo to the welcome screen thanks to Alcathair.
+
+Changes
+
+ * Begain changing items over to objects to support future tracking of what's in the player's stomach.
+ * Players can now eat ice cream out of the freezer case when the shop is closed.
+
+Bugfixes
+
+ * Corrected a crash in the gym when consuming random NPCs
+ * Corrected the gym 'talk' button appearing when there's no one to talk to.
+
+
+Changes v0.26
+
+New
+
+ * Players can now lactate. Activating it requires interacting with a certian character in a certian way several times.
+ * Players who are lactating may find the machine in the ice cream shop's office useful.
+ * Added needed fields to the player object to track what is currently in the player's stomach and bowels for future features.
+
+Changes
+
+ * Buying ice cream from Bessie now shows her rather then Guffin
+ * More conversation options with Bessie are in place in the office
+
+Bugfixes
+
+ * Corrected several crashes when interacting with Bessie
+ * Bessie and Guffin now correctly appear where they should
+
+
+Changes v0.25
+
+Bugfixes
+
+ * Bessie now appears in the shop during her shift. No more hiding in the back for her!
+ * Corrected a crash when talking to random NPCs in the gym.
+
+
+Changes v0.24
+
+New
+
+ * Bessie's interactions in the main room of the ice cream shop are fully in place.
+ * Begain adding Bessie's scenes in the back office of the ice cream shop.
+ * New gym sex scene provided by forum member BeardyKomodo.
+
+Changes
+
+ * Cleaned up the arousal messages, you shouldn't get multiple messages when over 100% arousal. Known issue; all arousal messages vanish when over 150%
+ 
+Bugfixes
+
+ * Corected a crash when talking to the bartender in the club
+	
+	
+Changes v0.23
+
+New
+
+ * The owner of the ice cream shop, and your former boss, can be encountered in the shop when Guffin isn't working
+
+Changes
+
+ * Seperated the button class into it's own file.
+ * Renamed the button class MyButton to avoid conflicts with flash's built in Button class.
+ * Seperated the AlertBox class into it's own file.
+ * Ice cream shop is now open between the hours of 6 and 22 (10pm)
+ * Converted the Hunt option in the club to the new NPC object system, should solve crash issues.
+
+Bugfixes
+
+ * See Changes section
+
+
+Changes v0.22
+
+New
+
+ * Enabled the remaining hooker gender options.
+ 
+Changes
+
+ * Converted NPCs to objects, this will help with future features that have been requested (interaction with consumed NPCs, references to them during scat scenes)
+ * Converted the hookers to use the new object NPCs
+ 
+Bugfixes
+
+ * Corrected a bad gender error in the gym.
+ * Fixed an issue that was causing combat NPCs to be weaker then the player. (Will only apply to new characters)
+
+Changes v0.21.1
+
+Bugfixes
+
+ * Fixed a crash when using the toliet.
+ * Fixed a crash with the random NPC system.
+ 
+
+Changes v0.21
+
+New
+
+ * Added option to debug menu to enable lactation. There's currently no way to drain your boobs though.
+ * Hookers can now be called from the phone in your apartment!
+ 
+
+Changes v0.20
+
+New
+
+ * Added an additioal sex scene after dying.
+
+Bugfixes
+
+ * Removed leftover link for the staff room machine when you leave the room.
+
+	
+Changes v0.19
+
+New
+
+ * Shay's newest machine is now avalible in the staff room.
+ * Added an option to the debug menu to reset Gold training so you can use the machines more then once a day.
+
+Changes
+
+ * Increased the rate players will slim down while working out.
+
+Bugfixes
+
+ * Removed debug code causing text to appear on characters with images.
+ * Prevented player's milk and cum levels from going into the negitives, even though they shouldn't be able to.
+ * Fixed some typos. Made some more.
+ * Fixed a bug where the system was forcing all work payouts to the minimum, even when it shouldn't have been. You should be seeing higher payments now.
+
+
+Changes v0.18
+
+New
+
+ * Added an FAQ to the main menu.
+ * Added credits to the main menu.
+ * Characters can now have images.
+ * Added a system to parse text to make life easier.
+ * Scat scenes added by forum member Victor Styche.
+ * Shay can be encountered in the Gold room, the key to the staff room can be acquired from him.
+ * Staff room in place, it has a vending machine!
+ 
+Changes
+
+ * Updated the player's description to take advantage of the new text parsing system.
+ 
+Bugfixes
+
+ * Corrected a crash when trying to work out after upgrading to a gold membership.
+ * NPCs eaten in the gym will increment the counter.
+ * Fixed an issue where returning to the main menu from the options screen by using the Main Menu button would break things. Also removed the load option on the options screen as it was broken and redundant.
+ 
+
+Changes v0.17
+
+New
+
+ * Added options to return to the main menu and load a saved game from within a current game.
+ * Random NPC encounters have been added to the Gym.
+ * Added debug option to reset quests.
+ * Buying of ice cream is now in place, thanks to forum member BoxFoxes
+ * Gold member encounter is now fully in place.
+ * Gold room machines are in place.
+ 
+Changes
+
+ * You now snack while working, should prevent you from starving to death while working.
+ 
+Bugfixes
+
+ * Corrected money check when hunting in the club.
+ * Corrected crash when checking description after death.
+ * Known Issue: Long room descriptions do not produce a visible means of scrolling. Using your mousewheel will scroll the text however.
+ 
+
+Changes v0.16
+
+New
+
+ * Added a way to jump to a given room on the map. If you know the room number. (0 is your bedroom)
+ * Began work on adding random characters to the gym, including a possible encounter with an existing Gold member.
+
+Bugfixes
+
+ * Fixed links not working.
+
+
+Changes v0.15.5
+
+New
+
+ * Added a link to the bug forum to the flash.
+ 
+Changes
+
+Bugfixes
+
+ * Players can save again.
+ * The white door is usable again.
+ * Player gender back to being assigned correctly.
+ * Some button labels were slightly too large for their buttons. This has bee corrected.
+ * Signing up as prey at the club now correctly parses the random NPC who eats you.
+ * Money now displays correctly, both on screen and in the pizza order system. (Issue was mostly with long repeating decimals.)
+ * Players can no longer get into Consume without having enough money to pay the cover. If they do somehow manage to get in, they won't be charged.
+ 
+
+Changes v0.15
+
+New
+
+ * Not directly Consume related, but I now have a forum set up; http://dancingfoxstudios.com/phpBB3/
+ * New items added.
+ * Added new background stats, currently unused.
+ 
+Changes
+
+ * Reworked the food coma effect. Eating more then 150% of your stomach's capacity will send you into (usually) several days of sleep while you digest. The game will stop to tell you of this and your stomach will stretch more then just once. This should result in faster stretching and shorter food comas.
+ * Added progress bars to the stats screen so you can get an idea how much longer you need to upgrade a stat.
+ 
+Bugfixes
+
+ * Corrected spelling errors.
+ * Changed how the buttons are reset. Should hopefully solve issues with unexpected actions.
+ * Fixed the missing scene when eating the pizza delivery
+ 
+
+Changes v0.14
+
+New
+
+ * You can talk to and buy drinks from the bartender in the club
+ * There are now hidden paths in the game. Click on the button to show it.
+ * Added random messages to the start screen.
+ * You can now make a deal to return from the dead.
+ * The phone company finally got around to hooking up the phone in your apartment!
+ * You have the number for the nearest pizza place. Call them up and get something delivered! Just don't forget to tip the driver.
+ * New species; rat.
+ * More items added.
+ * New shop added.
+
+Changes
+
+ * Messages and alerts now appear in a floating window.
+ * Increased Consume's cover charge to 200 and decreased prey cost to 200.
+ * Body mod items have been removed from the general store, turns out selling them is illegal! Who knew!
+ 
+Bugfixes
+
+ * Corrected another crash if you load a saved game after dying.
+ * Fixed /another/ crash if you try and load a saved game after dying. Hopefully this is the last of these.
+ * Players should no longer be able to be negitively fat.
+ * Fixed an issue where players would be unable to talk to NPCs in some areas
+
+
+Changes v0.13
+
+New
+
+ * 
+ 
+Changes
+
+ * Equipping a new item will return any currently equipped items to your invintory
+ * You now need to sign up to get into Consume. Don't try buypassing the bouncer, he has ways of dealing with rope jumpers.
+
+Bugfixes
+
+ * Corrected a crash if you load a saved game after dying.
+
+
+Changes v0.12.1
+ 
+Bugfixes
+
+ * Work now takes as long as it should.
+ * Fixed the buy confirmation screen showing the wrong item.
+ * You can no longer get negitive fat.
+
+
+Changes v0.12
+
+New
+
+ * Players can now buy items to increase and decrease their digestion rate.
+ * Players can now buy items to increase and decrease their digestion effenciny.
+ * Players can now take on a part-time job helping sort junk for some extra cash.
+ * Added a secret
+
+
+Changes v0.11
+
+New
+
+ * Can sell items to the general store
+ * Healing items now function when used.
+ * You can use healing items while in combat.
+ * Characters with vaginas can now masterbate. The action text is a place holder.
+
+
+Changes v0.10
+
+New
+
+ * Can now buy from shops
+
+
+Changes v0.9
+
+New
+
+ * The gym is in place and you can now train Strength, Agility and Endurance there.
+ 
+Bugfixes
+
+ * Fixed a bug causing you to be unable to leave certian rooms after opening your invintory.
+ * Corrected a display issue when loading that caused a number to appear instead of your character's name.
+
+
+Changes v0.8
+
+New
+
+ * Skills now advance as you use them.
+ * Item system bones are in place.
+ * Weapons can be equipped and used in combat.
+ * Free weapon and armor to existing characters! There's no other way to get them.
+
+Changes
+
+ * Altered the combat system slightly, should be getting more succussful attacks now.
+ * Intellagence now helps you to hit things.
+ * Removed the error message about useable being negitive. It's still broken though.
+
+Bugfixes
+
+ * Corrected a problem where the subscreen exit wasn't working correctly.
+
+
+Changes v0.7
+
+New
+
+ * Combat system basics are in place.
+
+Changes
+
+ * Buttons now turn grey if they don't connect to anything.
+ * Character health is now based on your endurance.
+ 
+Bugfixes
+ 
+
+Changes v0.6
+
+New
+
+ * Player stats can now be set on new characters. Existing characters gain points to upgrade with.
+ * Player stats can be upgraded via the character screen.
+
+Changes
+
+ * Corrected spelling error. I can't spell, if you see any more let me know.
+ * Moved the masturbate option to the player description screen.
+
+Bugfixes
+
+
+Changes v0.5
+
+New
+
+ * Random NPC system in place.
+ * Added new species; wolf
+ * Random NPCs can appear in the club and be eaten. Go forth and get crazy fat!
+ * Added the foundation for a quest system
+ * Added the foundation for an invintory system. No items in game yet.
+
+Changes
+
+ * Restructured saves, unfortunitly this has caused all existing saved data to become corrupted. Future changes to the save system shouldn't result in any more damage to player data.
+ * Reworked how the conversation system works. Should not affect anything.
+
+Bugfixes
+
+
+Changes 0.4
+
+New
+
+ * Added aditional contact information to the welcome screen.
+ * Character description screen in place.
+ * Masterbation framework added. Still need to write the scenes and add female arousal.
+
+Bugfixes
+
+ * Loading after death should now work.
+ * Players won't generate poop/cum/milk/fat or heal while starving to death. Eat something.
+ * I think I've fixed the issues with being unable to travel North.
+   * Corrected an issue where data was being saved and loaded while the player was playing. One possible cause of the above bug.
+   * Corrected an issue where the conversation links weren't getting cleared, leading to the player being trapped.
+   * Corrected an issue with the debug menu not clearing conversation links
+ * Corrected an issue where multiple saves were sharing the same map data. Woops.
+   * All saves will reset the map when loading. This will be corrected in a future version
+ * Slowed cum production (in new characters) you should no longer end up with massively overfull balls after sleeping
+ * Slowed milk production (in new characters)
+ * Reworked some behind-the-scenes stuff to make future features easier to implament. Probably created a bunch of bugs in the process.
+
+
+Changes 0.3
+
+New
+
+ * Overeating will cause you to slip into a food coma and sleep off the excess.
+ * Overeating will cause your stomach to streach slightly.
+ * Letting your bowels fill will cause them to streach slightly.
+ * You can now talk to named NPCs. Not after you eat them though
+ * Outside exists! Hisss evil dayball...
+ * Save/Load works. Currently supports up to three save slots.
+ 
+Bugfixes
+
+ * Eaten NPCs reappear if the player dies and starts a new game without reloading the flash.
+ * Button labels can no longer grow so large they can't be read anymore.
+ 
+
+Changes 0.2
+
+New
+
+ * Your character now poops. That is, you can visit the toilet at any time, but it only affects things if you have Scat enabled.
+ * Added debug menu. For testing.
+ * You can now starve to death. Don't.
+ * Digestion now works. You will heal off the food you eat as well as get fatter.
+ * Named NPCs can now appear in game.
+ * You can eat named NPCs. Don't eat important ones please.
+ 
+Bugfixes
+
+* Fixed option screen ghosting.
+* Players need to input a name and choose a species before chooing a gender.
+* Fixed text size not reflecting in the main text output area.

@@ -100,7 +100,7 @@ class MyButton extends Sprite {
 	}
 	
 	public function setButton(setName:String, ?setTip:String, setID:Dynamic = null) {
-		if (setTip != null) {
+		if (setTip != null && setTip != " ") {
 			this.hasToolTip = true;
 			this.toolTip = setTip;
 		} else {

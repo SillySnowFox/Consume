@@ -17,8 +17,10 @@ import Type.ValueType;
 @:bitmap("../img/logo_f_notext.png") class LogoFNoText extends BitmapData { }
 
 //Arrows
+/* Unused
 @:bitmap("../img/Arrow.png") class Arrow extends BitmapData { }
 @:bitmap("../img/ArrowLine.png") class ArrowLine extends BitmapData { }
+*/
 
 //Named Character images
 @:bitmap("../img/kyra.png") class KyraAvi extends BitmapData { }
@@ -131,6 +133,7 @@ class Main {
 					}
 				default:
 					message += tempMsg;
+					globals.lastRoom = globals.currentRoomID; //So we know what room the player came out of
 					currentRoom = new MyRoom(globals.rooms[options[0]]);
 					globals.currentRoomID = options[0]; //To keep track of where the player is (for saving)
 					timeGoesBy = options[1];
@@ -206,6 +209,11 @@ class Main {
 					//btns[11 - i].addEventListener(MouseEvent.CLICK, doCombat);
 					btns[11 - i].disableButton();
 				case "passive":
+					if (playerCharacter.lastClubDay != playerCharacter.day && globals.lastRoom == 7) {
+						message += "The bouncer nods to you, &quot;No cover today.&quot;<br>";
+						playerCharacter.lastClubDay = playerCharacter.day;
+						//money goes out here
+					}
 					message += "Prey wander the area, wating to be consumed.<br>";
 					btns[11 - i].setButton("Hunt", null, 0);
 					btns[11 - i].addEventListener(MouseEvent.CLICK, doHunt);
@@ -543,12 +551,21 @@ class Main {
 	static function doTalk( e:MouseEvent ) {
 		var charName:String = roomNPC.name;
 		var clicked:Int = e.currentTarget.btnID;
-		var talkFlag:Int = roomNPC.talk[clicked][1][0];
-		var questFlag:Int = -1;
+		var talkFlag:String = roomNPC.talk[clicked][1][0];
+		var quest:Bool = false;
+		var questAction:String = "";
+		var questFlag:String = "";
 		var questID:Int = -1;
 		var questValue:Int = -1;
 		var questSkip:Int = -1;
+		var keyID:Int = -1;
 		var key:MyItem_Key = new MyItem_Key();
+		var moneyChangeAmount:Int = -1;
+		var feeding:Bool = false;
+		var feedAmount:Int = -1;
+		var butt:Bool = false;
+		var buttAmount:Int = -1;
+		var talkCommandArray:Array<Dynamic> = new Array();
 		
 		var message:String = "";
 		var returnMessage:String = "";
@@ -565,44 +582,69 @@ class Main {
 			newRoom = false;
 		}
 		
-		switch (talkFlag) {
-		case 0:
-			//Nothing
-		case 1:
-			//Quest
-			questID = roomNPC.talk[clicked][1][1];
-			questFlag = roomNPC.talk[clicked][1][2];
-			questValue = roomNPC.talk[clicked][1][4];
-			
-			if (playerCharacter.quest[questID] == null) {
-				playerCharacter.quest[questID] = new MyQuest();
-				playerCharacter.quest[questID].newQuest(quests[questID]);
-			}
+		talkCommandArray = talkFlag.split("|");
+		
+		for (i in 0...talkCommandArray.length) {
+			questFlag = talkCommandArray[i].split(" ")[0];
 			
 			switch (questFlag) {
-			case 0:
-				//Set quest step to value
-				playerCharacter.quest[questID].stage = questValue;
-				if (playerCharacter.quest[questID].keyID != null) {
-					if (questValue == playerCharacter.quest[questID].keyID[1]) {
-						key.newKey(globals.keys[playerCharacter.quest[questID].keyID[0]]);
-						returnMessage += key.giveKey();
-						
-						if (returnMessage == "##FAIL") {
-							//Player already has that key, don't give them another one
-							returnMessage = "";
-						}
-					}
+			case "talk":
+				//Normal text
+			case "quest":
+				//Quest
+				quest = true;
+				questID = Std.parseInt(talkCommandArray[i].split(" ")[1]);
+			case "value":
+				questValue = Std.parseInt(talkCommandArray[i].split(" ")[1]);
+			case "skip":
+				questSkip = Std.parseInt(talkCommandArray[i].split(" ")[1]);
+			case "action":
+				questAction = talkCommandArray[i].split(" ")[1];
+			case "key":
+				keyID = Std.parseInt(talkCommandArray[i].split(" ")[1]);
+			case "money":
+				moneyChangeAmount = Std.parseInt(talkCommandArray[i].split(" ")[1]);
+			case "feed":
+				feeding = true;
+				feedAmount = Std.parseInt(talkCommandArray[i].split(" ")[1]);
+			case "bowels":
+				butt = true;
+				buttAmount = Std.parseInt(talkCommandArray[i].split(" ")[1]);
+			}
+			
+			if (quest) {
+				if (playerCharacter.quest[questID] == null) {
+					playerCharacter.quest[questID] = new MyQuest();
+					playerCharacter.quest[questID].newQuest(quests[questID]);
 				}
-			case 1:
-				//Skip conversation if quest is greater then value
-				questSkip = roomNPC.talk[clicked][1][3];
-				if (playerCharacter.quest[questID].stage > questValue) {
-					clicked = questSkip;
+				
+				switch (questAction) {
+				case "set":
+					//set QuestID.stage to questValue
+					playerCharacter.quest[questID].stage = questValue;
+				case "giveKey":
+					//give the player keyID
+					key.newKey(globals.keys[keyID]);
+					returnMessage += key.giveKey();
+				case "skip":
+					//Skip to questSkip if questID.stage is greater then questValue
+					if (playerCharacter.quest[questID].stage > questValue)
+						clicked = questSkip;
+				case "check":
+					//Check playerCharacter.money agianst money if the player has less then money go to questSkip
+					if (playerCharacter.money >= moneyChangeAmount) {
+						playerCharacter.money -= moneyChangeAmount;
+					} else {
+						clicked = questSkip;
+					}
 				}
 			}
 		}
 		
+		if (feeding)
+			playerCharacter.stomachCurrent += feedAmount;
+		if (butt)
+			playerCharacter.bowelsCurrent += buttAmount;
 		
 		message = roomNPC.talk[clicked][0];
 		
@@ -610,6 +652,7 @@ class Main {
 		
 		for (i in 0...roomNPC.talk[clicked][2].length) {
 			btns[i].setButton(roomNPC.talk[clicked][2][i][0], roomNPC.talk[clicked][2][i][1], roomNPC.talk[clicked][2][i][2]);
+			
 			switch (roomNPC.talk[clicked][2][i][2]) {
 			case -1:
 				//Exit option
@@ -693,11 +736,14 @@ class Main {
 				
 				updateHUD();
 				
+				newRoom = false;
+				
 				message = poopScene;
 				title = "Restroom";
 				
 				btns[0].setButton("Items", null, 1);
-				btns[0].addEventListener(MouseEvent.CLICK, doPoop);
+				btns[0].disableButton();
+				//btns[0].addEventListener(MouseEvent.CLICK, doPoop);
 				
 				btns[11].setButton("Finish");
 				btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
@@ -757,8 +803,7 @@ class Main {
 			btns[0].disableButton();
 			
 			btns[1].setButton("Keys", "View your keys", 2);
-			//btns[1].addEventListener(MouseEvent.CLICK, doDescription);
-			btns[1].disableButton();
+			btns[1].addEventListener(MouseEvent.CLICK, doDescription);
 			
 			btns[2].setButton("Prey", "See what you've consumed", 3);
 			btns[2].addEventListener(MouseEvent.CLICK, doDescription);
@@ -774,7 +819,20 @@ class Main {
 			
 		case 2:
 			//Keys
+			title = "Keys";
 			
+			message += "Apartment key --- The key to your apartment. Never leave home without it.<br>";
+			
+			if (playerCharacter.keyRing.length != 0) {
+				for (i in 0...playerCharacter.keyRing.length) {
+					message += playerCharacter.keyRing[i].name + " --- " + playerCharacter.keyRing[i].desc + "<br>";
+				}
+			}
+			
+			message += "</p><br><p>";
+			
+			btns[11].setButton("Back", null, 0);
+			btns[11].addEventListener(MouseEvent.CLICK, doDescription);
 		case 3:
 			//Prey
 			title = "Consumed Prey";
@@ -878,6 +936,9 @@ class Main {
 	static function debugMenu( e:MouseEvent ) {
 		var message:String = "";
 		var option:Int = 0;
+		var questID:Int = -1;
+		var stage:Int = -1;
+		var btnOptions:Array<String> = new Array();
 		
 		txtPublic.visible = false;
 		optionsBtn.visible = false;
@@ -886,7 +947,15 @@ class Main {
 		newRoom = false;
 		
 		if (e.currentTarget.hasOwnProperty("btnID")) {
-			option = e.currentTarget.btnID;
+			if (Type.typeof(e.currentTarget.btnID) == ValueType.TInt) {
+				option = e.currentTarget.btnID;
+			} else {
+				btnOptions = e.currentTarget.btnID.split("|");
+				option = Std.parseInt(btnOptions[0]);
+				questID = Std.parseInt(btnOptions[1]);
+				if (btnOptions.length == 3)
+					stage = Std.parseInt(btnOptions[2]);
+			}
 		}
 		
 		clearAllEvents();
@@ -903,6 +972,8 @@ class Main {
 			
 			btns[0].setButton("Toggle Lactation", null, 1);
 			btns[0].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[1].setButton("Set Quest stage", null, 2);
+			btns[1].addEventListener(MouseEvent.CLICK, debugMenu);
 			
 			btns[11].setButton("Back");
 			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
@@ -920,6 +991,33 @@ class Main {
 			message += ".";
 			
 			btns[11].setButton("Next", null, 0);
+			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
+		case 2:
+			message = "Quest?";
+			
+			for (i in 0...playerCharacter.quest.length) {
+				btns[i].setButton(playerCharacter.quest[i].name, null, "3|" + i);
+				btns[i].addEventListener(MouseEvent.CLICK, debugMenu);
+			}
+			
+			btns[11].setButton("Cancel", null, 0);
+			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
+		case 3:
+			message = "Set stage to?";
+			
+			for (i in 0...playerCharacter.quest[questID].stageDesc.length) {
+				btns[i].setButton("#" + i, null, "4|" + questID + "|" + i);
+				btns[i].addEventListener(MouseEvent.CLICK, debugMenu);
+			}
+			
+			btns[11].setButton("Cancel", null, 0);
+			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
+		case 4:
+			playerCharacter.quest[questID].stage = stage;
+			
+			message = "Quest '" + playerCharacter.quest[questID].dispName + "' set to stage '" + stage + "': " + playerCharacter.quest[questID].stageDesc[stage];
+			
+			btns[11].setButton("Back", null, 0);
 			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
 		}
 		
@@ -1052,6 +1150,8 @@ class Main {
 			}
 			
 			playerCharacter = loadedPlayer;
+			
+			globals.playerCharacter = playerCharacter;
 			
 			doorFuckCount = playerCharacter.end;
 			
@@ -1584,6 +1684,9 @@ class Main {
 			
 			playerCharacter.emptyStomachCountdown = playerCharacter.end;
 			doorFuckCount = playerCharacter.end;
+			
+			globals.playerCharacter = playerCharacter;
+			
 			updateHUD();
 			
 			message = "6:00 AM. <i>Damn, forgot to turn the alarm off.</i> You roll over and glare at the little black box chirping merrily away, telling you it's time to wake up and get ready for your job.</p><br><p>That you no longer have.</p><br><p>You groan and turn the alarm off, sitting up and thinking about what you're going to do. You remember you lost your job yesterday. Apparently licking coworkers and saying they taste good is frowned upon.</p><br><p>Oh well. Time to find a new way to pay the bills. Maybe that new club down the street is looking for a bartender or bouncer or something.";
@@ -1943,12 +2046,17 @@ class Main {
 		credits.push("Scat and gym anal sex scenes contributed by forum member Victor Styche.");
 		credits.push("Gym female oral sex scenes contributed by forum member BeardyKomodo.");
 		
-		oneLineBackers.push("pelle"); //Paid Oct $20
+		//oneLineBackers.push("pelle"); //Dropped to $1 Feb
+		oneLineBackers.push("Writer"); //Paid Feb #10
+		
 		
 		//backerCredits.push("Foxlets"); //Dropped below $5 in October
-		backerCredits.push("Bradley Taylor"); //Paid Oct $5
-		backerCredits.push("OutsideOctaves"); //Pledged in Nov $5
-		backerCredits.push("Michael Brookins"); //Pledged in Nov $5
+		backerCredits.push("Bradley Taylor"); //Paid Feb $5
+		backerCredits.push("OutsideOctaves"); //Paid Feb $5
+		backerCredits.push("Michael Brookins"); //Paid Feb $5
+		backerCredits.push("Erik Camp"); //Paid Feb $5
+		backerCredits.push("Pell Torr"); //Paid Feb $5
+		
 		
 		for (i in 0...credits.length) {
 			message += "<p>" + credits[i] + "</p>";
@@ -1957,7 +2065,7 @@ class Main {
 		message += "<br><p><b>Thanks to my Patreon backers!</b></p><br>";
 		
 		for (i in 0...oneLineBackers.length) {
-			message += "<p>$20! " + oneLineBackers[i] + "</p>";
+			message += "<p>" + oneLineBackers[i] + "</p>";
 		}
 		
 		message += "<br><p>" + backerCredits[0];
@@ -2614,6 +2722,8 @@ class Main {
 		AMFConnection.registerClassAlias("consume.itemObject", MyItem);
 		AMFConnection.registerClassAlias("consume.perkObject", MyPerk);
 		AMFConnection.registerClassAlias("consume.speciesObject", MySpecies);
+		AMFConnection.registerClassAlias("consume.NPCObject", MyNPC);
+		AMFConnection.registerClassAlias("consume.keyObject", MyItem_Key);
 		
 		//Species, both playable and non
 		species = new Array();
@@ -2633,7 +2743,8 @@ class Main {
 		
 		
 		for (i in 0...allSpecies.length) {
-			species.push(new MySpecies(allSpecies[i]));
+			species.push(new MySpecies());
+			species[species.length - 1].newSpecies(allSpecies[i]);
 		}
 		
 		//Perks, even hidden ones
@@ -2715,7 +2826,7 @@ class Main {
 		globals.exits[7]  = ["Main Street",		false,	0,			0,			4,				5,			0,			0,		"The main street of town just outside your apartment"];
 		globals.exits[8]  = ["S Main St",		false,	0,			0,			6,				5,			0,			0,		"The main street of town, featuring the new club and the location of your old place of employment"];
 		globals.exits[9]  = ["Club Consume",	false,	0,			0,			7,				5,			0,			0,		"The town's newest (and only) club"];
-		globals.exits[10] = ["Inside",			false,	0,			0,			9,				5,			96,			84];
+		globals.exits[10] = ["Inside",			false,	0,			0,			9,				5,			96,			84,		null,	null,			3];
 		globals.exits[11] = ["Alley",			true,	0,			0,			8,				5,			48,			0,		"A short dim alley running along the side of the club", 0];
 		globals.exits[12] = ["The Street",		false,	0,			0,			7,				5,			96,			84];
 		globals.exits[13] = ["Back Hall",		false,	0,			0,			10,				2,			50,			90,		"The back hall of the club, the restroom and consumption rooms can be found here"];
@@ -2800,6 +2911,7 @@ class Main {
 		globals.keys[0] = ["Gym Membership Keycard",	0,		"A credit-card sized square of plastic with the gym's logo printed on it and a black background"];
 		globals.keys[1] = ["Gym Gold Membership",		1,		"A credit-card sized square of plastic with the gym's logo printed on it and a gold background"];
 		globals.keys[2] = ["Gym Staff Key",				2,		"A key you got from Shay, it opens the staff room door at the gym"];
+		globals.keys[3] = ["Consume Red Band",			3,		"A tight fitting band with the logo of the local club on it. You can't get it off, but you often forget you're even wearing it."];
 		
 		
 		
@@ -2807,49 +2919,54 @@ class Main {
 		//			Name		dispName			hidden		stageDesc	KeyID/Stage to give
 		quests[0] = ["alley",	"Alley",			true,		["", "Discovered the hidden alley"],	null];
 		quests[1] = ["club",	"Club Membership",	false,		["", "Joined the club"],	null];
-		quests[2] = ["gym",		"Gym Membership",	false,		["", "Joined the gym", "Became a gold member", "Spoke with Shay", "Agreed to help Shay with his machine", "Became fuckbuddies with Shay"],	[0, 1]];
+		quests[2] = ["gym",		"Gym Membership",	false,		["", "Joined the gym", "Gold membership is avalible", "Became a gold member", "Spoke with Shay", "Agreed to help Shay with his machine", "Became fuckbuddies with Shay"],	[0, 1]];
 		quests[3] = ["death",	"A Deal With Death", true,		["", "Spoke with Hir", "Agreed to Hir deal", "Turned down the deal"], null];
+		quests[4] = ["cv",		"Pleasing The Wolf",	false,	["", "You tried to slip past the bouncer, it wasn't a good idea."], null];
 		
 		
 		/* Conversation flags;
 		 * 0 - Normal
 		 * 1 - Quest
 		 * 
-		 * Quest Flags;
-		 * 1 - Set QuestID to Value
-		 * 2 - Skip to Step if QuestID is greater then Value
+		 * Quest actions;
+		 * set - Set QuestID to Value
+		 * skip - Skip to Step if QuestID is greater then Value
 		 * 
 		 * Talk Format;
 		 * 0 - Dialog
 		 * 1 - 0 Flag, 1 QuestID, 2 QuestFlag, 3 Step, 4 Value
 		 */
 		
-		//Conversation -- move these to functions
+		//Conversation -- There has to be a better way to so these, but I can't think of how to do it.
 		//Bouncer
 		var talk0:Array<Dynamic> = new Array();
-		talk0[0] = ["A tall, extremely buff wolf stands next to a door. He watches you suspiciously with his arms crossed over his thick, bare chest. Thick gold bands with the club's logo, a silhouette of a vixen with something halfway down her throat, her big belly forming the 'C' in Consume, wrap around the wolf's biceps. Every time he flexes the bands looks like they're about to burst off.", [0], [["Hi", "Say hello to the bouncer.", 1], ["Go in?", "Ask if you can go inside.", 2], ["Dart in", "He's huge, there's no way he can move that fast, just run past him and go inside.", 17, 2, 5, 0], ["Leave", null, -1]]];
-		talk0[1] = ["His eyes narrow slightly but otherwise he doesn't move. Just when you've about given up on getting a responce he growls, &quot;Hello.&quot;", [0], [["Go in?", "Ask if you can go inside.", 2]]];
-		talk0[2] = ["You ask about going inside and the wolf watches you for a moment then grunts, &quot;Pred or Prey?&quot; Your confused look prompts him to sigh and produce a pamphlet from his back pocket. He seems to carry them around just so he doesn't need to talk anymore then he needs to.</p><br><p>Looking at the pamphlet it describes the difference between the red band predators and blue band prey, the key differences are that anyone who signs up for a blue band pays no cover and nothing for drinks. But they aren't allowed to leave. (Through the doors anyway.)</p><br><p>Red band pay a $200 cover, full price on drinks and $200 for each 'morsel.'</p><br><p>After you finish reading and look up the bouncer grunts again and repeats himself, &quot;Pred or Prey?&quot;", [1, 1, 1, 5, 0], [["Pred", "Join as a predator", 3], ["Prey", "Join as prey", -6], ["Think", "Think about it and come back later", -1]]];
-		talk0[3] = ["You tell the bouncer you'd like to sign up as a pred. He grunts and pulls a red band with the club's logo on it out and attaches it to your arm. Interestingly it fits snugly to you with out adjusting (and won't come off no matter how you pull at it). The bouncer also takes down your payment information so you can be properly billed for everything. Once he gets it down he goes back to standing by the door, you're not really sure where he's keeping all this stuff.", [1, 1, 0, 0, 1], [["Next", " ", 0]]];
+		talk0[0] = ["A tall, extremely buff wolf stands next to a door. He watches you suspiciously with his arms crossed over his thick, bare chest. Thick gold bands with the club's logo, a silhouette of a vixen with something halfway down her throat, her big belly forming the 'C' in Consume, wrap around the wolf's biceps. Every time he flexes the bands looks like they're about to burst off.", ["talk"], [["Hi", "Say hello to the bouncer.", 1], ["Go in?", "Ask if you can go inside.", 2], ["Dart in", "He's huge, there's no way he can move that fast, just run past him and go inside.", 17, 2, 5, 0], ["Leave", null, -1]]];
+		talk0[1] = ["His eyes narrow slightly but otherwise he doesn't move. Just when you've about given up on getting a responce he growls, &quot;Hello.&quot;", ["talk"], [["Go in?", "Ask if you can go inside.", 2]]];
+		talk0[2] = ["You ask about going inside and the wolf watches you for a moment then grunts, &quot;Pred or Prey?&quot; Your confused look prompts him to sigh and produce a pamphlet from his back pocket. He seems to carry them around just so he doesn't need to talk anymore then he needs to.</p><br><p>Looking at the pamphlet it describes the difference between the red band predators and blue band prey, the key differences are that anyone who signs up for a blue band pays no cover and nothing for drinks. But they aren't allowed to leave. (Through the doors anyway.)</p><br><p>Red band pay a $200 cover, full price on drinks and $200 for each 'morsel.'</p><br><p>After you finish reading and look up the bouncer grunts again and repeats himself, &quot;Pred or Prey?&quot;", ["quest 1|value 0|skip 5|action skip"], [["Pred", "Join as a predator", 3], ["Prey", "Join as prey", -6], ["Think", "Think about it and come back later", -1]]];
+		talk0[3] = ["You tell the bouncer you'd like to sign up as a pred. He grunts and pulls a red band with the club's logo on it out and attaches it to your arm. Interestingly it fits snugly to you with out adjusting (and won't come off no matter how you pull at it). The bouncer also takes down your payment information so you can be properly billed for everything. Once he gets it down he goes back to standing by the door, you're not really sure where he's keeping all this stuff.", ["quest 1|value 1|action set|key 3|action giveKey"], [["Next", " ", 0]]];
 		
-		talk0[5] = ["You ask if you can head into the club, the bouncer nods and thumbs towards the door.", [0], [["Go in", "Leave the taciturn wolf alone.", -1]]];
+		talk0[5] = ["You ask if you can head into the club, the bouncer nods and thumbs towards the door. &quot;You don't need to check with me. I can see your band.&quot;", ["talk"], [["Go in", "Leave the taciturn wolf alone.", -1]]];
 		
-		talk0[17] = ["You make as if you walk away from the club, but turn and dart back towards the door trying to get inside before the bouncer can react. On the one hand you were right about him not being terribly quick, on the other hand you didn't count on the door being locked. A low rumbling comes from behind you, the sound like a truck coming up behind you. You turn to see the wolf's teeth glinting in the light as he snarls at you.", [0], [["Flee", "Abort! Abort! Abandon thread!", 18], ["Attack", "Fight him off!", 19], ["Bribe", "Offer the wolf something to forget about this.", 20]]];
-		talk0[18] = ["You turn yourself around as fast as you can and run, the growling follows you away from the door.", [0], [["Next", " ", -1]]];
-		talk0[19] = ["You ready yourself to attack and fight off the wolf. Moments later you find yourself laying on your back, very confused about what just happened. You feel something warm covering your feet and manage to get your dazed head to move. Looking down you see the wolf grinning happily, which is almost more frighting then all the nasty looks he's been giving you. You follow his arms to your hips where he's gripping you tightly. Looking between his arms you see your thighs vanishing into the wolf's huge cock.</p><br><p>Alarmed you start to struggle but your motions only seem to entice the wolf more, he grabs your arms and pin them to your sides, pushing his cock further up over your hips. You see his balls start to bulge as your legs reach them, each time you flex trying to get away you feel his cock pulse and he growls softly, pausing to let you squirm inside his shaft. He pushes again, pinning your arms inside his shaft and stands with a grunt, letting his massive cock thrust out before him with you more then halfway down it. As soon as he stands you slide down to your chest leaving only your shoulders and head exposed.</p><br><p>He moves and put himself back into place at the door, your struggles and the occasional flex of his cock slowly sliding you further into his massive balls as he goes back to guarding the door. The last thing you're aware of, as your head is pulled into the bouncer's cock and everything starts going dark, is a female voice saying, &quot;Another one Mac? I hope this wasn't a customer this time. Still, you are nice and huge now...&quot;", [0], [["Next", " ", -2]]];
-		talk0[20] = ["Mind racing, you try and think how to get out of this situation. You finally decide to try offering him something to just forget about this and let you go. You make the suggestion, assuming he'll as you for a couple hundred dollars, instead he grins and rumbles, &quot;Bend over. Or open up. Either way works.&quot;", [0], [["Bend over", "Let the big wolf at your ass", 21], ["Open up", "Let him shove his cock down your throat", 22], ["Attack", "Screw that, attack!", 19]]];
-		talk0[21] = ["You turn around and bend over, you hear him moving up behind you. With little more then a grunt he levels his cock at your rear and pushes inside you. You gasp as he quickly fills your butt up, then keeps pushing. You struggle as he keeps pushing, somehow managing to fit his entire cock inside you. Once inside he promptly starts pounding away, clearly not interested in your pleasure at all. You feel him tense inside you and his hands grab your hips, holding your butt against his hips. He thrusts into you three more times before you feel his knot swell against your hole. You start to protest, trying to keep him from knotting your ass, but he growls and pops you over his knot, cumming hard after.</p><br><p>A minute later he finishes, pushing into you another few times to make sure you stay full, the rumbling from the big wolf taking on more of a happy sound as he unknots and lets you off him, your butt feeling uncomfortably full now. You turn back around to see him tucking his cock back in his pants, &quot;Don't do that again.&quot;", [1, 5, 0], [["OK", "Agree and deal with your new issue", -3, 0, 150]]];
-		talk0[22] = ["Not wanting to let him split you with that huge cock you see him sporting, you kneel down and open your mouth. He takes the invitation and moves up, that massive shaft heading towards your mouth. You start to worry it may be too big for you to fit , but he doesn't give you a chance to protest and simply jams his cock into your mouth. He keeps forcing more and more of his cock down your throat until your nose is pressed into his crotch. Then he starts pounding into your face, big hands holding your head as he fucks your face. It doesn't take him long to get himself off, you watch as his knot swells up in front of your face, luckily he doesn't try to knot your lips. He does hold you against him as he starts to cum hard into your mouth, forcing you to swallow everything.</p><br><p>He finishes after a minute or so, pulling his cock out of your mouth and tucking himself back in his pants. You do notice he's grinning now as he growls, &quot;Don't do that again.&quot;", [1, 5, 0], [["OK", "Agree and leave", -4, 0, 150]]];
+		talk0[17] = ["You make as if you walk away from the club, but turn and dart back towards the door trying to get inside before the bouncer can react. On the one hand you were right about him not being terribly quick, on the other hand you didn't count on the door being locked. A low rumbling comes from behind you, the sound like a truck coming up behind you. You turn to see the wolf's teeth glinting in the light as he snarls at you.", ["talk"], [["Flee", "Abort! Abort! Abandon thread!", 18], ["Attack", "Fight him off!", 19], ["Bribe", "Offer the wolf something to forget about this.", 20]]];
+		talk0[18] = ["You turn yourself around as fast as you can and run, the growling follows you away from the door.", ["talk"], [["Next", " ", -1]]];
+		talk0[19] = ["You ready yourself to attack and fight off the wolf. Moments later you find yourself laying on your back, very confused about what just happened. You feel something warm covering your feet and manage to get your dazed head to move. Looking down you see the wolf grinning happily, which is almost more frighting then all the nasty looks he's been giving you. You follow his arms to your hips where he's gripping you tightly. Looking between his arms you see your thighs vanishing into the wolf's huge cock.</p><br><p>Alarmed you start to struggle but your motions only seem to entice the wolf more, he grabs your arms and pin them to your sides, pushing his cock further up over your hips. You see his balls start to bulge as your legs reach them, each time you flex trying to get away you feel his cock pulse and he growls softly, pausing to let you squirm inside his shaft. He pushes again, pinning your arms inside his shaft and stands with a grunt, letting his massive cock thrust out before him with you more then halfway down it. As soon as he stands you slide down to your chest leaving only your shoulders and head exposed.</p><br><p>He moves and put himself back into place at the door, your struggles and the occasional flex of his cock slowly sliding you further into his massive balls as he goes back to guarding the door. The last thing you're aware of, as your head is pulled into the bouncer's cock and everything starts going dark, is a female voice saying, &quot;Another one Mac? I hope this wasn't a customer this time. Still, you are nice and huge now...&quot;", ["talk"], [["Next", " ", -2]]];
+		talk0[20] = ["Mind racing, you try and think how to get out of this situation. You finally decide to try offering him something to just forget about this and let you go. You make the suggestion, assuming he'll as you for a couple hundred dollars, instead he grins and rumbles, &quot;Bend over. Or open up. Either way works.&quot;", ["talk"], [["Bend over", "Let the big wolf at your ass", 21], ["Open up", "Let him shove his cock down your throat", 22], ["Attack", "Screw that, attack!", 19]]];
+		talk0[21] = ["You turn around and bend over, you hear him moving up behind you. With little more then a grunt he levels his cock at your rear and pushes inside you. You gasp as he quickly fills your butt up, then keeps pushing. You struggle as he keeps pushing, somehow managing to fit his entire cock inside you. Once inside he promptly starts pounding away, clearly not interested in your pleasure at all. You feel him tense inside you and his hands grab your hips, holding your butt against his hips. He thrusts into you three more times before you feel his knot swell against your hole. You start to protest, trying to keep him from knotting your ass, but he growls and pops you over his knot, cumming hard after.</p><br><p>A minute later he finishes, pushing into you another few times to make sure you stay full, the rumbling from the big wolf taking on more of a happy sound as he unknots and lets you off him, your butt feeling uncomfortably full now. You turn back around to see him tucking his cock back in his pants, &quot;Don't do that again.&quot;", ["quest 4|value 1|bowels 150|action set"], [["OK", "Agree and deal with your new issue", -1]]];
+		talk0[22] = ["Not wanting to let him split you with that huge cock you see him sporting, you kneel down and open your mouth. He takes the invitation and moves up, that massive shaft heading towards your mouth. You start to worry it may be too big for you to fit , but he doesn't give you a chance to protest and simply jams his cock into your mouth. He keeps forcing more and more of his cock down your throat until your nose is pressed into his crotch. Then he starts pounding into your face, big hands holding your head as he fucks your face. It doesn't take him long to get himself off, you watch as his knot swells up in front of your face, luckily he doesn't try to knot your lips. He does hold you against him as he starts to cum hard into your mouth, forcing you to swallow everything.</p><br><p>He finishes after a minute or so, pulling his cock out of your mouth and tucking himself back in his pants. You do notice he's grinning now as he growls, &quot;Don't do that again.&quot;", ["quest 4|value 1|feed 150|action set"], [["OK", "Agree and leave", -1]]];
 		
 		//Receptionist
 		var talk1:Array<Dynamic> = new Array();
-		talk1[0] = ["Looking like your typical gymbunny (though not a literal rabbit in this case) the human receptionist of this gym is average of height, skinny of weight, blonde of hair and blue of eye. She is wearing a very tight low-cut tank top, showing off her modest breasts. She smiles brightly as you enter and chirps, &quot;Hello! Welcome to Shay's Gym. I'll be happy to answer any questions you might have!&quot;", [0], [["Go in?", "Ask if you can go inside", 1], ["Name?", "Ask the perky girl her name", 2], ["Eat", "Ask if you can eat her", 3], ["Leave", " ", -1]]];
-		talk1[1] = ["You inquire about joining the gym and a smile spreads over her face, &quot;We offer two levels of membership, the first is our basic package. For a modest fee you get access to all our machines for the length of your visit. I can get you signed up for that one right now if you'd like, you'll have to pay each time you visit, but the nice thing is you only pay when you visit. So you don't have to worry about going on vacation or something like that. The cost for each visit is $20.&quot;</p><br><p>She pauses for a moment before continuing, &quot;We also offer a Gold membership. That's a one time fee and gets you unlimited access for life. You also get access to the Gold Room in the back where we have a number of advanced training machines. Unfortunately at this time we don't have any Gold memberships available. Check back later, something might open up.&quot;", [1, 2, 2, 5, 0], [["Sign Up", "Sign up for a basic membership", 4], ["Not Now", "Maybe later", -1]]];
-		talk1[2] = ["You ask her what her name is. She gives you one of her too-bright smiles and points at the name tag clipped to one breast, it reads &quot;Ann&quot;.", [0], [["Go in?", "Ask if you can go inside", 1], ["Eat", "Ask if you can eat her.", 3], ["Leave", " ", -1]]];
-		talk1[3] = ["You grin and mention you're a little hungry. She looks puzzled for a moment then blushes, &quot;You want to eat me?&quot; She shifts nervously, her eyes darting around. &quot;You really don't. I can't imagine I taste very good, I'm all skin and bones after all!&quot; She laughs nervously and fidgets some more.", [0], [["Go in?", "Ask if you can go inside", 1], ["Name?", "Ask the perky girl her name", 2], ["Leave", " ", -1]]];
-		talk1[4] = ["You agree to sign up, the perky receptionist takes down your name and a few other random details from you and fills out a form which she has you sign. After which she hands you a card, still warm from the little printer behind her station, it has your name and Basic Membership written on it as well as a barcode. &quot;Just slide that through the door over there and you'll automatically be charged and the door will open! Enjoy!&quot;", [1, 2, 1, -1, 1], [["Done", " ", -1]]];
-		talk1[5] = ["You ask if you can head inside and the receptionist smiles, &quot;Just swipe your card through the reader, the door will open for you. You don't need to talk to be every time you come inside, unless you really want to anyway.&quot;", [1, 0, 2, 48, 1], [["Name?", "Ask the perky girl her name", 2], ["Eat", "Ask if you can eat her.", 3], ["Leave", " ", -1]]];
-		
+		talk1[0] = ["Looking like your typical gymbunny (though not a literal rabbit in this case) the human receptionist of this gym is average of height, skinny of weight, blonde of hair and blue of eye. She is wearing a very tight low-cut tank top, showing off her modest breasts. She smiles brightly as you enter and chirps, &quot;Hello! Welcome to Shay's Gym. I'll be happy to answer any questions you might have!&quot;", ["talk"], [["Go in?", "Ask if you can go inside", 1], ["Gold", "Ask about the Gold membership", 10], ["Name?", "Ask the perky girl her name", 2], ["Eat", "Ask if you can eat her", 3], ["Leave", " ", -1]]];
+		talk1[1] = ["You inquire about joining the gym and a smile spreads over her face, &quot;We offer two levels of membership, the first is our basic package. For a modest fee you get access to all our machines for the length of your visit. I can get you signed up for that one right now if you'd like, you'll have to pay each time you visit, but the nice thing is you only pay when you visit. So you don't have to worry about going on vacation or something like that. The cost for each visit is $20.&quot;</p><br><p>She pauses for a moment before continuing, &quot;We also offer a Gold membership. That's a one time fee and gets you unlimited access for life. You also get access to the Gold Room in the back where we have a number of advanced training machines. Unfortunately at this time we don't have any Gold memberships available. Check back later, something might open up.&quot;", ["quest 2|value 0|skip 5|action skip"], [["Sign Up", "Sign up for a basic membership", 4], ["Not Now", "Maybe later", -1]]];
+		talk1[2] = ["You ask her what her name is. She gives you one of her too-bright smiles and points at the name tag clipped to one breast, it reads &quot;Ann&quot;.", ["talk"], [["Go in?", "Ask if you can go inside", 1], ["Gold", "Ask about the Gold membership", 10], ["Eat", "Ask if you can eat her.", 3], ["Leave", " ", -1]]];
+		talk1[3] = ["You grin and mention you're a little hungry. She looks puzzled for a moment then blushes, &quot;You want to eat me?&quot; She shifts nervously, her eyes darting around. &quot;You really don't. I can't imagine I taste very good, I'm all skin and bones after all!&quot; She laughs nervously and fidgets some more.", ["talk"], [["Go in?", "Ask if you can go inside", 1], ["Gold", "Ask about the Gold membership", 10], ["Name?", "Ask the perky girl her name", 2], ["Leave", " ", -1]]];
+		talk1[4] = ["You agree to sign up, the perky receptionist takes down your name and a few other random details from you and fills out a form which she has you sign. After which she hands you a card, still warm from the little printer behind her station, it has your name and Basic Membership written on it as well as a barcode. &quot;Just slide that through the door over there and you'll automatically be charged and the door will open! Enjoy!&quot;", ["quest 2|value 1|action set|key 0|action giveKey"], [["Done", " ", -1]]];
+		talk1[5] = ["You ask if you can head inside and the receptionist smiles, &quot;Just swipe your card through the reader, the door will open for you. You don't need to talk to be every time you come inside, unless you really want to anyway.&quot;", ["talk"], [["Gold", "Ask about the Gold membership", 10], ["Name?", "Ask the perky girl her name", 2], ["Eat", "Ask if you can eat her.", 3], ["Leave", " ", -1]]];
+		talk1[6] = ["You ask the receptionist about gold memberships and she smiles, &quot;You're in luck actually, we just had a gold membership open up! If you'd like to purchase it I'd be more then happy to get you set up!&quot; She bounces a little as she talks, it would seem she's rather excited about the idea. &quot;Just so you're aware, the Gold membership is a one time fee of $2000. I know that sounds super high, but you don't have to pay for daily use of the gym anymore <i>and</i> you get access to our special Gold room! So, are you interested?&quot;", ["talk"], [["Buy", "Sign up for the exclusive Gold Gym membership", 8], ["Maybe Later", "Think about it and come back later", -1]]];
+		talk1[7] = ["She giggles, &quot;Don't get me wrong, I like it when you stop by and talk with me, but you don't need to check with me every time you visit. The keypad there by the door will let you in.&quot; She waves towards it.", ["talk"], [["Gold", "Ask about the Gold membership", 10], ["Name?", "Ask the perky girl her name", 9], ["Eat", "Ask if you can eat her", 10], ["Leave", " ", -1]]];
+		talk1[8] = ["You agree to buy a gold membership, eager to use some of those machines you caught a glimpse of. The receptionist smiles as you hand over the money. She pulls a tablet out of her booth and makes a few notes on it, the money vanishing somewhere behind it at the same time. When she's done she looks up smiling, &quot;All set! You should be good to go right now if you'd like! Enjoy!&quot;", ["quest 2|money 2000|skip 9|action check"], [["Next", null, -1]]];
+		talk1[9] = ["You agree to buy a gold membership, eager to use some of those machines you caught a glimpse of. When you check your wallet however you discover that you're a little short of the $2000 fee. You smile sheepishly and promise you'll come back soon. &quot;Ok, hurry though.&quot; The receptionist makes a note as she talks, &quot;These memberships don't usually stay available for long.&quot;", ["talk"], [["Go in?", "Ask if you can go inside", 1], ["Name?", "Ask the perky girl her name", 2], ["Eat", "Ask if you can eat her", 3], ["Leave", " ", -1]]];
+		talk1[10] = ["You ask the receptionist about gold memberships, she frowns a little and shakes hear head, &quot;Sorry, we don't have any avalible right now. Check back soon though, I'm sure one will open up soon!", ["quest 2|value 1|skip 6|action skip"], [["Go in?", "Ask if you can go inside", 1], ["Name?", "Ask the perky girl her name", 2], ["Eat", "Ask if you can eat her", 3], ["Leave", " ", -1]]];
 		
 		
 		//NPCs
