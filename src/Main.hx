@@ -225,6 +225,31 @@ class Main {
 				}
 			case 2:
 				//Shop
+				switch (flagValue) {
+				case "iceCream":
+					//Ice Cream shop
+					//Guffin's Shift 8-14 (3)
+					//Bessie's Shift 14-20 (4)
+					if (playerCharacter.hour >= 8 && playerCharacter.hour < 20) {
+						roomNPC = new MyNPC();
+						message += "The freezer case filled with ice cream is here, ";
+					}
+					if (playerCharacter.hour >= 8 && playerCharacter.hour < 14)
+						roomNPC.newNPC(nonPlayerCharacters[3]);
+					if (playerCharacter.hour >= 14 && playerCharacter.hour < 20)
+						roomNPC.newNPC(nonPlayerCharacters[4]);
+					
+					btns[9].setButton("Buy", "Buy some tasty Ice Cream.", 0);
+					btns[9].addEventListener(MouseEvent.CLICK, doBuyIce);
+					if (roomNPC != null) {
+						message += roomNPC.name + " is standing behind it.<br>";
+						btns[11].setButton("Talk", "Talk to " + roomNPC.name, 0);
+						btns[11].addEventListener(MouseEvent.CLICK, doTalk);
+					}
+				case "general":
+					//general store
+					
+				}
 			case 3:
 				//Talk
 				message += roomNPC.name + " is here.<br>";
@@ -952,6 +977,9 @@ class Main {
 		outputText(message, title);
 	}
 	
+	static function doBuyIce( e:MouseEvent ) {
+		
+	}
 	
 	static function resetGame( e:MouseEvent ) {
 		var choice:Int = e.currentTarget.btnID;
@@ -2894,7 +2922,7 @@ class Main {
 		globals.exits[32] = ["Staff Room",		false,	0,			0,			23,				5,			48,			84,		"The staff area of the gym", null, 2];
 		globals.exits[33] = ["Restroom",		false,	0,			0,			24,				5,			48,			84];
 		globals.exits[34] = ["Showers",			false,	0,			0,			25,				5,			48,			84];
-		globals.exits[35] = ["Ice Cream",		false,	0,			0,			26,				5,			50,			86];
+		globals.exits[35] = ["Ice Cream",		false,	8,			20,			26,				5,			50,			86];
 		globals.exits[36] = ["Street",			false,	0,			0,			6,				5,			50,			86];
 		globals.exits[37] = ["Backroom",		false,	0,			0,			27,				5,			50,			86];
 		globals.exits[38] = ["Storefront",		false,	0,			0,			26,				5,			50,			86];
@@ -2934,7 +2962,7 @@ class Main {
 		globals.rooms[23] = ["Gym - Staff Room",		null,	29,		null,	null,	null,	null,	null,	null,	[10],		false,		true,		null,		"This back room of this gym is clearly not an area customers are intended to see. Two walls are covered in the lockers of the employees. The wall opposite the door has a door and a window into which is the manager's office. Shay can usually be found somewhere in the area. Along side the window sits a vending machine mostly selling health drinks.</p><br><p>The middle of the room is dominated by an impressive contraption, you can't fathom what all the parts are supposed to be used for. According to Shay, this machine is supposed to make your chest bigger. Also according to him, it doesn't work correctly."];
 		globals.rooms[24] = ["Gym - Restroom",			null,	null,	29,		null,	null,	null,	null,	null,	[5],		true,		false,		null,		"A standard single-occupancy restroom. The door locks."];
 		globals.rooms[25] = ["Gym - Showers",			29,		null,	null,	null,	null,	null,	null,	null,	[0],		true,		false,		null,		"A short hallway leads to several shower stalls, providing gym goers a place to change and get cleaned up. Rows of small lockers are provided for customers to store any personal belongings they don't want to carry with them into the gym proper, it is bring your own lock however."];
-		globals.rooms[26] = ["Ice Cream Shop",			null,	null,	null,	36,		37,		null,	null,	null,	[0],		false,		true,		null,		"Your old place of employment, the local ice cream shop. They have all the basics; cones, sundaes even a few specialty items like shakes and splits. When you worked here you got all the ice cream you wanted, now you're going to have to pay for any you want. There's a door behind the counter, but you're pretty sure you'll get in trouble if you try going back there now."];
+		globals.rooms[26] = ["Ice Cream Shop",			null,	null,	null,	36,		37,		null,	null,	null,	[[2, "iceCream"]], false, true,		null,			"Your old place of employment, the local ice cream shop. They have all the basics; cones, sundaes even a few specialty items like shakes and splits. When you worked here you got all the ice cream you wanted, now you're going to have to pay for any you want. There's a door behind the counter, but you're pretty sure you'll get in trouble if you try going back there now."];
 		globals.rooms[27] = ["Ice Cream Shop - Backroom", null, 40,		null,	38,		41,		null,	39,		null,	[0],		false,		true,		null,		"The back room of the ice cream shop set up as a break room, with a table and several chairs. The old TV you remember from when you worked here is still sitting on top of the refrigerator. From here there are three doors, one is the tiny rest room, one is the large walk-in freezer that holds the extra ice cream. The third door was always locked, but now you have a key for it."];
 		globals.rooms[28] = ["Ice Cream Shop - Freezer", null,	37,		null,	null,	null,	null,	null,	null,	[0],		true,		false,		null,		"The freezer, it's very cold, naturally. And it's filled with tub after tub of ice cream ready to be sold in the shop. A quick look around and you're pretty sure there's enough here the shop will never run out, even at the rates people around here eat the stuff. Or at least it'll take a long time."];
 		globals.rooms[29] = ["Ice Cream Shop - Restroom", null,	null,	null,	null,	null,	null,	37,		null,	[5],		true,		true,		null,		"A standard single-occupancy restroom. The door locks."];
@@ -3019,7 +3047,7 @@ class Main {
 		shayTalk[1] = ["You return Shay's greeting and he grins happily, &quot;Always nice to see a new face. Be careful, some of these machines are a little questionable, you might need to take it easy with them. If you have any questions let me know, I'll be around.&quot; He then steps past you and out the door.", ["quest 2|value 4|action set"], [["Well then", "Well, that was abrupt.", -1]]];
 		shayTalk[2] = ["You find Shay leaning against one of the machines, he grins as you look him over. &quot;Hello again, sorry about rushing out last time, had a few things to take care of. I've got some time now though if you want to talk.&quot;", ["talk"], [["Gold Room", "Ask about the gold room.", 3], ["Him", "Ask about him.", 8], ["Nothing", "Nothing to ask about.", -1]]];
 		shayTalk[3] = ["Curious you ask Shay about the machines in this room, he grins as he looks around, a clear sense of pride as he eyes the room, &quot;You like them? Most of these I made myself. I'm still tweaking them a little, that's the reason we don't let many people in here. Wouldn't want to have the machines break, or a customer.&quot; He grins at his joke. &quot;Let me know how you like them.&quot;", ["talk"], [["Like", "Tell Shay how much you enjoy them", 4], ["Dislike", "Tell Shay that you don't like them", 9], ["Haven't", "Tell him you haven't used them yet.", 10]]];
-		shayTalk[4] = ["You grin and tell Shay that you really like the machines. He looks you over and his grin widens, &quot;I can tell. How's the adjustments working out for you?&quot; He winks.", ["talk", [["Flirty", "Give him a flirty responce", 5], ["Appreciative", "Give him an appreciative responce.", 11], ["More", "Let him know you want more", 12]]];
+		shayTalk[4] = ["You grin and tell Shay that you really like the machines. He looks you over and his grin widens, &quot;I can tell. How's the adjustments working out for you?&quot; He winks.", ["talk", [["Flirty", "Give him a flirty responce", 5], ["Appreciative", "Give him an appreciative responce.", 11], ["More", "Let him know you want more", 12]]]];
 		shayTalk[5] = ["Your smile spreads and you tell Shay you love the way the machines make you feel as well as they way they make you look. You obviously eye his package and ask if he's made use of his own creations.</p><br><p>Shay laughs lightly, &quot;Oh yes. Had a few side-effects from early versions though. I tend to get... a little large.&quot; He looks a bit bashful as he says this.", ["talk"], [["How big?", "Just how big does he get?", 6], ["Too Bad", "That's no good", 14]]];
 		shayTalk[6] = ["So he gets bigger? You slide a little closer and inquire just how big he gets. Shay shifts a little uncomfortably as you get closer to him. &quot;Oh, I um...&quot; He rubs the back of his neck, his package starting to swell quite dramatically. &quot;I don't really know to be honest. It, well I just kinda keep growing.&quot;", ["talk"], [["Fun", "That could be fun", 7], ["Awkward", "That could be awkward.", 14]]];
 		shayTalk[7] = ["You slide closer still and express how much fun you think that could be, a cock that just gets bigger and bigger. You eye him as he swells larger still, his shorts getting tight around his growing erection. He shifts again, his discomfort growing almost as fast as his cock. He moves away from you and quickly moves towards the door, &quot;I uh... I need to go do something, um... somewhere else.&quot; He darts out quickly.", ["quest 2|value 5|action set"], [["Well", "I guess you embaressed him", -1]]];
@@ -3037,6 +3065,11 @@ class Main {
 		shayTalk[19] = ["He nods after you say you'll think about it, &quot;I'll be around if you change your mind.&quot; He turns and heads out the door.", ["talk"], [["Done", "He left. Again.", -1]]];
 		shayTalk[20] = ["You agree to help out with the testing, Shay nods and digs in his pocket for a moment, &quot;Great! I've got a key around here somewhere, it'll get you into the staff room where the new machine is set up. Give it a try when you get the chance. Ah,&quot; He pulls a key out of his pocket and hands it to you. &quot;Here you go. I'll be around if you need anything.&quot; He then heads back to the main room.", ["quest 2|value 6|action set|key 2|action giveKey"], [["Done", " ", -1]]];
 		
+		//Guffin
+		var guffinTalk:Array<Dynamic> = new Array();
+		guffinTalk[0] = ["A short white fox stands behind the counter, he smiles as you walk in then blushes when you look him over. He appears to be your typical arctic fox save for the two small horns on his head. Most of him is covered by the counter but as you step up to the counter you see him sporting a very large belly, seems someone else has been partaking of the 'free' ice cream. &quot;O-oh, uh... hello! M-my name is Guffin, m-may I take your order? W-what would you like to have? Just l-let me know what you'd like.&quot;", ["talk"], [["Okay", " ", -1]]];
+		
+		
 		
 		//NPCs
 		nonPlayerCharacters = new Array();
@@ -3044,6 +3077,7 @@ class Main {
 		nonPlayerCharacters[0] = ["Mac the bouncer",		species[3],	false,	false,	true,	true,	84,		500,	macTalk,		null];
 		nonPlayerCharacters[1] = ["Ann the receptionist",	species[0],	true,	false,	false,	false,	63,		95,		annTalk,		null];
 		nonPlayerCharacters[2] = ["Shay",					species[3], false,	false,	true,	true,	74,		600,	shayTalk,		null];
+		nonPlayerCharacters[3] = ["Guffin",					species[1], false,	true,	false,	false,	65,		450,	guffinTalk,		null];
 		
 	}
 
@@ -3063,6 +3097,7 @@ class Main {
 			btns[i].removeEventListener(MouseEvent.CLICK, loadGame);
 			btns[i].removeEventListener(MouseEvent.CLICK, showHidden);
 			btns[i].removeEventListener(MouseEvent.CLICK, debugMenu);
+			btns[i].removeEventListener(MouseEvent.CLICK, resetGame);
 			
 			btns[i].removeEventListener(MouseEvent.CLICK, doTalk);
 			btns[i].removeEventListener(MouseEvent.CLICK, doSleep);
@@ -3087,7 +3122,6 @@ class Main {
 			btns[i].removeEventListener(MouseEvent.CLICK, combatHeal);
 			btns[i].removeEventListener(MouseEvent.CLICK, doCombat);
 			btns[i].removeEventListener(MouseEvent.CLICK, meetDeath);
-			btns[i].removeEventListener(MouseEvent.CLICK, resetGame);
 			btns[i].removeEventListener(MouseEvent.CLICK, playerStats);
 			btns[i].removeEventListener(MouseEvent.CLICK, statUpgrade);
 
