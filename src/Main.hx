@@ -58,6 +58,8 @@ class Main {
 	static var doorFuckCount:Int;
 	static var conversationStep:Int;
 	
+	static var playerDied:String;
+	
 	static function movePlayer( e:MouseEvent ) {
 		//The main movement function
 		var roomName:String;
@@ -86,6 +88,14 @@ class Main {
 				txtDebug.addEventListener(MouseEvent.CLICK, debugMenu);
 				txtDebug.visible = true;
 			}
+		}
+		
+		//If the player signed up to be prey, we need to flip them right to the consumption scene rather then letting them move about.
+		
+		if (playerCharacter.quest[1].stage == 2) {
+			playerDied = "prey";
+			doDeath();
+			return;
 		}
 		
 		if (newRoom) {
@@ -141,7 +151,8 @@ class Main {
 					switch (timeReturnArray[0]) {
 					case "#DIE":
 						//Player died
-						doDeath(null, timeReturnArray[1]);
+						playerDied = timeReturnArray[1];
+						doDeath();
 						return;
 					case "#STOMACH":
 						//Player's stomach is overfilled, food coma time
@@ -414,14 +425,48 @@ class Main {
 		btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
 	}
 	
-	static function doDeath( ?e:MouseEvent, ?how:String ) {
+	static function doDeath( ?e:MouseEvent ) {
+		var message:String = "";
+		var title:String = "You Died";
+		var clicked:String = "";
+		
+		if (e != null)
+			clicked = e.currentTarget.btnID;
 		
 		clearAllEvents();
+		txtPublic.visible = false;
 		
-		outputText("{Placeholder} Dead", "Death");
+		switch (playerDied) {
+		case "prey":
+			//Player signed up to be prey
+			roomNPC = new MyNPC();
+			roomNPC.randomNPC(species, playerCharacter);
+			
+			title = "Consume - Prey";
+			message = "You spend some time on the dance floor, eventually making your way to the bar to enjoy the free drinks. Several drinks later and you've got a nice buzz going on and a " + roomNPC.name + " approaches you and takes you into the back rooms. " + roomNPC.gender("sub") + " doesn't waste any time on pleasantries and simply shoves you down " + roomNPC.gender("pos").toLowerCase() + " throat as soon as the door locks. It takes you a few moments to process what just happened, the alcohol in your system making everything feel like a dream. In the last moments you start to panic slightly before everything goes black.";
+			
+			playerDied = "eaten";
+			
+			btns[0].setButton("Next", null, "eaten");
+			btns[0].addEventListener(MouseEvent.CLICK, doDeath);
+		default:
+			switch (clicked) {
+			case "eaten":
+				//Player got eaten, silly player.
+				message = "You got yourself eaten. You're supposed to eat them dummy.</p><br><p>";
+			default:
+				message = "ERROR: Unknown death type: " + clicked;
+			}
+			
+			message += "Score: " + Math.round(playerCharacter.fat + playerCharacter.numEaten) + "</p><br><p>";
+			
+			//Deal with death
+			
+			btns[11].setButton("Main Menu");
+			btns[11].addEventListener(MouseEvent.CLICK, resetGame);
+		}
 		
-		btns[11].setButton("Main Menu");
-		btns[11].addEventListener(MouseEvent.CLICK, resetGame);
+		outputText(message, title);
 	}
 	
 	static function doHunt( e:MouseEvent ) {
@@ -2003,7 +2048,7 @@ class Main {
 		qanda.push("<p><b>Will there be an option for the player to be eaten?</b></p><p>Yes. There are a few scenes in place already. There will be more as the game progresses.</p>");
 		qanda.push("<p><b>Will there be [insert type of vore]?</b></p><p>Yes, it's going to take a while before any besides oral are in place, though there are currently a few types of NPC non-oral vore in place now.</p>");
 		qanda.push("<p><b>Will there be [insert species]?</b></p><p>Working on adding species! There's usually a poll going on the forum to pick which species gets added in the next update. And I'm always willing to hear suggestions.</p>");
-		qanda.push("<p><b>Will you add graphics/Can I make graphics for your game?</b></p><p>Yes! In fact there is a list of bounties available on the forums!</p>");
+		qanda.push("<p><b>Will you add graphics/Can I make graphics for your game?</b></p><p>Yes! I am always willing to take artwork, see the forums for details. Unfortunitly I can't offer bounties right now, but maybe I will again soon.</p>");
 		qanda.push("<p><b>Can I write scenes?</b></p><p>Yes. Write it up and send it to me, either note or email. If I can get it in the game I'll do so and let you know (and yes you will be credited with writing it in game.) You can also write characters if you'd like, more information, including what slots are open, can be found on the forums.</p>");
 		qanda.push("<p><b>Can I pay your for your wonderful fetish game?</b></p><p>By all means, yes! Yes you can! ... And I've made it even easier for you, just head over to Patreon <a target='_new' href='https://www.patreon.com/SillySnowFox'><u>here</u></a> and pledge a couple dollars!</p>");
 		qanda.push("<p><b>What do you use to make Consume?</b></p><p>Consume is written in ActionScript and compiled into flash by using HaXe. I use FlashDevelop as the debugging environment. This causes a few odd issues as HaXe doesn't support some aspects of ActionScript for some reason but it also doesn't require a subscription.</p>");
@@ -2045,11 +2090,11 @@ class Main {
 		
 		
 		//backerCredits.push("Foxlets"); //Dropped below $5 in October
-		backerCredits.push("Bradley Taylor"); //Paid Feb $5
-		backerCredits.push("OutsideOctaves"); //Paid Feb $5
+		//backerCredits.push("Bradley Taylor"); //Paid Feb $5
+		//backerCredits.push("OutsideOctaves"); //Paid Feb $5
 		backerCredits.push("Michael Brookins"); //Paid Feb $5
 		backerCredits.push("Erik Camp"); //Paid Feb $5
-		backerCredits.push("Pell Torr"); //Paid Feb $5
+		//backerCredits.push("Pell Torr"); //Paid Feb $5
 		
 		
 		for (i in 0...credits.length) {
@@ -2912,7 +2957,7 @@ class Main {
 		//Quests
 		//			Name		dispName			hidden		stageDesc	KeyID/Stage to give
 		quests[0] = ["alley",	"Alley",			true,		["", "Discovered the hidden alley"],	null];
-		quests[1] = ["club",	"Club Membership",	false,		["", "Joined the club"],	null];
+		quests[1] = ["club",	"Club Membership",	false,		["", "Joined the club", "Joined the club as prey"],	null];
 		quests[2] = ["gym",		"Gym Membership",	false,		["", "Joined the gym", "Gold membership is avalible", "Became a gold member", "Spoke with Shay", "Agreed to help Shay with his machine", "Became fuckbuddies with Shay"],	[0, 1]];
 		quests[3] = ["death",	"A Deal With Death", true,		["", "Spoke with Hir", "Agreed to Hir deal", "Turned down the deal"], null];
 		quests[4] = ["cv",		"Pleasing The Wolf",	false,	["", "You tried to slip past the bouncer, it wasn't a good idea."], null];
@@ -2936,7 +2981,7 @@ class Main {
 		var talk0:Array<Dynamic> = new Array();
 		talk0[0] = ["A tall, extremely buff wolf stands next to a door. He watches you suspiciously with his arms crossed over his thick, bare chest. Thick gold bands with the club's logo, a silhouette of a vixen with something halfway down her throat, her big belly forming the 'C' in Consume, wrap around the wolf's biceps. Every time he flexes the bands looks like they're about to burst off.", ["talk"], [["Hi", "Say hello to the bouncer.", 1], ["Go in?", "Ask if you can go inside.", 2], ["Dart in", "He's huge, there's no way he can move that fast, just run past him and go inside.", 17, 2, 5, 0], ["Leave", null, -1]]];
 		talk0[1] = ["His eyes narrow slightly but otherwise he doesn't move. Just when you've about given up on getting a responce he growls, &quot;Hello.&quot;", ["talk"], [["Go in?", "Ask if you can go inside.", 2]]];
-		talk0[2] = ["You ask about going inside and the wolf watches you for a moment then grunts, &quot;Pred or Prey?&quot; Your confused look prompts him to sigh and produce a pamphlet from his back pocket. He seems to carry them around just so he doesn't need to talk anymore then he needs to.</p><br><p>Looking at the pamphlet it describes the difference between the red band predators and blue band prey, the key differences are that anyone who signs up for a blue band pays no cover and nothing for drinks. But they aren't allowed to leave. (Through the doors anyway.)</p><br><p>Red band pay a $200 cover, full price on drinks and $200 for each 'morsel.'</p><br><p>After you finish reading and look up the bouncer grunts again and repeats himself, &quot;Pred or Prey?&quot;", ["quest 1|value 0|skip 5|action skip"], [["Pred", "Join as a predator", 3], ["Prey", "Join as prey", -6], ["Think", "Think about it and come back later", -1]]];
+		talk0[2] = ["You ask about going inside and the wolf watches you for a moment then grunts, &quot;Pred or Prey?&quot; Your confused look prompts him to sigh and produce a pamphlet from his back pocket. He seems to carry them around just so he doesn't need to talk anymore then he needs to.</p><br><p>Looking at the pamphlet it describes the difference between the red band predators and blue band prey, the key differences are that anyone who signs up for a blue band pays no cover and nothing for drinks. But they aren't allowed to leave. (Through the doors anyway.)</p><br><p>Red band pay a $200 cover, full price on drinks and $200 for each 'morsel.'</p><br><p>After you finish reading and look up the bouncer grunts again and repeats himself, &quot;Pred or Prey?&quot;", ["quest 1|value 0|skip 5|action skip"], [["Pred", "Join as a predator", 3], ["Prey", "Join as prey", 30], ["Think", "Think about it and come back later", -1]]];
 		talk0[3] = ["You tell the bouncer you'd like to sign up as a pred. He grunts and pulls a red band with the club's logo on it out and attaches it to your arm. Interestingly it fits snugly to you with out adjusting (and won't come off no matter how you pull at it). The bouncer also takes down your payment information so you can be properly billed for everything. Once he gets it down he goes back to standing by the door, you're not really sure where he's keeping all this stuff.", ["quest 1|value 1|action set|key 3|action giveKey"], [["Next", " ", 0]]];
 		
 		talk0[5] = ["You ask if you can head into the club, the bouncer nods and thumbs towards the door. &quot;You don't need to check with me. I can see your band.&quot;", ["talk"], [["Go in", "Leave the taciturn wolf alone.", -1]]];
@@ -2947,6 +2992,8 @@ class Main {
 		talk0[20] = ["Mind racing, you try and think how to get out of this situation. You finally decide to try offering him something to just forget about this and let you go. You make the suggestion, assuming he'll as you for a couple hundred dollars, instead he grins and rumbles, &quot;Bend over. Or open up. Either way works.&quot;", ["talk"], [["Bend over", "Let the big wolf at your ass", 21], ["Open up", "Let him shove his cock down your throat", 22], ["Attack", "Screw that, attack!", 19]]];
 		talk0[21] = ["You turn around and bend over, you hear him moving up behind you. With little more then a grunt he levels his cock at your rear and pushes inside you. You gasp as he quickly fills your butt up, then keeps pushing. You struggle as he keeps pushing, somehow managing to fit his entire cock inside you. Once inside he promptly starts pounding away, clearly not interested in your pleasure at all. You feel him tense inside you and his hands grab your hips, holding your butt against his hips. He thrusts into you three more times before you feel his knot swell against your hole. You start to protest, trying to keep him from knotting your ass, but he growls and pops you over his knot, cumming hard after.</p><br><p>A minute later he finishes, pushing into you another few times to make sure you stay full, the rumbling from the big wolf taking on more of a happy sound as he unknots and lets you off him, your butt feeling uncomfortably full now. You turn back around to see him tucking his cock back in his pants, &quot;Don't do that again.&quot;", ["quest 4|value 1|bowels 150|action set"], [["OK", "Agree and deal with your new issue", -1]]];
 		talk0[22] = ["Not wanting to let him split you with that huge cock you see him sporting, you kneel down and open your mouth. He takes the invitation and moves up, that massive shaft heading towards your mouth. You start to worry it may be too big for you to fit , but he doesn't give you a chance to protest and simply jams his cock into your mouth. He keeps forcing more and more of his cock down your throat until your nose is pressed into his crotch. Then he starts pounding into your face, big hands holding your head as he fucks your face. It doesn't take him long to get himself off, you watch as his knot swells up in front of your face, luckily he doesn't try to knot your lips. He does hold you against him as he starts to cum hard into your mouth, forcing you to swallow everything.</p><br><p>He finishes after a minute or so, pulling his cock out of your mouth and tucking himself back in his pants. You do notice he's grinning now as he growls, &quot;Don't do that again.&quot;", ["quest 4|value 1|feed 150|action set"], [["OK", "Agree and leave", -1]]];
+		
+		talk0[30] = ["You tell the bouncer you'd like to sign up as prey. He grunts and pulls a blue band with the club's logo on it out and attaches it to your arm. Interestingly it fits snugly to you with out adjusting (and won't come off no matter how you pull at it) the bouncer then pushes you into the club with little fan fare.", ["quest 1|value 2|action set"], [["Next", " ", -1]]];
 		
 		//Receptionist
 		var talk1:Array<Dynamic> = new Array();
@@ -2961,6 +3008,7 @@ class Main {
 		talk1[8] = ["You agree to buy a gold membership, eager to use some of those machines you caught a glimpse of. The receptionist smiles as you hand over the money. She pulls a tablet out of her booth and makes a few notes on it, the money vanishing somewhere behind it at the same time. When she's done she looks up smiling, &quot;All set! You should be good to go right now if you'd like! Enjoy!&quot;", ["quest 2|money 2000|skip 9|action check"], [["Next", null, -1]]];
 		talk1[9] = ["You agree to buy a gold membership, eager to use some of those machines you caught a glimpse of. When you check your wallet however you discover that you're a little short of the $2000 fee. You smile sheepishly and promise you'll come back soon. &quot;Ok, hurry though.&quot; The receptionist makes a note as she talks, &quot;These memberships don't usually stay available for long.&quot;", ["talk"], [["Go in?", "Ask if you can go inside", 1], ["Name?", "Ask the perky girl her name", 2], ["Eat", "Ask if you can eat her", 3], ["Leave", " ", -1]]];
 		talk1[10] = ["You ask the receptionist about gold memberships, she frowns a little and shakes hear head, &quot;Sorry, we don't have any avalible right now. Check back soon though, I'm sure one will open up soon!", ["quest 2|value 1|skip 6|action skip"], [["Go in?", "Ask if you can go inside", 1], ["Name?", "Ask the perky girl her name", 2], ["Eat", "Ask if you can eat her", 3], ["Leave", " ", -1]]];
+		
 		
 		
 		//NPCs

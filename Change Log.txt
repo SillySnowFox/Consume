@@ -9,6 +9,7 @@ New
  * Cover charge detection is now in place in the club. Consume is having a special, no cover charge!
  * Ann will now correctly give you your gym keycard when you sign up
  * DEBUG MENU: Quest stages can be set directly. WARNING: will not give out related keys.
+ * Players can sign up to be eaten as prey
  * 
 
 Changes
