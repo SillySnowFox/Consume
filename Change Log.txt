@@ -12,7 +12,11 @@ New
  * Players can sign up to be eaten as prey
  * Added Guffin back to the ice cream shop
  * Added Bessie back to the ice cream shop
- * 
+ * Added the black market to the game.
+ * Added the dragon back to the general store.
+ * Added the general store's warehouse. You can't yet work in it though.
+ * Added the ass back to the game, player's can't yet encounter him.
+ *
 
 Changes
 

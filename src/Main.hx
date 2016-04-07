@@ -9,6 +9,7 @@ import flash.events.*;
 import flash.display.*;
 import haxe.remoting.AMFConnection;
 import Type.ValueType;
+import haxe.xml.Check.Attrib;
 
 //Logo images
 @:bitmap("../img/logo_f.png") class LogoF extends BitmapData { }
@@ -239,8 +240,8 @@ class Main {
 					if (playerCharacter.hour >= 14 && playerCharacter.hour < 20)
 						roomNPC.newNPC(nonPlayerCharacters[4]);
 					
-					btns[9].setButton("Buy", "Buy some tasty Ice Cream.", 0);
-					//btns[9].addEventListener(MouseEvent.CLICK, doBuyIce);
+					btns[9].setButton("Buy", "Buy some tasty Ice Cream.", "ic:0");
+					//btns[9].addEventListener(MouseEvent.CLICK, doShop);
 					btns[9].disableButton();
 					if (roomNPC != null) {
 						message += roomNPC.name + " is standing behind it.<br>";
@@ -249,7 +250,18 @@ class Main {
 					}
 				case "general":
 					//general store
+					message += roomNPC.name + " has something to sell.<br>";
 					
+					btns[9].setButton("Buy", "Take a look at the dragon's stock", "gen:0");
+					//btns[9].addEventListener(MouseEvent.CLICK, doShop);
+					btns[9].disableButton();
+				case "rat":
+					//The rat's illegal shop
+					message += roomNPC.name + " has something to sell.<br>";
+					
+					btns[9].setButton("Buy", "Take a look at the rat's offerings.", "rat:0");
+					//btns[9].addEventListener(MouseEvent.CLICK, doShop);
+					btns[9].disableButton();
 				}
 			case 3:
 				//Talk
@@ -258,6 +270,17 @@ class Main {
 				btns[11 - i].addEventListener(MouseEvent.CLICK, doTalk);
 			case 4:
 				//Work
+				message += "Plenty of work awaits you here.<br>";
+				
+				btns[9].setButton("Work 2", "Work for two hours", 2);
+				//btns[9].addEventListener(MouseEvent.CLICK, doWork);
+				btns[9].disableButton();
+				btns[10].setButton("Work 4", "Work for four hours", 4);
+				//btns[10].addEventListener(MouseEvent.CLICK, doWork);
+				btns[10].disableButton();
+				btns[11].setButton("Work 8", "Work for eight hours", 8);
+				//btns[11].addEventListener(MouseEvent.CLICK, doWork);
+				btns[11].disableButton();
 			case 5:
 				//Toilet
 				message += "There is a toilet here you can use.<br>";
@@ -726,7 +749,9 @@ class Main {
 			case -1:
 				//Exit option
 				btns[i].addEventListener(MouseEvent.CLICK, movePlayer);
-				
+			case -7:
+				//Drop into QTE, for now just turn that button off
+				btns[i].disableButton();
 			default:
 				btns[i].addEventListener(MouseEvent.CLICK, doTalk);
 			}
@@ -978,7 +1003,14 @@ class Main {
 		outputText(message, title);
 	}
 	
-	static function doBuyIce( e:MouseEvent ) {
+	static function doShop( e:MouseEvent ) {
+		// ic - ice cream shop
+		// rat - black market
+		// gen - general store
+		
+	}
+	
+	static function doWork( e:MouseEvent ) {
 		
 	}
 	
@@ -2930,7 +2962,8 @@ class Main {
 		globals.exits[39] = ["Freezer",			false,	0,			0,			28,				5,			50,			86,		"The shop's large walk-in freezer"];
 		globals.exits[40] = ["Restroom",		false,	0,			0,			29,				5,			50,			86];
 		globals.exits[41] = ["Office",			false,	0,			0,			30,				5,			50,			86];
-		
+		globals.exits[42] = ["Warehouse",		false,	0,			0,			31,				5,			55,			84,		null,	null,	5];
+		globals.exits[43] = ["Storefront",		false,	0,			0,			19,				5,			55,			84];
 		
 		
 		
@@ -2945,7 +2978,7 @@ class Main {
 		globals.rooms[5]  = ["City Park",				null,	null,	null,	7,		null,	null,	null,	null,	[[1, "active"]], true,	true,		null,		"The city park. Though you know it's only a single block, something about the woods makes it easy to get lost. There are usually a number of less then friendly individuals in the woods as well."];
 		globals.rooms[6]  = ["South Main Street",		null,	7,		null,	9,		35,		null,	null,	null,	[0],		false,		true,		null,		"Most of this area is still under construction. One building is finished, though most of it is still unoccupied their is a lighted door leading to the basement."];
 		globals.rooms[7]  = ["Consume Entryway",		null,	null,	null,	10,		8,		11,		null,	null,	[3],		false,		true,		0,			"A short flight of concrete steps leading to a steel door. The landing is mostly taken up by the very large bouncer who eyes you as you come down the stairs. A single lamp lights the landing with a second light focusing on the small sign affixed to the door.</p><p>The sign reads, &quot;Welcome to Consume.&quot;"];
-		globals.rooms[8]  = ["Back Alley",				null, 	null,	9,		null,	null,	null,	null,	null,	[0],		false,		false,		null,		"A dim alley running along the side of the club. It ends in a small loading dock area with a dumpster next to a locked door. There is a short drive leading to the street providing access to the dock. Halfway down the alley you find a small alcove, standing in it is a figure in a dark cloak."];
+		globals.rooms[8]  = ["Back Alley",				null, 	null,	9,		null,	null,	null,	null,	null,	[3, [2, "rat"]], false,	false,		5,			"A dim alley running along the side of the club. It ends in a small loading dock area with a dumpster next to a locked door. There is a short drive leading to the street providing access to the dock. Halfway down the alley you find a small alcove, standing in it is a figure in a dark cloak."];
 		globals.rooms[9]  = ["Consume - Dance Floor",	null,	16,		null,	13,		12,		19,		18,		null,	[[1, "passive"]], false, true,		null,		"The main room of Consume is mostly taken up by a dance floor. Along one wall is the bar, several bartenders work behind it serving drinks to thirsty patrons. Opposite the bar is a stage for live bands to preform on. It is currently empty, music being piped in from speakers hidden in the club. Across from the main entrance is a set of stairs leading to the upper balcony with a door under the steps leading to the devourment rooms."];
 		globals.rooms[10] = ["Consume - Back Hall",		null,	15,		null,	null,	14, 	null,	null,	null,	[0],		true,		true,		null,		"A short hall lined with rooms on either side. Behind each door is a sparsely furnished room with little more then a lamp and a bed. At the far end of the hall is a door marked &quot;Staff Only.&quot; All the doors are locked from this side."];
 		globals.rooms[11] = ["Consume - Restroom",		null,	null,	null,	null,	null,	null,	13,		null,	[5],		true,		false,		null,		"A standard single-occupancy restroom. The door locks."];
@@ -2956,7 +2989,7 @@ class Main {
 		globals.rooms[16] = ["North Main Street",		null,	23,		null,	28,		26,		null,	7,		null,	[0],		false,		true,		null,		"What is probably best referred to as the town's market district. It's rather depressing really, there is only a single general store here, located in a tiny building to the east. Across the street to the west is a modern gym, you've never gone inside it before, but perhaps now it would be worth it to take a peek inside. North of here the road heads out of town eventually leading to the highway and the rest of the country. Before it gets that far, and still within walking distance, sits the town's hospital."];
 		globals.rooms[17] = ["Hospital - Waiting Room",	null,	null,	null,	null,	24,		null,	22,		null,	[0],		true,		true,		null,		"A typical hospital waiting area, the reception desk is always occupied by someone looking tired and slightly haggard. You idly wonder if the expression comes with the job, or if it's the other way around. There isn't much to see or do here other then wait, the staff isn't going to let you any deeper into the hospital unless there's something wrong with you."];
 		globals.rooms[18] = ["Hospital - Pharmacy",		null,	null,	null,	25,		null,	null,	null,	null,	[0],		false,		true,		null,		"The pharmacy counter of the local hospital, the steel cage keeping random people out is closed and no one seems to be around at the moment. Looks like the pharmacist is out at the moment."];
-		globals.rooms[19] = ["General Store",			null,	null,	null,	27,		null,	null,	null,	null,	[0],		false,		true,		null,		"The array of junk occupying this store is truly impressive. You feel that, had you the time and desire, you could find some truly remarkable things here. Alas the haphazard piles and disorganized clutter make you fear for your safety as you navigate to the counter."];
+		globals.rooms[19] = ["General Store",			null,	null,	null,	27,		null,	null,	42,		null,	[3, [2, "general"]], false,	true,	6,			"The array of junk occupying this store is truly impressive. You feel that, had you the time and desire, you could find some truly remarkable things here. Alas the haphazard piles and disorganized clutter make you fear for your safety as you navigate to the counter."];
 		globals.rooms[20] = ["Gym - Reception",			null,	null,	null,	29,		27,		null,	null,	null,	[3],		false,		true,		1,			"The reception room of this gym is comfortable and modern. Several comfortable looking chairs wait to either side, with a reception desk at the end of the room. A door next to the desk is marked &quot;Members Only&quot; and seems to lead into the main workout area, visible from outside though the large floor to ceiling windows along the street facing wall. A keycard reader next to the door ensures only those with the proper access can get in the building."];
 		globals.rooms[21] = ["Gym - Workout Area",		null,	null,	null,	31,		30,		33,		32,		34,		[8],		false,		true,		null,		"A large open room filled with machines of every type. Each one designed to strengthen some aspect of your body. Each machine has a sign next to it with a visual description of how to use the machine as well as several warnings about using them correctly. The machines also seem to be grouped and numbered, it looks like if you pick a group and follow the numbers in sequence you'll get a good workout in that area.</p><br><p>The back wall of the room is a large mirror, both letting you see yourself working out and giving the illusion that the room is much larger then it appears. There are three doors in the room, the first heads back out through the reception area and then outside. Across the room from that is another door secured with a card reader, it has a sign on it that reads &quot;Gold Room&quot;. Set in the mirrored wall, and nearly invisible is a third door, a small &quot;Staff&quot; sign attached to it.</p><br><p>There are several others in various states of fitness moving around, though not enough to make the place feel crowded."];
 		globals.rooms[22] = ["Gym - Gold Room",			null,	null,	null,	null,	29,		null,	null,	null,	[9],		false,		true,		null,		"Calling this room the 'Gold Room' is a bit of a misnomer, the room it's self isn't actually gold. Rather it's a smallish room with mirrors on all the walls. Machines circle the outside of the room, with a break in the line for the door. The machines claim to do all kinds of strange things to your body, and studying them closely you can almost understand why the gym owner limits their use.</p><br><p>The first machine to your left is the one the ill-fated ass Erik demonstrated for you, the straps and levers inside the machine will, somehow, make you several inches taller when you use it.</p><br><p>The next machine looks a lot like a play-doh press, only person-sized. The sticker on it states that it will squeeze the fat out of your body, leaving you with as close to 0% body fat as it's possible to get.</p><br><p>Siting next to that one, looking for all the world like some kind of lewd sex machine is one which the label states will make your dick, assuming you have one, larger.</p><br><p>Unsurprisingly the next machine, which looks a lot like a steampunk bidet, claims to make the balls of anyone who uses it larger. You have to wonder why Erik didn't bother with it.</p><br><p>The next contraption is very odd looking, it seems to be a combination of the last two, but different in some way you can't really pin down just by looking. The label on this machine says that it will make your erections larger.</p><br><p>Next is a machine that you almost recognize, it looks like a thigh sculptor, only more advanced. This machine says that it will slim your hips and thighs.</p><br><p>Last, the machine directly to your right as you come in, is another nearly familiar machine. This machine appears to be an advanced squat machine, the label saying that it will give you a smaller, tighter butt."];
@@ -2968,6 +3001,7 @@ class Main {
 		globals.rooms[28] = ["Ice Cream Shop - Freezer", null,	37,		null,	null,	null,	null,	null,	null,	[0],		true,		false,		null,		"The freezer, it's very cold, naturally. And it's filled with tub after tub of ice cream ready to be sold in the shop. A quick look around and you're pretty sure there's enough here the shop will never run out, even at the rates people around here eat the stuff. Or at least it'll take a long time."];
 		globals.rooms[29] = ["Ice Cream Shop - Restroom", null,	null,	null,	null,	null,	null,	37,		null,	[5],		true,		true,		null,		"A standard single-occupancy restroom. The door locks."];
 		globals.rooms[30] = ["Ice Cream Shop - Office",	null,	null,	null,	37,		null,	null,	null,	null,	[0],		false,		false,		null,		"While you worked here you were never allowed into this room, you were pretty sure it was just an office since Bessie was usually in here when she was at the shop at all. Now that you can get in here you see that you were mostly correct. The area right inside the door looks like your typical office, a desk sits facing the door and covered in papers and files. An old computer monitor takes up one corner of the desk. You're pretty sure there's a keyboard somewhere under the papers, but you'd have to dig to find it. A pair of filing cabinets rest against the back wall, flanking the desk to either side.</p><br><p>Where the idea of a typical office breaks down is the area to the left of the desk. A raised lip separates the two areas and probably helps keep any spills from reaching the office or escaping out the door. The floor is tiled and gently slops towards the center where a drain is placed in the floor. Slightly offset from the center is a large wooden chair. It looks vaguely like a toilet, with a hole cut in the seat, but is lacking a bowl or tank. Instead it has long, very solid arms with straps hanging off them. The legs likewise have straps placed to go around the occupant's ankles. Behind the chair on a complicated hinge system is what appears to be an automatic milking machine, it looks like it can be moved over the chair and positioned in front of who ever is sitting in the chair. The hoses run to the far corner of the room where a large tank waits to be filled, there's also a machine next to the tank labeled 'Automatic Ice Cream Maker v2.0'"];
+		globals.rooms[31] = ["General Store - Warehouse", null, 43,		null,	null,	null,	null,	null,	null,	[4],		true,		false,		null,		"A massive warehouse under the main shop filled with more stuff then you could possibly sort through in several lifetimes."];
 		
 		
 		
@@ -2985,6 +3019,7 @@ class Main {
 		globals.keys[2] = ["Gym Staff Key",				2,		"A key you got from Shay, it opens the staff room door at the gym"];
 		globals.keys[3] = ["Consume Red Band",			3,		"A tight fitting band with the logo of the local club on it. You can't get it off, but you often forget you're even wearing it."];
 		globals.keys[4] = ["Ice Cream Shop Backroom key", 4,	"A key you got from Bessie that will let you into the back rooms of the ice cream shop. You're pretty sure this is the same key you had when you worked there."];
+		globals.keys[5] = ["General Store key",			5,		"A key you got after agreeing to help out at the general store."];
 		
 		
 		
@@ -2996,6 +3031,8 @@ class Main {
 		quests[3] = ["death",	"A Deal With Death", true,		["", "Spoke with Hir", "Agreed to Hir deal", "Turned down the deal"], null];
 		quests[4] = ["cv",		"Pleasing The Wolf", false,		["", "You tried to slip past the bouncer, it wasn't a good idea."], null];
 		quests[5] = ["milk",	"Milking the Cow",	false,		["", "Tweaked her nipple", "Drunk after tweaking", "Milked her", "Agreed to help with her machine", "Heard instructions on using the chair", "Bessie is in the chair", "Eaten"]];
+		quests[6] = ["job",		"Part Time Job",	false,		["You need one", "Accecpted the job in the general store"], null];
+		
 		
 		
 		/* Conversation flags;
@@ -3089,6 +3126,29 @@ class Main {
 		bessieTalk[12] = ["You shrug and tell her you have better things to do then play with her. She shrugs, &quot;You know where to find me.&quot; Then she goes back to cleaning.", ["talk"], [["Leave", " ", -1]]];
 		bessieTalk[13] = ["You step up to the counter, Bessie is behind it. She still looks annoyed with you, &quot;If you're here for ice cream, buy something. If you're here to help, you're late and you'll have to come back tomorrow.&quot;", ["talk"], [["Leave", " ", -1]]];
 		
+		//Rat
+		var ratTalk:Array<Dynamic> = new Array();
+		ratTalk[0] = ["Hidden down this dark alley you find a figure standing in a dark cloak. He's trying to be unobtrusive and gets a shifty look to him when you get close. As you get closer you can make out that he's a short rat in a long dirty coat, he looks you over and appears to come to some kind of decision. &quot;You look like the type who likes to try new things. What do you say? What to see what I've got?&quot; Apparently he's a salesman.", ["talk"], [["Why Here?", "Ask why he's selling his wares in an alley.", 1], ["Leave", "Leave the shady character alone", -1]]];
+		ratTalk[1] = ["You inquire why this salesrat is selling his stuff in an alley. He gets that shifty look again then says, &quot;Some of what I have isn't strictly legal to sell. Perfectly fine to own mind you, just not to sell to others. The law's funny like that.&quot; Ah, illegal stuff. Cool.", ["talk"], [["Leave", "Leave the shady character alone", -1]]];
+		
+		//Shopkeeper
+		var shopTalk:Array<Dynamic> = new Array();
+		shopTalk[0] = ["Perhaps unsurprisingly, the owner of this shop is a very large dragon. He's not overly tall, but is extremely wide, so big in fact he must have trouble moving through some of the stacks of junk filling the shop. He smiles as you walk up to the counter, &quot;Hi there, what can I do for you?&quot;", ["talk"], [["Work", "Ask about helping out around the shop", 1], ["Leave", " ", -1]]];
+		shopTalk[1] = ["You inquire if the dragon needs any part-time help. He thinks for a moment, &quot;I don't need any help with the shop, though I suppose if you wanted to sort through some of my inventory I could pay you for that. It wouldn't be regular work, just a few hours here and there.&quot; He shrugs, &quot;Honestly you could just work as much or as little as you like, sound interesting?&quot;", ["quest 6|value 0|skip 3|action skip"], [["Agree", "Accecpt the offer.", 2], ["Disagree", "Don't accecpt the offer.", 0]]];
+		shopTalk[2] = ["The shopkeep smiles, &quot;Good, just let me know when you'd like to put in a few hours. There's plenty of work to do downstairs.&quot;", ["quest 6|value 1|action set|key 5|action giveKey"], [["Next", " ", 0]]];
+		shopTalk[3] = ["You let the dragon know you'd like to work he nods, &quot;Just head down there and let me know when you leave.&quot;", ["talk"], [["Leave", null, -1]]];
+		
+		//Erik
+		var erikTalk:Array<Dynamic> = new Array();
+		erikTalk[0] = ["You feel the floor rumble and look up, an extremely large human has just settled himself down on the machine next to you. The poor machine seems to groan under the man's weight as he sets it as high as it will go and starts working it as easily as you'd lift a sandwich. He notices you watching him and grins, &quot;Can I help you with something?&quot;", ["talk"], [["Flirt", "Flirt with the huge man.", 1], ["Hungry", "See if the man-mountian wants to be lunch.", 2], ["Gold member?", "Ask if he's a gold gym member", 3], ["Leave", " ", -1]]];
+		erikTalk[1] = ["You smile and ask if the big man is big all over or just in his arms. He grins and grabs his crotch, thrusting towards you, &quot;Oh hell yea! You have no idea what's in that room do you?&quot; He stands, pulling his gym shorts up tight so you can see him bulge, &quot;Muscles, cock. Balls. Everything gets big in there.&quot; He leers at you, &quot;You want to see?&quot;", ["talk"], [["Yes", "You tell him you would like to see just how big he really is.", 5], ["Not really", "Uh, no. Jackass.", 4]]];
+		erikTalk[2] = ["You ask if the big man wants to see what you look like from the inside. He does another couple of reps then pauses, looking at you. &quot;You're one of those weirdos from that new club aren't you? Always going around eating people. Keep that shit to your little club, leave me out of it.&quot; He grunts and goes back to working out, faster then before, though he goes back to a more steady pace after a few moments.", ["talk"], [["Flirt", "Flirt with the huge man.", 1], ["Gold member?", "Ask if he's a gold gym member", 3], ["Leave", " ", -1]]];
+		erikTalk[3] = ["You ask if he's a gold member of the gym. He stops working the machine for a moment and flexes, showing off his massive muscles, &quot;Sure am! Where else do you think these beauties came from? I've been a member for only six months now and I'm already huge! Just imagine how big I'll be after another six months!&quot; He kisses one bicep and goes back to the machine.", ["talk"], [["Flirt", "Flirt with the huge man.", 1], ["Hungry", "See if the man-mountian wants to be lunch.", 2], ["Leave", " ", -1]]];
+		erikTalk[4] = ["You inform him that, no. You are not interested. He huffs and drops the bar he was working with, standing and giving a few unnecessary flexes before stomping off. &quot;Fine. You're not my type anyway.&quot;", ["talk"], [["Continue", " ", -1]]];
+		erikTalk[5] = ["You grin and tell him that you would love to see just how big he is. And in fact you'd like to watch as he gets bigger. His grin grows, as do certain other parts, and he looks around quickly. &quot;Well, I'm not supposed to let anyone who isn't a gold member into the room, but there's no one looking...&quot; He stands, dropping the machine's bar without bothering to set it properly and grabs a gallon jug of water you hadn't noticed before and takes a huge gulp from, getting more of it down his front then actually in his mouth.</p><br><p>&quot;C'mon cupcake.&quot;He waves as he starts towards the locked gold member door, &quot;Come watch Erik the Mighty get even mightier.&quot;", ["talk"], [["Follow", "A preview of the gold room. Nice.", 6], ["Stay", "He's a jackass. Stay here and hope he doesn't come back.", -1]]];
+		erikTalk[6] = ["You follow the big human, he pauses at the door to type something into the pad then pushes the door open. He actually starts pushing before the system unlocks and rather then letting go so it can unlock and starting again he just pushes harder until the poor lock squeals and releases, the door popping open. He steps through and you dart in after, the door locking shut behind you.</p><br><p>You look around getting your first look of the nearly mythical Gold Room. It's not really all that impressive, 7 machines sit in a semi circle around the outside of the room, with the door being the only section that hasn't got a machine. The outer walls have floor to ceiling mirrors just like the main room. Erik the jackass goes over to one of the machines, an almost medieval torture looking contraption. He takes another bug gulp from his water jug and tosses it in the general direction of the room's trash can. He misses, then he starts working himself into the machine.</p><br><p>&quot;You'll like this one cupcake. Makes me taller, more room for all these muscles.&quot; He winks at you and nods towards another machine, &quot;We can use that one next. It makes little me, less little.&quot; He seems to think that's funny and chuckles to himself as he keeps working himself into the straps. He's rather distracted right now, and there's no one in the room and no one is likely to enter any time soon either. You could probably get rid of him...", ["talk"], [["Wait", "You kinda want to see how this thing works. It's worth putting up with him calling you 'cupcake'", 7], ["Grab", "He's distracted and not in the machine completly yet. Now's your chance.", -7]]];
+		erikTalk[7] = ["You decide to wait, watching as he finally gets all the various straps and harnesses in place and turns the machine on. It starts working over his body, tightening and pulling all over him and he makes several groans and moans, at first you think he's in pain until you notice how much his shorts appear to have shrunk, a massively over sized cock outlined clearly though the thin fabric. Amusingly he seems to have neglected his balls, you can't even see them.</p><br><p>When you look back up you see that he's watching you, a big stupid grin on his face. The machine gives a soft beep and the straps release, Erik pulls himself free mostly by simply stepping out of it. He grins and flexes for you and you can see that he's several inches taller then he was before getting in it. &quot;You like?&quot; He does a little spin, his cock straining his poor gym shorts, which break off as he flexes his muscles. His huge cock bursting free and bouncing towards you, his grin turns lecherous.</p><br><p>&quot;Well well, I see you like the look I've got here.&quot; He steps closer to you, aiming his cock towards you. &quot;So what do you say cupcake? You want to give my big hard bod a ride?&quot; He runs his hand over his cock, watching you.", ["talk"], [["Grab", "He's so eager to be inside someone...", -7], ["Leave", "Screw this, just leave.", -1]]];
+		
 		
 		//NPCs
 		nonPlayerCharacters = new Array();
@@ -3098,6 +3158,9 @@ class Main {
 		nonPlayerCharacters[2] = ["Shay",					species[3], false,	false,	true,	true,	74,		600,	shayTalk,		null];
 		nonPlayerCharacters[3] = ["Guffin",					species[1], false,	true,	false,	false,	65,		450,	guffinTalk,		null];
 		nonPlayerCharacters[4] = ["Bessie",					species[4],	true,	false,	true,	false,	67,		690,	bessieTalk,		null];
+		nonPlayerCharacters[5] = ["Shifty Rat",				species[6],	false,	false,	true,	true,	60,		80,		ratTalk,		null];
+		nonPlayerCharacters[6] = ["Shopkeeper",				species[2], false,	false,	true,	true,	62,		650,	shopTalk,		null];
+		nonPlayerCharacters[7] = ["Erik",					species[0], false,	false,	true,	true,	78,		700,	erikTalk,		null];
 		
 	}
 
@@ -3126,8 +3189,8 @@ class Main {
 			btns[i].removeEventListener(MouseEvent.CLICK, doHunt);
 			btns[i].removeEventListener(MouseEvent.CLICK, doDescription);
 			btns[i].removeEventListener(MouseEvent.CLICK, doFoodComa);
-			
-			
+			btns[i].removeEventListener(MouseEvent.CLICK, doShop);
+			btns[i].removeEventListener(MouseEvent.CLICK, doWork);
 			
 		}
 			
@@ -3135,7 +3198,6 @@ class Main {
 			btns[i].removeEventListener(MouseEvent.CLICK, statChange);
 			
 			btns[i].removeEventListener(MouseEvent.CLICK, buyDrink);
-			btns[i].removeEventListener(MouseEvent.CLICK, doShop);
 			btns[i].removeEventListener(MouseEvent.CLICK, doSell);
 			btns[i].removeEventListener(MouseEvent.CLICK, doGym);
 			btns[i].removeEventListener(MouseEvent.CLICK, giveItem);
@@ -3147,7 +3209,6 @@ class Main {
 
 			btns[i].removeEventListener(MouseEvent.CLICK, doMasterbate);
 
-			btns[i].removeEventListener(MouseEvent.CLICK, doWork);
 			btns[i].removeEventListener(MouseEvent.CLICK, eatNPC);
 			btns[i].removeEventListener(MouseEvent.CLICK, freeMoney);
 			
@@ -3157,7 +3218,6 @@ class Main {
 			btns[i].removeEventListener(MouseEvent.CLICK, orderPizza);
 			btns[i].removeEventListener(MouseEvent.CLICK, jumpTo);
 			btns[i].removeEventListener(MouseEvent.CLICK, gymTalk);
-			btns[i].removeEventListener(MouseEvent.CLICK, buyIceCream);
 			btns[i].removeEventListener(MouseEvent.CLICK, resetQuests);
 			btns[i].removeEventListener(MouseEvent.CLICK, quickTime);
 			btns[i].removeEventListener(MouseEvent.CLICK, goldGymRoom);
