@@ -240,7 +240,8 @@ class Main {
 						roomNPC.newNPC(nonPlayerCharacters[4]);
 					
 					btns[9].setButton("Buy", "Buy some tasty Ice Cream.", 0);
-					btns[9].addEventListener(MouseEvent.CLICK, doBuyIce);
+					//btns[9].addEventListener(MouseEvent.CLICK, doBuyIce);
+					btns[9].disableButton();
 					if (roomNPC != null) {
 						message += roomNPC.name + " is standing behind it.<br>";
 						btns[11].setButton("Talk", "Talk to " + roomNPC.name, 0);
@@ -2924,7 +2925,7 @@ class Main {
 		globals.exits[34] = ["Showers",			false,	0,			0,			25,				5,			48,			84];
 		globals.exits[35] = ["Ice Cream",		false,	8,			20,			26,				5,			50,			86];
 		globals.exits[36] = ["Street",			false,	0,			0,			6,				5,			50,			86];
-		globals.exits[37] = ["Backroom",		false,	0,			0,			27,				5,			50,			86];
+		globals.exits[37] = ["Backroom",		false,	0,			0,			27,				5,			50,			86,		null,	null,	4];
 		globals.exits[38] = ["Storefront",		false,	0,			0,			26,				5,			50,			86];
 		globals.exits[39] = ["Freezer",			false,	0,			0,			28,				5,			50,			86,		"The shop's large walk-in freezer"];
 		globals.exits[40] = ["Restroom",		false,	0,			0,			29,				5,			50,			86];
@@ -2983,6 +2984,7 @@ class Main {
 		globals.keys[1] = ["Gym Gold Membership",		1,		"A credit-card sized square of plastic with the gym's logo printed on it and a gold background"];
 		globals.keys[2] = ["Gym Staff Key",				2,		"A key you got from Shay, it opens the staff room door at the gym"];
 		globals.keys[3] = ["Consume Red Band",			3,		"A tight fitting band with the logo of the local club on it. You can't get it off, but you often forget you're even wearing it."];
+		globals.keys[4] = ["Ice Cream Shop Backroom key", 4,	"A key you got from Bessie that will let you into the back rooms of the ice cream shop. You're pretty sure this is the same key you had when you worked there."];
 		
 		
 		
@@ -2992,7 +2994,8 @@ class Main {
 		quests[1] = ["club",	"Club Membership",	false,		["", "Joined the club", "Joined the club as prey"],	null];
 		quests[2] = ["gym",		"Gym Membership",	false,		["", "Joined the gym", "Gold membership is avalible", "Became a gold member", "Spoke with Shay", "Spoke to Shay a second time", "Agreed to help Shay with his machine", "Became fuckbuddies with Shay"],	[0, 1]];
 		quests[3] = ["death",	"A Deal With Death", true,		["", "Spoke with Hir", "Agreed to Hir deal", "Turned down the deal"], null];
-		quests[4] = ["cv",		"Pleasing The Wolf",	false,	["", "You tried to slip past the bouncer, it wasn't a good idea."], null];
+		quests[4] = ["cv",		"Pleasing The Wolf", false,		["", "You tried to slip past the bouncer, it wasn't a good idea."], null];
+		quests[5] = ["milk",	"Milking the Cow",	false,		["", "Tweaked her nipple", "Drunk after tweaking", "Milked her", "Agreed to help with her machine", "Heard instructions on using the chair", "Bessie is in the chair", "Eaten"]];
 		
 		
 		/* Conversation flags;
@@ -3069,6 +3072,22 @@ class Main {
 		var guffinTalk:Array<Dynamic> = new Array();
 		guffinTalk[0] = ["A short white fox stands behind the counter, he smiles as you walk in then blushes when you look him over. He appears to be your typical arctic fox save for the two small horns on his head. Most of him is covered by the counter but as you step up to the counter you see him sporting a very large belly, seems someone else has been partaking of the 'free' ice cream. &quot;O-oh, uh... hello! M-my name is Guffin, m-may I take your order? W-what would you like to have? Just l-let me know what you'd like.&quot;", ["talk"], [["Okay", " ", -1]]];
 		
+		//Bessie
+		var bessieTalk:Array<Dynamic> = new Array();
+		bessieTalk[0] = ["You step up to the counter, your former boss Bessie standing behind it and glaring at you. The cowgirl who gave you so much grief while you worked for her looks like she's managed to put on a couple pounds since the last time you saw her, most of it in her extremely massive breasts each one the size of a midsize exercise ball, though the bulge of her belly under them seems a little bigger as well. Before you have a chance to say anything she narrows her eyes, &quot;No, you can't have your job back. If you want to buy something, do so then get out.&quot;", ["quest 5|value 0|skip 8|action skip|value 1|skip 9|action skip"], [["No Job", "Why would you want it back?", 2], ["Weight", "Looks like she's put on weight", 1], ["You've always...", "There is one thing you've always wanted to do...", 3], ["Leave", "Now you remember how annoying she is to talk to.", -1]]];
+		bessieTalk[1] = ["You make a show of looking Bessie over and mention that she's looking bigger then when she fired you. Her eyes narrow further, &quot;Since I've had to take over your shift I haven't had time to milk myself, not that it's any of your business. Now are you going to buy something or not?&quot;", ["talk"], [["Help", "You do have a lot of spare time now, you could offer to help", 5], ["No Job", "Why would you want it back?", 2], ["You've always...", "There is one thing you've always wanted to do...", 3], ["Leave", "Now you remember how annoying she is to talk to.", -1]]];
+		bessieTalk[2] = ["Why would you want your job back? You say as much and Bessie's expression darkens slightly, &quot;Then buy something and get out. Or just get out.&quot;", ["talk"], [["Weight", "Looks like she's put on weight", 1], ["You've always...", "There is one thing you've always wanted to do...", 3], ["Leave", "Now you remember how annoying she is to talk to.", -1]]];
+		bessieTalk[3] = ["Ever since you met Bessie you've always wanted to just give her nipples a tug and see how much milk you could get to come out of her. It's probably going to be more now, since she seems to be rather backed up. Do you want to?", ["talk"], [["Do it", "Give her a tug!", 4], ["Don't", "No, that would be dumb", 6]]];
+		bessieTalk[4] = ["You reach out quickly and grab one of Bessie's nipples in your hand. It's surprisingly large even considering how big her tits are, it feels like you have a ripe strawberry in your hand. Before she can do more then widen her eyes at your action you pull hard. The motion is enough to release the tide of backed up milk in the cowgirl's breast, the thick white liquid soaking her shirt and flowing through the cloth to the floor where it makes a mess. The breast you uncorked is visibly shrinking as you watch, Bessie's face going from surprise to outrage to a soft contentment.</p><br><p>Well, no sense in her being lopsided. You give the other tit a tug and it also releases it's milky cargo, totally coating the front of Bessie's clothes. It's rather amazing how much she has in there really, her breasts have shrunk to almost 3/4ths the size they were when you walked in and they're still going.", ["quest 5|value 1|action set"], [["Flee", "She's going to be pissed when she comes out of this, maybe you should leave", -1], ["Drink", "It's just going to waste anyway. Maybe she'll go easy on you if you help her clean up", 7]]];
+		bessieTalk[5] = ["You offer to help and she outright glares at you, &quot;Didn't me firing you tell you I don't want your help? If all you're going to do is insult me you can just fuck right off.&quot;", ["talk"], [["You've always...", "There is one thing you've always wanted to do...", 3], ["Leave", "Now you remember how annoying she is to talk to.", -1]]];
+		bessieTalk[6] = ["You decide not to mess with her, there's a good chance you'd get hurt. Or arrested. All the staring you've been doing at Bessie's overfilled chest hasn't gone unnoticed, she thumps one hand on the counter, sending ripples through her tits, and shouts, &quot;Buy something or get the fuck out! Stop staring at my chest!&quot;", ["talk"], [["Do it", "Screw it, she's being a bitch anyway. Give a tit a yank", 4], ["Leave", "Well if she's just going to be unplesant there's no reason to keep talking to her", -1]]];
+		bessieTalk[7] = ["You move around the counter and pull Bessie's soaked shirt away from her tits and exposing her engorged nipple. You wrap your lips around it and drink, the milk flows out into your mouth and you swallow it down, your mouth refills quickly. After the first few mouthfuls it becomes clear where the shop gets the raw material for it's ice cream, and it's even better fresh.</p><br><p>As you drink, Bessie lets out a soft 'moo', her eyes closed and hands resting lightly on your shoulders. You manage to drain one breast and she eagerly moves to present you with the other, you take that one and quickly empty it.</p><br><p>You lean back, stomach stretched with warm milk. You eye Bessie, a little wary of how she's going to react. The first thing you notice is how small her breasts are now, probably a D cup. Maybe a large C. Bessie herself is sitting against the wall, a look of happy bliss on her face as she makes soft 'moo' sounds, apparently letting out all that backed up milk was quite good for her.", ["quest 5|value 2|stomach 100|action set"], [["Leave", " ", -1]]];
+		bessieTalk[8] = ["You step up to the counter, your former boss Bessie standing behind it. She gives you an odd look, you notice her breasts are smaller then the last time you walked in here, but still very large. &quot;I don't know what you thought you were doing, grabbing me like that. If you do it again I'll...&quot; She pauses, clearly not sure what threat she can make. After a moment she sighs, &quot;Just don't do it again. At least not out here&quot; She blushes, something you don't think you've ever seen her do before. &quot;Wasted all that milk...&quot; She clears her throat and looks a little more abashed, &quot;Do you need something?&quot;", ["talk"], [["Help", "She seemed to enjoy it last time, maybe she'd like to have another go?", 10], ["Nothing", " ", -1]]];
+		bessieTalk[9] = ["You step up to the counter, your former boss Bessie standing behind it. As you open your mouth she pulls back and slaps you across the face. It stings. A lot. When your vision stops spinning from the slap you see Bessie glaring at you, &quot;Don't you EVER. Do that. AGAIN!&quot; She rubs one of her breasts, you can't help but notice that she appears to be a large D currently. &quot;I should just kick you out, or call the cops to come and get you. Not that they'd show up for a week.&quot; She mutters that last part, then returns her glare to you, &quot;But frankly I can't afford to turn away a customer. So buy something. Or get out.&quot;", ["talk"], [["Help", "She seemed to enjoy it last time, maybe she'd like to have another go?", 10], ["Nothing", " ", -1]]];
+		bessieTalk[10] = ["Since she seemed to enjoy the last time you 'helped' you offer to do it again, she actually thinks about it for a moment. &quot;Well, actually...&quot; She looks around the shop, you also look around noting that the place is completely empty. You turn back to her and see that she's still looking around. You wait, after a while you tap your foot impatiently. She looks back at you, a blush covering her face, &quot;Actually, I think I could use a hand. The machine isn't really designed to be used from the inside.&quot; She rubs the back of her neck, &quot;Part of the reason I've been so backed up. I tell you what, you meet me in the back room while the other guy is working and help me with the machine and I'll let you take some ice cream home with you. Sound fair?&quot;", ["talk"], [["Agree", " ", 11], ["Disagree", " ", 12]]];
+		bessieTalk[11] = ["You agree, it'll be fun to get to tie her up for a while. She sighs and hands you a key, &quot;You know what room it's in, the one you were never allowed in before. I'll be there while the shop is open in the mornings. Maybe I can finally get someone else hired.&quot;", ["quest 5|value 4|action set|key 4|action giveKey"], [["Leave", " ", -1]]];
+		bessieTalk[12] = ["You shrug and tell her you have better things to do then play with her. She shrugs, &quot;You know where to find me.&quot; Then she goes back to cleaning.", ["talk"], [["Leave", " ", -1]]];
+		bessieTalk[13] = ["You step up to the counter, Bessie is behind it. She still looks annoyed with you, &quot;If you're here for ice cream, buy something. If you're here to help, you're late and you'll have to come back tomorrow.&quot;", ["talk"], [["Leave", " ", -1]]];
 		
 		
 		//NPCs
@@ -3078,6 +3097,7 @@ class Main {
 		nonPlayerCharacters[1] = ["Ann the receptionist",	species[0],	true,	false,	false,	false,	63,		95,		annTalk,		null];
 		nonPlayerCharacters[2] = ["Shay",					species[3], false,	false,	true,	true,	74,		600,	shayTalk,		null];
 		nonPlayerCharacters[3] = ["Guffin",					species[1], false,	true,	false,	false,	65,		450,	guffinTalk,		null];
+		nonPlayerCharacters[4] = ["Bessie",					species[4],	true,	false,	true,	false,	67,		690,	bessieTalk,		null];
 		
 	}
 

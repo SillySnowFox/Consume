@@ -10,6 +10,8 @@ New
  * Ann will now correctly give you your gym keycard when you sign up
  * DEBUG MENU: Quest stages can be set directly. WARNING: will not give out related keys.
  * Players can sign up to be eaten as prey
+ * Added Guffin back to the ice cream shop
+ * Added Bessie back to the ice cream shop
  * 
 
 Changes
