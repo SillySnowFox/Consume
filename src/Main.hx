@@ -300,6 +300,7 @@ class Main {
 				btns[11 - i].disableButton();
 			case 8:
 				//Workout
+				
 			case 9:
 				//Gold room
 			case 10:

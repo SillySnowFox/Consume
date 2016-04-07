@@ -1,6 +1,21 @@
 Visit the forums and say Hi! http://dancingfoxstudios.com/phpBB3/
 Support the game on Pateron! https://www.patreon.com/SillySnowFox?ty=h
 
+v0.38
+
+New
+
+ *
+
+Changes
+
+ *
+
+Bugfixes
+
+ *
+ 
+
 v0.37
 
 New
@@ -16,18 +31,15 @@ New
  * Added the dragon back to the general store.
  * Added the general store's warehouse. You can't yet work in it though.
  * Added the ass back to the game, player's can't yet encounter him.
- *
 
 Changes
 
  * Changed the way the conversation system flags work, making them much more dynamic and expandable
  * Fixed empty tooltips.
- * 
  
 Bugfixes
 
  * Fixed a crash in the conversaion system
- * 
 
  
 v0.36
