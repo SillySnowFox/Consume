@@ -5,7 +5,8 @@ v0.38
 
 New
 
- *
+ * DEBUG MENU: Added the ability to jump to any room the player knows the room ID number of.
+ * 
 
 Changes
 
@@ -13,7 +14,10 @@ Changes
 
 Bugfixes
 
- *
+ * Corrected a crash when using the bathroom with scat toggled off.
+ * Removed unneeded RegisterClassAlias calls, should slightly reduce save file size.
+ * Removed Herobrine
+ * 
  
 
 v0.37

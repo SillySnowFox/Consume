@@ -851,6 +851,10 @@ class Main {
 			title = "Restroom";
 			message = "You make use of the facilities. You feel much better after.";
 			
+			updateHUD();
+			
+			newRoom = false;
+			
 			btns[11].setButton("Next");
 			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
 		}
@@ -1067,6 +1071,10 @@ class Main {
 		
 		switch (option) {
 		case 0:
+			var txtJump:Object = Lib.current.getChildByName("jumpTo");
+			if (txtJump != null)
+				Lib.current.removeChild(txtJump);
+			
 			message = "Choose wisely</p><br><p>Lactation is ";
 			if (playerCharacter.lac) {
 				message += "on";
@@ -1079,6 +1087,8 @@ class Main {
 			btns[0].addEventListener(MouseEvent.CLICK, debugMenu);
 			btns[1].setButton("Set Quest stage", null, 2);
 			btns[1].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[2].setButton("Jump To", "Teleport around the map", 5);
+			btns[2].addEventListener(MouseEvent.CLICK, debugMenu);
 			
 			btns[11].setButton("Back");
 			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
@@ -1124,6 +1134,43 @@ class Main {
 			
 			btns[11].setButton("Back", null, 0);
 			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
+		case 5:
+			//Teleport
+			message = "Enter Room ID to teleport to:<br><br>(Tip: Your bedroom has an ID of 0)";
+			
+			var txtFormat:TextFormat = new TextFormat("Sans", globals.textSize);
+			
+			
+			var txtJump:TextField = new TextField();
+			txtJump.x = 20;
+			txtJump.y = 120;
+			txtJump.visible = true;
+			txtJump.border = true;
+			txtJump.width = 30;
+			txtJump.height = 30;
+			txtJump.defaultTextFormat = txtFormat;
+			txtJump.type = TextFieldType.INPUT;
+			txtJump.name = "jumpTo";
+			
+			Lib.current.addChild(txtJump);
+			
+			btns[0].setButton("Jump", null, 6);
+			btns[0].addEventListener(MouseEvent.CLICK, debugMenu);
+			
+			btns[2].setButton("Back", null, 0);
+			btns[2].addEventListener(MouseEvent.CLICK, debugMenu);
+		case 6:
+			var txtJump:Object = Lib.current.getChildByName("jumpTo");
+			var jumpTo:Int = Std.parseInt(txtJump.text);
+			
+			Lib.current.removeChild(txtJump);
+			
+			message = "New room set to: " + jumpTo;
+			
+			newRoom = true;
+			
+			btns[0].setButton("Next", null, jumpTo);
+			btns[0].addEventListener(MouseEvent.CLICK, movePlayer);
 		}
 		
 		outputText(message, "Debug Menu");
@@ -2824,7 +2871,6 @@ class Main {
 		
 		AMFConnection.registerClassAlias("consume.playerObject", MyPlayerObject);
 		AMFConnection.registerClassAlias("consume.questObject", MyQuest);
-		AMFConnection.registerClassAlias("consume.itemObject", MyItem);
 		AMFConnection.registerClassAlias("consume.perkObject", MyPerk);
 		AMFConnection.registerClassAlias("consume.speciesObject", MySpecies);
 		AMFConnection.registerClassAlias("consume.NPCObject", MyNPC);
@@ -2898,7 +2944,7 @@ class Main {
 		
 		perks.push(["taur",		"Taur",				"You have the elongated lower half of a taur.",						"TAUR WEIGHT:+100 STOMACHCAP:+100 IMMOBILE:-100", true]);
 		
-		perks.push(["dbg1",		"DEBUG1 -- Huge",	"For debugging only; hugeness",										"BREASTSIZE:+24 BELLYSIZE:+65000 BALLSIZE:+24 PENISLENGTH:+50 PENISWIDTH:+45",	true]);
+		perks.push(["dbg1",		"DEBUG1 -- Huge",	"For debugging only; hugeness",										"BREASTSIZE:+24 BELLYSIZE:+65000 BALLSIZE:+24 PENISLENGTH:+50 PENISWIDTH:+45",	false]);
 		
 		
 		
@@ -3196,8 +3242,6 @@ class Main {
 		}
 			
 			/*
-			btns[i].removeEventListener(MouseEvent.CLICK, statChange);
-			
 			btns[i].removeEventListener(MouseEvent.CLICK, buyDrink);
 			btns[i].removeEventListener(MouseEvent.CLICK, doSell);
 			btns[i].removeEventListener(MouseEvent.CLICK, doGym);
@@ -3217,9 +3261,7 @@ class Main {
 			btns[i].removeEventListener(MouseEvent.CLICK, itemFunction);
 			
 			btns[i].removeEventListener(MouseEvent.CLICK, orderPizza);
-			btns[i].removeEventListener(MouseEvent.CLICK, jumpTo);
 			btns[i].removeEventListener(MouseEvent.CLICK, gymTalk);
-			btns[i].removeEventListener(MouseEvent.CLICK, resetQuests);
 			btns[i].removeEventListener(MouseEvent.CLICK, quickTime);
 			btns[i].removeEventListener(MouseEvent.CLICK, goldGymRoom);
 			
@@ -3227,7 +3269,6 @@ class Main {
 			btns[i].removeEventListener(MouseEvent.CLICK, resetGymTrain);
 			btns[i].removeEventListener(MouseEvent.CLICK, useMachine);
 			btns[i].removeEventListener(MouseEvent.CLICK, orderHooker);
-			btns[i].removeEventListener(MouseEvent.CLICK, enableLac);
 			btns[i].removeEventListener(MouseEvent.CLICK, shopOffice);
 			*/
 		
