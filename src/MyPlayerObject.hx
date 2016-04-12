@@ -290,11 +290,11 @@ class MyPlayerObject extends MyCharacter {
 		}
 		if (!this.lac) {
 			this.breastCurrent = 0;
-			this.breastContents = null;
+			this.breastContents = new Array();
 		}
 		if (!this.balls && !this.hasPerk("inbal")) {
 			this.cumCurrent = 0;
-			this.ballContents = null;
+			this.ballContents = new Array();
 		}
 		
 		if (this.stomachCurrent == 0) {

@@ -273,14 +273,11 @@ class Main {
 				message += "Plenty of work awaits you here.<br>";
 				
 				btns[9].setButton("Work 2", "Work for two hours", 2);
-				//btns[9].addEventListener(MouseEvent.CLICK, doWork);
-				btns[9].disableButton();
+				btns[9].addEventListener(MouseEvent.CLICK, doWork);
 				btns[10].setButton("Work 4", "Work for four hours", 4);
-				//btns[10].addEventListener(MouseEvent.CLICK, doWork);
-				btns[10].disableButton();
+				btns[10].addEventListener(MouseEvent.CLICK, doWork);
 				btns[11].setButton("Work 8", "Work for eight hours", 8);
-				//btns[11].addEventListener(MouseEvent.CLICK, doWork);
-				btns[11].disableButton();
+				btns[11].addEventListener(MouseEvent.CLICK, doWork);
 			case 5:
 				//Toilet
 				message += "There is a toilet here you can use.<br>";
@@ -957,6 +954,7 @@ class Main {
 			} else {
 				message += "Your stomach is empty.</p><br><p>";
 			}
+			if (playerCharacter.balls || playerCharacter.hasPerk("inBal")) {
 			if (playerCharacter.ballContents.length != 0) {
 				message += "Balls:";
 				for (i in 0...playerCharacter.ballContents.length) {
@@ -978,7 +976,7 @@ class Main {
 			} else {
 				message += "Your balls are empty.</p><br><p>";
 			}
-			
+			}
 			
 			btns[11].setButton("Back", null, 0);
 			btns[11].addEventListener(MouseEvent.CLICK, doDescription);
@@ -1016,7 +1014,30 @@ class Main {
 	}
 	
 	static function doWork( e:MouseEvent ) {
+		var workTime:Int = e.currentTarget.btnID;
+		var workSucc:Int = rollDie(playerCharacter.int);
+		var payment:Int = (workSucc * 75) * workTime;
+		var message:String = "";
 		
+		clearAllEvents();
+		
+		message = advanceSkill(workSucc, "int");
+		
+		if (payment < 75)
+			payment = 75;
+		
+		playerCharacter.money += payment;
+		
+		playerCharacter.passTime(workTime * 60);
+		
+		updateHUD();
+		
+		outputText("You spend " + workTime + " hours sorting through the piles of stuff in the storeroom. Most of it is junk of one kind or another, all of it is shiny. Without any real idea what to do with the stuff, you sort it by value, using your strange and poorly explained ability to instantly know the value of any random object you pick up. After you finish for the day you head back up stairs and let the shopkeeper know you've finished. He thanks you and hands you $" + payment + " as payment. &quot;Feel free to come back and work some more whenever you want.&quot;</p><br><p>" + message, "General Store - Work");
+		
+		newRoom = true;
+		
+		btns[0].setButton("Next", null, 19);
+		btns[0].addEventListener(MouseEvent.CLICK, movePlayer);
 	}
 	
 	static function resetGame( e:MouseEvent ) {
@@ -2328,6 +2349,81 @@ class Main {
 	 *                        *
 	\**************************/
 	
+	static function rollDie( numDie:Int ):Int {
+		var rndNum:Int;
+		var numSucc:Int = 0;
+		var diceToRoll:Int = numDie;
+		
+		for (i in 0...diceToRoll) {
+			rndNum = Math.round(Math.random() * 10);
+			
+			if ( rndNum == 10 )
+				diceToRoll += 1;	// exploding tens
+			
+			if ( rndNum >= 7 )
+				numSucc += 1;
+			
+			if ( rndNum == 0 )
+				diceToRoll += 1;	// reroll on a 0 becuase that's not a valid result
+			
+			numDie -= 1;
+		}
+		
+		return numSucc;
+	}
+	
+	static function advanceSkill(advanceBy:Int, skill:String):String {
+		var skillOver:Float = -1;
+		var message:String = "";
+		
+		switch (skill) {
+		case "str":
+			playerCharacter.strNeededToUp -= advanceBy;
+		case "agi":
+			playerCharacter.agiNeededToUp -= advanceBy;
+		case "int":
+			playerCharacter.intNeededToUp -= advanceBy;
+		case "end":
+			playerCharacter.endNeededToUp -= advanceBy;
+		}
+		
+		if (playerCharacter.strNeededToUp <= 0) {
+			playerCharacter.str += 1;
+			playerCharacter.pointsSpent += 1;
+			skillOver = Math.abs(playerCharacter.strNeededToUp);
+			playerCharacter.strNeededToUp = Math.round((playerCharacter.str * 5) - skillOver);
+			message = "You feel stronger.</p><p>";
+		}
+		
+		if (playerCharacter.agiNeededToUp <= 0) {
+			playerCharacter.agi += 1;
+			playerCharacter.pointsSpent += 1;
+			skillOver = Math.abs(playerCharacter.agiNeededToUp);
+			playerCharacter.agiNeededToUp = Math.round((playerCharacter.agi * 5) - skillOver);
+			message += "You feel more agile.</p><p>";
+		}
+		
+		if (playerCharacter.endNeededToUp <= 0) {
+			playerCharacter.end += 1;
+			playerCharacter.healthMax += 2;
+			playerCharacter.healthCurr += 2;
+			playerCharacter.pointsSpent += 1;
+			skillOver = Math.abs(playerCharacter.endNeededToUp);
+			playerCharacter.endNeededToUp = Math.round((playerCharacter.end * 5) - skillOver);
+			message += "You feel tougher.</p><p>";
+		}
+		
+		if (playerCharacter.intNeededToUp <= 0) {
+			playerCharacter.int += 1;
+			playerCharacter.pointsSpent += 1;
+			skillOver = Math.abs(playerCharacter.intNeededToUp);
+			playerCharacter.intNeededToUp = Math.round((playerCharacter.int * 5) - skillOver);
+			message += "You feel smarter.</p><p>";
+		}
+		
+		return message;
+	}
+	
 	static function convertTime(minutes:Int):String {
 		var hours:Int = 0;
 		var days:Int = 0;
@@ -3238,6 +3334,7 @@ class Main {
 			btns[i].removeEventListener(MouseEvent.CLICK, doFoodComa);
 			btns[i].removeEventListener(MouseEvent.CLICK, doShop);
 			btns[i].removeEventListener(MouseEvent.CLICK, doWork);
+			btns[i].removeEventListener(MouseEvent.CLICK, doDeath);
 			
 		}
 			

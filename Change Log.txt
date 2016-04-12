@@ -6,6 +6,7 @@ v0.38
 New
 
  * DEBUG MENU: Added the ability to jump to any room the player knows the room ID number of.
+ * Enabled working in the general store.
  * 
 
 Changes
@@ -17,6 +18,8 @@ Bugfixes
  * Corrected a crash when using the bathroom with scat toggled off.
  * Removed unneeded RegisterClassAlias calls, should slightly reduce save file size.
  * Removed Herobrine
+ * Corrected an issue when playing as a character without balls.
+ * Fixed a loop when attempting to reset the game after dying.
  * 
  
 
