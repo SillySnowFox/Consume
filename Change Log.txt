@@ -1,17 +1,27 @@
 Visit the forums and say Hi! http://dancingfoxstudios.com/phpBB3/
 Support the game on Pateron! https://www.patreon.com/SillySnowFox?ty=h
 
+v0.39
+
+New
+
+ *
+
+Changes
+
+ *
+
+Bugfixes
+
+ *
+
+
 v0.38
 
 New
 
  * DEBUG MENU: Added the ability to jump to any room the player knows the room ID number of.
  * Enabled working in the general store.
- * 
-
-Changes
-
- *
 
 Bugfixes
 
@@ -20,7 +30,6 @@ Bugfixes
  * Removed Herobrine
  * Corrected an issue when playing as a character without balls.
  * Fixed a loop when attempting to reset the game after dying.
- * 
  
 
 v0.37
