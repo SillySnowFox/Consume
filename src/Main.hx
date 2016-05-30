@@ -252,9 +252,8 @@ class Main {
 					//general store
 					message += roomNPC.name + " has something to sell.<br>";
 					
-					btns[9].setButton("Buy", "Take a look at the dragon's stock", "gen:0");
-					//btns[9].addEventListener(MouseEvent.CLICK, doShop);
-					btns[9].disableButton();
+					btns[9].setButton("Buy", "Take a look at the " + roomNPC.species.name + "'s stock", "gen:0");
+					btns[9].addEventListener(MouseEvent.CLICK, doShop);
 				case "rat":
 					//The rat's illegal shop
 					message += roomNPC.name + " has something to sell.<br>";
@@ -1010,6 +1009,26 @@ class Main {
 		// ic - ice cream shop
 		// rat - black market
 		// gen - general store
+		
+		var shopType:String = e.currentTarget.btnID.split(":")[0];
+		var shopStage:Int = e.currentTarget.btnID.split(":")[1];
+		var shopList:Array<Dynamic> = new Array();
+		
+		clearAllEvents();
+		updateHUD();
+		
+		switch (shopType) {
+		case "gen":
+			//General Store
+			shopList = globals.shopLists[0];
+			
+		case "rat":
+			//Black Market
+			
+		case "ic":
+			//Ice Cream Shop
+			
+		}
 		
 	}
 	
@@ -3163,6 +3182,24 @@ class Main {
 		globals.keys[3] = ["Consume Red Band",			3,		"A tight fitting band with the logo of the local club on it. You can't get it off, but you often forget you're even wearing it."];
 		globals.keys[4] = ["Ice Cream Shop Backroom key", 4,	"A key you got from Bessie that will let you into the back rooms of the ice cream shop. You're pretty sure this is the same key you had when you worked there."];
 		globals.keys[5] = ["General Store key",			5,		"A key you got after agreeing to help out at the general store."];
+		
+		//Food
+		
+		//Weapons
+		
+		//Armor
+		
+		//Shoplists
+		
+		/* Shop format
+		 * Item Type|Item|Price
+		 * Types:
+		 *  F - Food
+		 *  W - Weapon
+		 *  A - Armor
+		 */
+		
+		var genShop:Array<Dynamic> = new Array();
 		
 		
 		

@@ -36,6 +36,11 @@ class GlobalVars extends Sprite {
 	public var rooms:Array<Dynamic>;
 	public var exits:Array<Dynamic>;
 	public var keys:Array<Dynamic>;
+	public var food:Array<Dynamic>;
+	public var weapons:Array<Dynamic>;
+	public var armor:Array<Dynamic>;
+	
+	public var shopLists:Array<Dynamic>;
 	
 	//The current NPC the player is interacting with. Not in use. Use roomNPC instead
 	public var npcObject:Object;
