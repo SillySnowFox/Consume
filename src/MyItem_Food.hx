@@ -46,13 +46,15 @@ class MyItem_Food extends MyItem {
 		return message;
 	}
 	
-	public function new(name:String, mass:Int, value:Int, desc:String, newSpecials:Array<Dynamic>) {
-		super();
-		
+	public function new_food(name:String, mass:Int, value:Int, desc:String, ?newSpecials:Array<Dynamic>) {
 		this.name = name;
 		this.mass = mass;
 		this.value = value;
 		this.desc = desc;
 		this.specials = newSpecials;
+	}
+	
+	public function new() {
+		super();
 	}
 }

@@ -3184,6 +3184,9 @@ class Main {
 		globals.keys[5] = ["General Store key",			5,		"A key you got after agreeing to help out at the general store."];
 		
 		//Food
+		globals.food = new Array();
+		globals.food[0] = new MyItem_Food();
+		globals.food[0].new_food("Cheeseburger", 5, 2, "A thick greesy cheeseburger");
 		
 		//Weapons
 		
@@ -3200,7 +3203,11 @@ class Main {
 		 */
 		
 		var genShop:Array<Dynamic> = new Array();
+		genShop[0] = globals.food[0];
 		
+		
+		globals.shopLists = new Array();
+		globals.shopLists[0] = genShop;
 		
 		
 		//Quests

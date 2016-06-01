@@ -36,9 +36,9 @@ class GlobalVars extends Sprite {
 	public var rooms:Array<Dynamic>;
 	public var exits:Array<Dynamic>;
 	public var keys:Array<Dynamic>;
-	public var food:Array<Dynamic>;
-	public var weapons:Array<Dynamic>;
-	public var armor:Array<Dynamic>;
+	public var food:Array<MyItem_Food>;
+	public var weapons:Array<MyItem_Weapon>;
+	public var armor:Array<MyItem_Armor>;
 	
 	public var shopLists:Array<Dynamic>;
 	
