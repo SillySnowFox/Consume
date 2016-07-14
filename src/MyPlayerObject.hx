@@ -30,6 +30,8 @@ class MyPlayerObject extends MyCharacter {
 	public var stomachStreachCountdown:Int = -1;
 	public var bowelsStreachCountdown:Int = -1;
 	
+	public var unlockedPhoneNumbers:Array<Bool>;
+	
 	//Level Up
 	public var pointsSpent:Int;
 	public var strNeededToUp:Int;
@@ -465,6 +467,7 @@ class MyPlayerObject extends MyCharacter {
 		quest = new Array();
 		invObject = new Array();
 		keyRing = new Array();
+		unlockedPhoneNumbers = new Array();
 		
 		//Set initial values
 		arousal = 0;
@@ -484,6 +487,14 @@ class MyPlayerObject extends MyCharacter {
 		intNeededToUp = int * 5;
 		
 		this.name = name;
+		
+		/* Player phonebook
+		 * 0 - Pizza
+		 * 1 - Hookers
+		 * 
+		 */
+		
+		unlockedPhoneNumbers = [true, true];
 	}
 	
 	

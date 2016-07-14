@@ -16,7 +16,7 @@ class GlobalVars extends Sprite {
 	public var currentRoomID:Int;
 	
 	//This value tells the game if the save data is going to be missing values so we don't look for them. Saves with a buldNumer lower then 11 are not compatable with this game engine at all.
-	public var buildNumber:Int = 12;
+	public var buildNumber:Int = 13;
 	public var minBuildNumber:Int = 12; //If the saved build number is below this number, don't allow players to load that file. Otherwise the game will attempt to update the file
 	
 	//Changes the number that displays in the corner of the play field

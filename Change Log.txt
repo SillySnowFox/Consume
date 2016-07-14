@@ -9,11 +9,14 @@ New
 
 Changes
 
- *
+ * Added code to the loading system that will automagically update out of date save files.
+ * 
 
 Bugfixes
 
- *
+ * Fixed bug preventing some players from progressing past Species select. (Thanks to s-r-g-i)
+ * Fixed digested prey duplicate messages. (Thanks to s-r-g-i)
+ * 
 
 
 v0.38

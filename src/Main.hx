@@ -291,9 +291,8 @@ class Main {
 			case 7:
 				//Phone
 				message += "There is a phone on the wall here.<br>";
-				btns[11 - i].setButton("Phone");
-				//btns[11 - i].addEventListener(MouseEvent.CLICK, doPhone);
-				btns[11 - i].disableButton();
+				btns[11 - i].setButton("Phone", null, 0);
+				btns[11 - i].addEventListener(MouseEvent.CLICK, doPhone);
 			case 8:
 				//Workout
 				
@@ -864,8 +863,52 @@ class Main {
 	}
 	
 	static function doPhone( e:MouseEvent ) {
+		var clicked:Dynamic = e.currentTarget.btnID;
+		var callList:String = "";
+		var phoneNames:Array<Dynamic> = [["Pizza", "Down the Street Pizza - Close enough", "Call the closest pizza place, it's in the next town over, to get one delivered."], ["Hooker", "Rebecca's Girls - Catering to all tastes and pleasures", "Call up a hooker, you know you want to."]];
+		var message:String = "";
+		var action:String = "";
+		var value:Int = -1;
+		var split:Array<String> = new Array();
 		
-		outputText("Phone", "Phone");
+		clearAllEvents();
+		
+		if (Type.typeof(clicked) == ValueType.TInt) {
+			switch (clicked) {
+			case 0:
+				for (i in 0...playerCharacter.unlockedPhoneNumbers.length) {
+					if (playerCharacter.unlockedPhoneNumbers[i]) {
+						callList += "<li>" + phoneNames[i][1] + "</li>";
+						btns[i].setButton(phoneNames[i][0], phoneNames[i][2], "call:" + i);
+						if (i == 0) {
+							btns[i].addEventListener(MouseEvent.CLICK, doPhone);
+						} else {
+							btns[i].disableButton();
+						}
+					}
+				}
+				
+				message = "A basic phone attached to the wall. Who do you want to call?</p><br>" + callList;
+			}
+		} else {
+			split = clicked.split(":");
+			action = split[0];
+			value = split[1];
+			
+			switch (action) {
+			case "call":
+				switch (value) {
+				case 0: //Pizza
+					
+				case 1: //Hookers
+					
+				default:
+					new AlertBox("Bad switch action: " + action + ":" + value);
+				}
+			}
+		}
+		
+		outputText(message, "Phone");
 	}
 	
 	static function doDescription( e:MouseEvent ) {
@@ -1252,7 +1295,11 @@ class Main {
 							save1Tip = "Load " + saveDataObject.data.player1.name;
 						} else {
 							//Out of date save data
-							save1Name = saveDataObject.data.player1.name + " -- Needs updating";
+							if (saveDataObject.data.save1[0] == 12) { //Version 12 was missing unlockedPhoneNumbers
+								saveDataObject.data.player1.unlockedPhoneNumbers = [true, true];
+								saveDataObject.data.save1[0] = 13;
+							}
+							save1Name = saveDataObject.data.player1.name + " -- Updated";
 							save1Tip = "Load " + saveDataObject.data.player1.name;
 						}
 					}
@@ -1268,7 +1315,11 @@ class Main {
 							save2Name = saveDataObject.data.player2.name;
 							save2Tip = "Load " + saveDataObject.data.player2.name;
 						} else {
-							save2Name = saveDataObject.data.player2.name + " -- Needs updating";
+							if (saveDataObject.data.save2[0] == 12) { //Version 12 was missing unlockedPhoneNumbers
+								saveDataObject.data.player2.unlockedPhoneNumbers = [true, true];
+								saveDataObject.data.save2[0] = 13;
+							}
+							save2Name = saveDataObject.data.player2.name + " -- Updated";
 							save2Tip = "Load " + saveDataObject.data.player2.name;
 						}
 					}
@@ -1284,7 +1335,11 @@ class Main {
 							save3Name = saveDataObject.data.player3.name;
 							save3Tip = "Load " + saveDataObject.data.player3.name;
 						} else {
-							save3Name = saveDataObject.data.player3.name + " -- Needs updating";
+							if (saveDataObject.data.save3[0] == 12) { //Version 12 was missing unlockedPhoneNumbers
+								saveDataObject.data.player3.unlockedPhoneNumbers = [true, true];
+								saveDataObject.data.save3[0] = 13;
+							}
+							save3Name = saveDataObject.data.player3.name + " -- Updated";
 							save3Tip = "Load " + saveDataObject.data.player3.name;
 						}
 					}
@@ -1365,6 +1420,7 @@ class Main {
 			
 			if (playerCharacter.sphincter == null && playerCharacter.species != null)
 				playerCharacter.sphincter = playerCharacter.species.sphincter;
+			
 			
 			updateHUD();
 			outputText("Game loaded from slot " + clicked, "Load Game");
