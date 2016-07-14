@@ -311,7 +311,7 @@ class MyPlayerObject extends MyCharacter {
 			if (this.emptyStomachCountdown != 0) {
 				this.emptyStomachCountdown -= 1;
 				emptyStomach = false;
-				digestMessage = "Your stomach growls hungerly.</p><br><p>";
+				digestMessage = "Your stomach growls hungrily.</p><br><p>";
 			} else {
 				emptyStomach = true;
 			}
@@ -363,26 +363,25 @@ class MyPlayerObject extends MyCharacter {
 			
 			while (time > 0) {
 				time -= 1;
-				for (i in 0...this.stomachContents.length) {
-					if (this.stomachContents[i].healthCurr > 0) {
-						this.stomachContents[i].healthCurr -= this.digestDamage;
-						
+				var j:Int = 0;
+				while (j < stomachContents.length) {
+					if (this.stomachContents[j].healthCurr > 0) {
+						this.stomachContents[j].healthCurr -= this.digestDamage;
 					} else {
 						this.stomachCurrent -= this.digestDamage;
+						this.stomachContents[j].mass -= this.digestDamage;
 						
-						this.stomachContents[i].mass -= this.digestDamage;
-						
-						if (this.stomachContents[i].mass <= 0) {
-							digestedNPCs.push(this.stomachContents[i]);
+						if (this.stomachContents[j].mass <= 0) {
+							digestedNPCs.push(this.stomachContents[j]);
+							if (globals.allowScat)
+								this.bowelsContents.push(this.stomachContents[j]);
+							stomachContents.remove(stomachContents[j]);
+							j--;
 						}
 					}
+					
+					j++;
 				}
-			}
-			
-			for (i in 0...digestedNPCs.length) {
-				if (globals.allowScat)
-					this.bowelsContents.push(digestedNPCs[i]);
-				this.stomachContents.remove(digestedNPCs[i]);
 			}
 			
 			for (i in 0...this.stomachContents.length) {
@@ -392,9 +391,9 @@ class MyPlayerObject extends MyCharacter {
 				}
 				if (this.stomachContents[i].healthCurr > 0) {
 					if (this.stomachContents[i].likeVore) {
-						digestMessage += "Muffled moans come from your belly as your prey uses their last moments to masterbate.<br>";
+						digestMessage += "Muffled moans come from your belly as your prey uses their last moments to masturbate.<br>";
 					} else {
-						digestMessage += "You feel your prey struggling agianst your stomach.<br> ";
+						digestMessage += "You feel your prey struggling against your stomach.<br> ";
 					}
 				}
 			}

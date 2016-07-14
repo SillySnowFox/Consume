@@ -1529,369 +1529,374 @@ class Main {
 		
 		clearAllEvents();
 		
-		switch (clicked) {
-		case -14:
-			int -= 1;
-			pointsAvail += 1;
-			newGame();
-		case -13:
-			int += 1;
-			pointsAvail -= 1;
-			newGame();
-		case -12:
-			end -= 1;
-			pointsAvail += 1;
-			newGame();
-		case -11:
-			end += 1;
-			pointsAvail -= 1;
-			newGame();
-		case -10:
-			agi -= 1;
-			pointsAvail += 1;
-			newGame();
-		case -9:
-			agi += 1;
-			pointsAvail -= 1;
-			newGame();
-		case -8:
-			str -= 1;
-			pointsAvail += 1;
-			newGame();
-		case -7:
-			str += 1;
-			pointsAvail -= 1;
-			newGame();
-		case -6:
-			if (penis) {
-				if (balls) {
+		// Handle integer button IDs first
+		if (Type.typeof(clicked) == ValueType.TInt)
+		{
+			switch (clicked) {
+			case -14:
+				int -= 1;
+				pointsAvail += 1;
+				newGame();
+			case -13:
+				int += 1;
+				pointsAvail -= 1;
+				newGame();
+			case -12:
+				end -= 1;
+				pointsAvail += 1;
+				newGame();
+			case -11:
+				end += 1;
+				pointsAvail -= 1;
+				newGame();
+			case -10:
+				agi -= 1;
+				pointsAvail += 1;
+				newGame();
+			case -9:
+				agi += 1;
+				pointsAvail -= 1;
+				newGame();
+			case -8:
+				str -= 1;
+				pointsAvail += 1;
+				newGame();
+			case -7:
+				str += 1;
+				pointsAvail -= 1;
+				newGame();
+			case -6:
+				if (penis) {
+					if (balls) {
+						balls = false;
+					} else {
+						balls = true;
+					}
+				}
+				newGame();
+			case -5:
+				if (penis) {
+					penis = false;
 					balls = false;
 				} else {
+					penis = true;
 					balls = true;
 				}
-			}
-			newGame();
-		case -5:
-			if (penis) {
-				penis = false;
-				balls = false;
-			} else {
-				penis = true;
-				balls = true;
-			}
-			newGame();
-		case -4:
-			if (vagina) {
-				vagina = false;
-			} else {
-				vagina = true;
-			}
-			newGame();
-		case -3:
-			if (breasts) {
-				breasts = false;
-			} else {
-				breasts = true;
-			}
-			newGame();
-		case -2:
-			offset -= 9;
-			newGame();
-		case -1:
-			offset += 9;
-			newGame();
-		case 0:
-			//Main page
-			outputText("Choose a species:", "New Game");
-			
-			for (i in 0...9) {
-				if (i + offset == species.length)
-					break;
-				btns[i].setButton(species[i + offset].name, null, "Species " + (i + offset));
-				btns[i].addEventListener(MouseEvent.CLICK, newGame);
-			}
-			if (species.length - offset > 9) {
-				btns[11].setButton("More", null, -1);
-				btns[11].addEventListener(MouseEvent.CLICK, newGame);
-			}
-			if (offset != 0) {
-				btns[9].setButton("Prev", null, -2);
-				btns[9].addEventListener(MouseEvent.CLICK, newGame);
-			}
-			
-			step = 0;
-			globals.backTo = "Welcome";
-			pointsAvail = 10;
-			str = 1;
-			agi = 1;
-			end = 1;
-			int = 1;
-			perksToPick = 2;
-			perksPicked = new Array();
-		case 1:
-			//Gender picker
-			
-			message = "Playing as a ";
-			
-			if (breasts && vagina && !penis && !balls)
-				genderString = "Female";
-			if (!breasts && !vagina && penis && (balls || !balls))
-				genderString = "Male";
-			if ((breasts || !breasts) && vagina && penis && (balls || !balls))
-				genderString = "Herm";
-			if (breasts && !vagina && penis && (!balls || balls))
-				genderString = "Dickgirl";
-			if (breasts && !vagina && !penis && !balls)
-				genderString = "Doll";
-			if (!breasts && vagina && !penis && !balls)
-				genderString = "Cuntboy";
-			if (!breasts && !vagina && !penis && !balls)
-				genderString = "Neuter";
-			
-			message += genderString + " " + thisSpecies.name;
-				
-			message += "<br><br>Breasts: ";
-			if (breasts) {
-				message += "Yes";
-			} else {
-				message += "No";
-			}
-			message += "<br>Vagina: ";
-			if (vagina) {
-				message += "Yes";
-			} else {
-				message += "No";
-			}
-			message += "<br>Penis: ";
-			if (penis) {
-				message += "Yes";
-			} else {
-				message += "No";
-			}
-			message += "<br>Balls: ";
-			if (balls) {
-				message += "Yes";
-			} else {
-				message += "No";
-			}
-			
-			btns[0].setButton("Breasts", null, -3);
-			btns[0].addEventListener(MouseEvent.CLICK, newGame);
-			btns[1].setButton("Vagina", null, -4);
-			btns[1].addEventListener(MouseEvent.CLICK, newGame);
-			btns[2].setButton("Penis", null, -5);
-			btns[2].addEventListener(MouseEvent.CLICK, newGame);
-			if (penis) {
-				btns[3].setButton("Balls", null, -6);
-				btns[3].addEventListener(MouseEvent.CLICK, newGame);
-			}
-			
-			btns[9].setButton("Back", null, 0);
-			btns[9].addEventListener(MouseEvent.CLICK, newGame);
-			
-			btns[11].setButton("Next", null, 2);
-			btns[11].addEventListener(MouseEvent.CLICK, newGame);
-			
-			outputText(message, "New Game");
-			step = 1;
-		case 2:
-			//Stat assign
-			message = "Playing as a " + genderString + " " + thisSpecies.name + "<br><br>";
-			
-			message += "Distrubite your stat points. You have " + pointsAvail + " remaining.<br>";
-			message += "Strength: " + str + "<br>";
-			message += "Agility: " + agi + "<br>";
-			message += "Endurance: " + end + "<br>";
-			message += "Intelligence: " + int + "<br>";
-			
-			if (pointsAvail != 0) {
-				btns[0].setButton("Strength+", null, -7);
-				btns[0].addEventListener(MouseEvent.CLICK, newGame);
-				btns[3].setButton("Agility+", null, -9);
-				btns[3].addEventListener(MouseEvent.CLICK, newGame);
-				btns[6].setButton("Endurance+", null, -11);
-				btns[6].addEventListener(MouseEvent.CLICK, newGame);
-				btns[9].setButton("Intelligence+", null, -13);
-				btns[9].addEventListener(MouseEvent.CLICK, newGame);
-			}
-			
-			if (str != 1) {
-				btns[1].setButton("Strength-", null, -8);
-				btns[1].addEventListener(MouseEvent.CLICK, newGame);
-			}
-			if (agi != 1) {
-				btns[4].setButton("Agility-", null, -10);
-				btns[4].addEventListener(MouseEvent.CLICK, newGame);
-			}
-			if (end != 1) {
-				btns[7].setButton("Endurance-", null, -12);
-				btns[7].addEventListener(MouseEvent.CLICK, newGame);
-			}
-			if (int != 1) {
-				btns[10].setButton("Intelligence-", null, -14);
-				btns[10].addEventListener(MouseEvent.CLICK, newGame);
-			}
-			
-			
-			btns[8].setButton("Back", null, 1);
-			btns[8].addEventListener(MouseEvent.CLICK, newGame);
-			
-			if (pointsAvail == 0) {
-				btns[11].setButton("Next", null, 3);
-				btns[11].addEventListener(MouseEvent.CLICK, newGame);
-			}
-			
-			outputText(message, "New Game");
-			step = 2;
-			offset = 0;
-		case 3:
-			//Perk pick
-			message = "Playing as a " + genderString + " " + thisSpecies.name + "<br>";
-			message += "Str: " + str + ", ";
-			message += "Agi: " + agi + ", ";
-			message += "End: " + end + ", ";
-			message += "Int: " + int + "<br><br>";
-			
-			message += "Choose " + perksToPick + " perks:<br>";
-			
-			var btnNum:Int = 0;
-			visiblePerks = new Array();
-			
-			for (i in 0...globals.perks.length) {
-				if (globals.perks[i].showPerk)
-					visiblePerks.push(globals.perks[i]);
-			}
-			
-			if (visiblePerks.length > 9) {
-				message += "Page: " + (Math.ceil(offset / 9) + 1) + " of " + Math.ceil(visiblePerks.length / 9) + "<br>";
-			}
-			
-			message += "<br>";
-			
-			for (i in 0...9) {
-				if (i + offset == visiblePerks.length)
-					break;
-				if (perksPicked.indexOf(i + offset) == -1) {
-					message += "<font size = '+4'>☐</font> " + visiblePerks[i + offset].dispName + "<br>";
+				newGame();
+			case -4:
+				if (vagina) {
+					vagina = false;
 				} else {
-					message += "<font size = '+4'>☒</font> " + visiblePerks[i + offset].dispName + "<br>";
+					vagina = true;
 				}
-				message += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + visiblePerks[i + offset].desc + "<br><br>";
-				btns[btnNum].setButton(visiblePerks[i + offset].dispName, null, ("perk " + (i + offset)));
-				btns[btnNum].addEventListener(MouseEvent.CLICK, newGame);
-				btnNum += 1;
-			}
-			if (visiblePerks.length - offset > 9) {
-				btns[11].setButton("More", null, -1);
-				btns[11].addEventListener(MouseEvent.CLICK, newGame);
-			}
-			if (offset != 0) {
-				btns[9].setButton("Prev", null, -2);
+				newGame();
+			case -3:
+				if (breasts) {
+					breasts = false;
+				} else {
+					breasts = true;
+				}
+				newGame();
+			case -2:
+				offset -= 9;
+				newGame();
+			case -1:
+				offset += 9;
+				newGame();
+			case 0:
+				//Main page
+				outputText("Choose a species:", "New Game");
+				
+				for (i in 0...9) {
+					if (i + offset == species.length)
+						break;
+					btns[i].setButton(species[i + offset].name, null, "Species " + (i + offset));
+					btns[i].addEventListener(MouseEvent.CLICK, newGame);
+				}
+				if (species.length - offset > 9) {
+					btns[11].setButton("More", null, -1);
+					btns[11].addEventListener(MouseEvent.CLICK, newGame);
+				}
+				if (offset != 0) {
+					btns[9].setButton("Prev", null, -2);
+					btns[9].addEventListener(MouseEvent.CLICK, newGame);
+				}
+				
+				step = 0;
+				globals.backTo = "Welcome";
+				pointsAvail = 10;
+				str = 1;
+				agi = 1;
+				end = 1;
+				int = 1;
+				perksToPick = 2;
+				perksPicked = new Array();
+			case 1:
+				//Gender picker
+				
+				message = "Playing as a ";
+				
+				if (breasts && vagina && !penis && !balls)
+					genderString = "Female";
+				if (!breasts && !vagina && penis && (balls || !balls))
+					genderString = "Male";
+				if ((breasts || !breasts) && vagina && penis && (balls || !balls))
+					genderString = "Herm";
+				if (breasts && !vagina && penis && (!balls || balls))
+					genderString = "Dickgirl";
+				if (breasts && !vagina && !penis && !balls)
+					genderString = "Doll";
+				if (!breasts && vagina && !penis && !balls)
+					genderString = "Cuntboy";
+				if (!breasts && !vagina && !penis && !balls)
+					genderString = "Neuter";
+				
+				message += genderString + " " + thisSpecies.name;
+					
+				message += "<br><br>Breasts: ";
+				if (breasts) {
+					message += "Yes";
+				} else {
+					message += "No";
+				}
+				message += "<br>Vagina: ";
+				if (vagina) {
+					message += "Yes";
+				} else {
+					message += "No";
+				}
+				message += "<br>Penis: ";
+				if (penis) {
+					message += "Yes";
+				} else {
+					message += "No";
+				}
+				message += "<br>Balls: ";
+				if (balls) {
+					message += "Yes";
+				} else {
+					message += "No";
+				}
+				
+				btns[0].setButton("Breasts", null, -3);
+				btns[0].addEventListener(MouseEvent.CLICK, newGame);
+				btns[1].setButton("Vagina", null, -4);
+				btns[1].addEventListener(MouseEvent.CLICK, newGame);
+				btns[2].setButton("Penis", null, -5);
+				btns[2].addEventListener(MouseEvent.CLICK, newGame);
+				if (penis) {
+					btns[3].setButton("Balls", null, -6);
+					btns[3].addEventListener(MouseEvent.CLICK, newGame);
+				}
+				
+				btns[9].setButton("Back", null, 0);
 				btns[9].addEventListener(MouseEvent.CLICK, newGame);
+				
+				btns[11].setButton("Next", null, 2);
+				btns[11].addEventListener(MouseEvent.CLICK, newGame);
+				
+				outputText(message, "New Game");
+				step = 1;
+			case 2:
+				//Stat assign
+				message = "Playing as a " + genderString + " " + thisSpecies.name + "<br><br>";
+				
+				message += "Distrubite your stat points. You have " + pointsAvail + " remaining.<br>";
+				message += "Strength: " + str + "<br>";
+				message += "Agility: " + agi + "<br>";
+				message += "Endurance: " + end + "<br>";
+				message += "Intelligence: " + int + "<br>";
+				
+				if (pointsAvail != 0) {
+					btns[0].setButton("Strength+", null, -7);
+					btns[0].addEventListener(MouseEvent.CLICK, newGame);
+					btns[3].setButton("Agility+", null, -9);
+					btns[3].addEventListener(MouseEvent.CLICK, newGame);
+					btns[6].setButton("Endurance+", null, -11);
+					btns[6].addEventListener(MouseEvent.CLICK, newGame);
+					btns[9].setButton("Intelligence+", null, -13);
+					btns[9].addEventListener(MouseEvent.CLICK, newGame);
+				}
+				
+				if (str != 1) {
+					btns[1].setButton("Strength-", null, -8);
+					btns[1].addEventListener(MouseEvent.CLICK, newGame);
+				}
+				if (agi != 1) {
+					btns[4].setButton("Agility-", null, -10);
+					btns[4].addEventListener(MouseEvent.CLICK, newGame);
+				}
+				if (end != 1) {
+					btns[7].setButton("Endurance-", null, -12);
+					btns[7].addEventListener(MouseEvent.CLICK, newGame);
+				}
+				if (int != 1) {
+					btns[10].setButton("Intelligence-", null, -14);
+					btns[10].addEventListener(MouseEvent.CLICK, newGame);
+				}
+				
+				
+				btns[8].setButton("Back", null, 1);
+				btns[8].addEventListener(MouseEvent.CLICK, newGame);
+				
+				if (pointsAvail == 0) {
+					btns[11].setButton("Next", null, 3);
+					btns[11].addEventListener(MouseEvent.CLICK, newGame);
+				}
+				
+				outputText(message, "New Game");
+				step = 2;
+				offset = 0;
+			case 3:
+				//Perk pick
+				message = "Playing as a " + genderString + " " + thisSpecies.name + "<br>";
+				message += "Str: " + str + ", ";
+				message += "Agi: " + agi + ", ";
+				message += "End: " + end + ", ";
+				message += "Int: " + int + "<br><br>";
+				
+				message += "Choose " + perksToPick + " perks:<br>";
+				
+				var btnNum:Int = 0;
+				visiblePerks = new Array();
+				
+				for (i in 0...globals.perks.length) {
+					if (globals.perks[i].showPerk)
+						visiblePerks.push(globals.perks[i]);
+				}
+				
+				if (visiblePerks.length > 9) {
+					message += "Page: " + (Math.ceil(offset / 9) + 1) + " of " + Math.ceil(visiblePerks.length / 9) + "<br>";
+				}
+				
+				message += "<br>";
+				
+				for (i in 0...9) {
+					if (i + offset == visiblePerks.length)
+						break;
+					if (perksPicked.indexOf(i + offset) == -1) {
+						message += "<font size = '+4'>☐</font> " + visiblePerks[i + offset].dispName + "<br>";
+					} else {
+						message += "<font size = '+4'>☒</font> " + visiblePerks[i + offset].dispName + "<br>";
+					}
+					message += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + visiblePerks[i + offset].desc + "<br><br>";
+					btns[btnNum].setButton(visiblePerks[i + offset].dispName, null, ("perk " + (i + offset)));
+					btns[btnNum].addEventListener(MouseEvent.CLICK, newGame);
+					btnNum += 1;
+				}
+				if (visiblePerks.length - offset > 9) {
+					btns[11].setButton("More", null, -1);
+					btns[11].addEventListener(MouseEvent.CLICK, newGame);
+				}
+				if (offset != 0) {
+					btns[9].setButton("Prev", null, -2);
+					btns[9].addEventListener(MouseEvent.CLICK, newGame);
+				}
+				
+				btns[10].setButton("Back", null, 2);
+				btns[10].addEventListener(MouseEvent.CLICK, newGame);
+				
+				if (perksToPick == 0) {
+					btns[10].setButton("Next", null, 4);
+				}
+				
+				step = 3;
+				outputText(message, "New Game");
+			case 4:
+				//Name
+				var txtFormat:TextFormat = new TextFormat("Sans", globals.textSize + 2);
+				
+				var plrName:TextField = new TextField();
+				plrName.x = 60;
+				plrName.y = 125;
+				plrName.type = TextFieldType.INPUT;
+				plrName.name = "playername";
+				plrName.visible = true;
+				plrName.border = true;
+				plrName.height = 30;
+				plrName.width = 100;
+				plrName.text = "";
+				plrName.defaultTextFormat = txtFormat;
+				Lib.current.addChild(plrName);
+				
+				message = "Playing as a " + genderString + " " + thisSpecies.name + "<br>";
+				message += "Str: " + str + ", ";
+				message += "Agi: " + agi + ", ";
+				message += "End: " + end + ", ";
+				message += "Int: " + int + "<br>";
+				message += "Perks: ";
+				
+				message += visiblePerks[perksPicked[0]].dispName + ", " + visiblePerks[perksPicked[1]].dispName + "<br><br>";
+				
+				message += "Name?";
+				
+				btns[11].setButton("Next", null, 5);
+				btns[11].addEventListener(MouseEvent.CLICK, newGame);
+				
+				outputText(message, "New Game");
+			case 5:
+				//Confirm
+				var plrName:Object = Lib.current.getChildByName("playername");
+				
+				if (plrName.text == "") {
+					playerName = "Food";
+				} else {
+					playerName = plrName.text;
+				}
+				
+				Lib.current.removeChild(plrName);
+				
+				message = "Do you want to play as a " + genderString + " " + thisSpecies.name + " named " + playerName + " with the following stats?<br>";
+				message += "Str: " + str + ", ";
+				message += "Agi: " + agi + ", ";
+				message += "End: " + end + ", ";
+				message += "Int: " + int + "<br>";
+				message += "Perks: ";
+				
+				message += visiblePerks[perksPicked[0]].dispName + ", " + visiblePerks[perksPicked[1]].dispName + "<br><br>";
+				
+				outputText(message, "New Game");
+				
+				btns[0].setButton("Yes", null, 6);
+				btns[0].addEventListener(MouseEvent.CLICK, newGame);
+				
+				btns[2].setButton("No", null, 4);
+				btns[2].addEventListener(MouseEvent.CLICK, newGame);
+			case 6:
+				//Create new player object
+				for (i in 0...perksPicked.length) {
+					finalPerks.push(visiblePerks[perksPicked[i]]);
+				}
+				
+				playerCharacter = new MyPlayerObject();
+				playerCharacter.newPlayer(thisSpecies, breasts, vagina, penis, balls, str, agi, end, int, playerName, finalPerks);
+				playerCharacter.quest = new Array();
+				
+				for (i in 0...quests.length) {
+					playerCharacter.quest.push(new MyQuest());
+					playerCharacter.quest[playerCharacter.quest.length - 1].newQuest(quests[i]);
+				}
+				
+				playerCharacter.emptyStomachCountdown = playerCharacter.end;
+				doorFuckCount = playerCharacter.end;
+				
+				globals.playerCharacter = playerCharacter;
+				
+				updateHUD();
+				
+				message = "6:00 AM. <i>Damn, forgot to turn the alarm off.</i> You roll over and glare at the little black box chirping merrily away, telling you it's time to wake up and get ready for your job.</p><br><p>That you no longer have.</p><br><p>You groan and turn the alarm off, sitting up and thinking about what you're going to do. You remember you lost your job yesterday. Apparently licking coworkers and saying they taste good is frowned upon.</p><br><p>Oh well. Time to find a new way to pay the bills. Maybe that new club down the street is looking for a bartender or bouncer or something.";
+				
+				outputText(message, "BEEP! BEEP! BEEP! BEEP!");
+				
+				btns[11].setButton("Next", null, 0);
+				btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+				
+				//Look into variable destructors, take out all the ones used in character creation don't need them past this point.
 			}
+		}
 			
-			btns[10].setButton("Back", null, 2);
-			btns[10].addEventListener(MouseEvent.CLICK, newGame);
-			
-			if (perksToPick == 0) {
-				btns[10].setButton("Next", null, 4);
-			}
-			
-			step = 3;
-			outputText(message, "New Game");
-		case 4:
-			//Name
-			var txtFormat:TextFormat = new TextFormat("Sans", globals.textSize + 2);
-			
-			var plrName:TextField = new TextField();
-			plrName.x = 60;
-			plrName.y = 125;
-			plrName.type = TextFieldType.INPUT;
-			plrName.name = "playername";
-			plrName.visible = true;
-			plrName.border = true;
-			plrName.height = 30;
-			plrName.width = 100;
-			plrName.text = "";
-			plrName.defaultTextFormat = txtFormat;
-			Lib.current.addChild(plrName);
-			
-			message = "Playing as a " + genderString + " " + thisSpecies.name + "<br>";
-			message += "Str: " + str + ", ";
-			message += "Agi: " + agi + ", ";
-			message += "End: " + end + ", ";
-			message += "Int: " + int + "<br>";
-			message += "Perks: ";
-			
-			message += visiblePerks[perksPicked[0]].dispName + ", " + visiblePerks[perksPicked[1]].dispName + "<br><br>";
-			
-			message += "Name?";
-			
-			btns[11].setButton("Next", null, 5);
-			btns[11].addEventListener(MouseEvent.CLICK, newGame);
-			
-			outputText(message, "New Game");
-		case 5:
-			//Confirm
-			var plrName:Object = Lib.current.getChildByName("playername");
-			
-			if (plrName.text == "") {
-				playerName = "Food";
-			} else {
-				playerName = plrName.text;
-			}
-			
-			Lib.current.removeChild(plrName);
-			
-			message = "Do you want to play as a " + genderString + " " + thisSpecies.name + " named " + playerName + " with the following stats?<br>";
-			message += "Str: " + str + ", ";
-			message += "Agi: " + agi + ", ";
-			message += "End: " + end + ", ";
-			message += "Int: " + int + "<br>";
-			message += "Perks: ";
-			
-			message += visiblePerks[perksPicked[0]].dispName + ", " + visiblePerks[perksPicked[1]].dispName + "<br><br>";
-			
-			outputText(message, "New Game");
-			
-			btns[0].setButton("Yes", null, 6);
-			btns[0].addEventListener(MouseEvent.CLICK, newGame);
-			
-			btns[2].setButton("No", null, 4);
-			btns[2].addEventListener(MouseEvent.CLICK, newGame);
-		case 6:
-			//Create new player object
-			for (i in 0...perksPicked.length) {
-				finalPerks.push(visiblePerks[perksPicked[i]]);
-			}
-			
-			playerCharacter = new MyPlayerObject();
-			playerCharacter.newPlayer(thisSpecies, breasts, vagina, penis, balls, str, agi, end, int, playerName, finalPerks);
-			playerCharacter.quest = new Array();
-			
-			for (i in 0...quests.length) {
-				playerCharacter.quest.push(new MyQuest());
-				playerCharacter.quest[playerCharacter.quest.length - 1].newQuest(quests[i]);
-			}
-			
-			playerCharacter.emptyStomachCountdown = playerCharacter.end;
-			doorFuckCount = playerCharacter.end;
-			
-			globals.playerCharacter = playerCharacter;
-			
-			updateHUD();
-			
-			message = "6:00 AM. <i>Damn, forgot to turn the alarm off.</i> You roll over and glare at the little black box chirping merrily away, telling you it's time to wake up and get ready for your job.</p><br><p>That you no longer have.</p><br><p>You groan and turn the alarm off, sitting up and thinking about what you're going to do. You remember you lost your job yesterday. Apparently licking coworkers and saying they taste good is frowned upon.</p><br><p>Oh well. Time to find a new way to pay the bills. Maybe that new club down the street is looking for a bartender or bouncer or something.";
-			
-			outputText(message, "BEEP! BEEP! BEEP! BEEP!");
-			
-			btns[11].setButton("Next", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
-			
-			//Look into variable destructors, take out all the ones used in character creation don't need them past this point.
-			
-			
-		default:
+		else	// If clicked wasn't an Int, handle it as a String
+		{
 			//Species info/confirmation screen
 			switch (clicked.split(" ")[0]) {
 			case "Species":
