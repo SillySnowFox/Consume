@@ -25,10 +25,11 @@ class MyPlayerObject extends MyCharacter {
 	public var day:Int;
 	
 	public var emptyStomachCountdown:Int;
-	public var cumStreachCountdown:Int = -1;
-	public var milkStreachCountdown:Int = -1;
-	public var stomachStreachCountdown:Int = -1;
-	public var bowelsStreachCountdown:Int = -1;
+	public var cumStretchCountdown:Int = -1;
+	public var milkStretchCountdown:Int = -1;
+	public var stomachStretchCountdown:Int = -1;
+	public var bowelsStretchCountdown:Int = -1;
+
 	
 	public var unlockedPhoneNumbers:Array<Bool>;
 	
@@ -38,6 +39,14 @@ class MyPlayerObject extends MyCharacter {
 	public var agiNeededToUp:Int;
 	public var endNeededToUp:Int;
 	public var intNeededToUp:Int;
+	
+	private var massToPooRatio:Float = 0.33;	// $design: Arbitrary amount of poo from each unit of mass
+	private static var digestMessages:Array<String> = 
+		[
+			"", 
+			"Your stomach rumbles happily as it works on its contents.</p><br><p>"
+		];
+	
 	
 	public function playerDesc():String {
 		var message:String = "";
@@ -262,175 +271,285 @@ class MyPlayerObject extends MyCharacter {
 		return message;
 	}
 	
+	
+	
 	public function fitHeight(doorSize:Int):String {
 		
 		return "";
 	}
 	
-	public function passTime(minutes:Int):String {
-		var globals:Object = Lib.current.getChildByName("GlobalVars");
-		var message:String = "";
-		var allowScat:Bool = globals.allowScat;
-		var allowSex:Bool = globals.allowSex;
-		var time:Int = minutes;
-		var emptyStomach:Bool = false;
-		var isDig:Bool = true;
-		var digestMessage:String = "";
-		var rndMsg:Int = -1;
+	
+	
+	private function checkStretching():Void {
 		
-		var digestMessages:Array<String> = new Array();
-		var digestedNPCs:Array<MyNPC> = new Array();
-		
-		digestMessages = ["", "Your stomach rumbles happily as it works on it's contents.</p><br><p>"];
-		
-		if (!allowScat) {
-			this.bowelsCurrent = 0;
-			this.bowelsContents = null;
-		}
-		if (!allowSex) {
-			this.arousal = 0;
-		}
-		if (!this.lac) {
-			this.breastCurrent = 0;
-			this.breastContents = new Array();
-		}
-		if (!this.balls && !this.hasPerk("inbal")) {
-			this.cumCurrent = 0;
-			this.ballContents = new Array();
-		}
-		
-		if (this.stomachCurrent == 0) {
-			isDig = false;
-			if (this.fat != 0) {
-				if (this.fat >= this.digestDamage) {
-					this.fat -= this.digestDamage;
-				} else {
-					this.fat = 0;
-				}
-				emptyStomach = false;
-				this.emptyStomachCountdown = this.end;
+		if (stomachCurrent >= stomachCap) {
+			stomachStretchCountdown--;
+			if (stomachStretchCountdown <= 0) {
+				stomachCap += stretchAmountStomach;
+				stomachStretchCountdown = stretchRateStomach;
 			}
-			if (this.emptyStomachCountdown != 0) {
-				this.emptyStomachCountdown -= 1;
-				emptyStomach = false;
-				digestMessage = "Your stomach growls hungrily.</p><br><p>";
+		}
+		if (cumCurrent > cumCap) {
+			cumStretchCountdown--;
+			if (cumStretchCountdown <= 0) {
+				cumStretchCountdown = stretchRateCum;
+				cumCap += stretchAmountCum;
+			}
+		}
+		if (breastCurrent > breastCap) {
+			milkStretchCountdown--;
+			if (milkStretchCountdown <= 0) {
+				milkStretchCountdown = stretchRateMilk;
+				breastCap += stretchAmountMilk;
+			}
+		}
+		if (bowelsCurrent > bowelsCap) {
+			bowelsStretchCountdown--;
+			if (bowelsStretchCountdown <= 0) {
+				bowelsStretchCountdown = stretchRateBowels;
+				bowelsCap += stretchAmountBowels;
+			}
+		}
+	}
+	
+	
+	
+	private function digestTick():Void {
+		
+		// If stomach is empty
+		if (stomachCurrent == 0) {
+			if (fat != 0) {
+				//var FatBurnRate:Int = digestDamage;	// $design: Slower fat burn/starvation?
+				var FatBurnRate:Int = 1;				//  Seems like the player starves really quick at game start. Maybe a bit of starting fat would help.
+				if (fat >= FatBurnRate) {
+					fat -= FatBurnRate;
+				} else {
+					fat = 0;
+				}
+				emptyStomachCountdown = end;
 			} else {
-				emptyStomach = true;
+				if(emptyStomachCountdown > 0) {
+					emptyStomachCountdown--;
+				}else {
+					healthCurr--;
+				}
+			}
+			return;
+		}
+		
+		
+		// Stomach is not empty, proceed with digestion
+		this.fat += this.fatGain;
+		emptyStomachCountdown = end;
+		
+		if (stomachContents.length > 0) {
+			//var DigestAmt:Int = digestDamage;										// $design: If there are multiple prey in stomach, should each 
+			var DigestAmt:Int = Math.ceil(digestDamage / stomachContents.length);	// one take full digest damage, or should damage be split between all prey?
+
+			for (CurPrey in stomachContents) {
+				if(CurPrey.healthCurr > 0){
+					CurPrey.healthCurr -= DigestAmt;
+					if (CurPrey.healthCurr < 0) {
+						CurPrey.healthCurr = 0;
+					}
+				} else {
+					if (CurPrey.mass >= DigestAmt) {
+						stomachCurrent -= DigestAmt;
+						CurPrey.mass -= DigestAmt;
+						bowelsCurrent += DigestAmt * massToPooRatio;
+					} else {
+						stomachCurrent -= CurPrey.mass;
+						bowelsCurrent += CurPrey.mass * massToPooRatio;
+						CurPrey.mass = 0;
+					}
+				}
+			}
+		} else{
+			// Nothing specific in stomach, just decrease stomachCurrent
+			if (stomachCurrent >= digestDamage) {
+				bowelsCurrent += digestDamage * massToPooRatio;
+				stomachCurrent -= digestDamage;
+			} else {
+				bowelsCurrent += stomachCurrent * massToPooRatio;
+				stomachCurrent = 0;
+			}
+		}
+		
+		
+		// This shouldn't happen, but just in case...
+		if (stomachCurrent < 0) {
+			stomachCurrent = 0;
+		}
+		
+		
+		var Globals:Object = Lib.current.getChildByName("GlobalVars");
+		if (Globals.allowScat) {
+			// Move fully digested prey into bowels
+			var i:Int = 0;
+			while (i < stomachContents.length) {
+				if (stomachContents[i].mass <= 0) {
+					bowelsContents.push(stomachContents[i]);
+					stomachContents.remove(stomachContents[i]);
+					i--;
+				}
+				i++;
 			}
 		} else {
-			emptyStomach = false;
-			if (this.stomachContents.length == 0) {
-				this.stomachCurrent -= time * this.digestDamage;
-			}
-			
-			this.fat += time * this.fatGain;
-			if (this.penis && (this.balls || this.hasPerk("inbal"))) {
-				this.cumCurrent += time * this.cumGain;
-				if ((this.cumCurrent > this.cumCap) && this.balls) {
-					message += "Your balls feel heavy and full.<br>";
-					this.cumStreachCountdown -= time;
-					if (this.cumStreachCountdown <= 0) {
-						this.cumStreachCountdown = this.stretchRateCum;
-						this.cumCap += this.stretchAmountCum;
-						message += "You breathe a sigh of relief as the tightness in your balls relaxes.<br>";
-					}
+			bowelsCurrent = 0;
+		}
+	}
+	
+	
+	
+	private function advanceOneTick():Void {
+		digestTick();
+		
+		// If we're still fed, run body processes
+		if (emptyStomachCountdown == end) {
+			if (balls || hasPerk("inbal"))
+				cumCurrent += cumGain;
+			if (lac && breasts)
+				breastCurrent += milkGain;
+			if (healthCurr++ >= healthMax)
+				healthCurr = healthMax;
+		}
+		
+		// See if anything stretched
+		checkStretching();
+		
+	}
+	
+	
+	public function passTime(minutes:Int):Void {
+		updateTime(minutes);
+		for (i in 0...minutes) {
+			advanceOneTick();
+		}
+	}
+	
+	
+	public function passTime_with_output(minutes:Int):String {
+		
+		var OldStomachCap:Float = stomachCap;
+		var OldCumCap:Float = cumCap;
+		var OldBreastCap:Float = breastCap;
+		
+		passTime(minutes);
+		
+		
+		// Put together filled/stretch message
+		var Message:String = "";
+		
+		
+		// -- Stomach
+		if (stomachCap > OldStomachCap) {
+			Message += "Your stomach groans softly as the pressure of your recent meals lessens slightly.<br>";
+		}
+		
+		// -- Cum
+		if (cumCurrent > OldCumCap){
+			if(this.balls) {
+				Message += "Your balls feel heavy and full.<br>";
+				if (cumCap > OldCumCap) {
+					Message += "You breathe a sigh of relief as the tightness in your balls relaxes.<br>";
 				}
-				if ((this.cumCurrent > this.cumCap) && !this.balls && this.hasPerk("inbal")) {
-					message += "You feel slightly bloated from all your cum filling you.<br>";
-					this.cumStreachCountdown -= time;
-					if (this.cumStreachCountdown <= 0) {
-						this.cumStreachCountdown = this.stretchRateCum;
-						this.cumCap += this.stretchAmountCum;
-						message += "You breathe a sigh of relief as the pressure of your cum lightens.<br>";
-					}
+			}
+			else {
+				Message += "You feel slightly bloated from all your cum filling you.<br>";
+				if (cumCap > OldCumCap) {
+					Message += "You breathe a sigh of relief as the pressure of your cum lightens.<br>";
 				}
 			}
-			if (this.lac && this.breasts) {
-				this.breastCurrent += time * this.milkGain;
-				if (this.breastCurrent > this.breastCap) {
-					message += "Your breasts feel tight and uncomfortably full.<br>";
-					this.milkStreachCountdown -= time;
-					if (this.milkStreachCountdown <= 0) {
-						this.milkStreachCountdown = this.stretchRateMilk;
-						this.breastCap += this.stretchAmountMilk;
-						message += "You sigh softly as the tightness in your breasts relaxes slightly.<br>";
-					}
-				}
+		}
+		
+		// -- Breasts
+		if(breastCurrent > OldBreastCap) {
+			Message += "Your breasts feel tight and uncomfortably full.<br>";
+			if(breastCap > OldBreastCap){
+				Message += "You sigh softly as the tightness in your breasts relaxes slightly.<br>";
 			}
-			
-			rndMsg = Math.round(Math.random() * digestMessages.length - 1);
-			
+		}
+		
+
+		// Get digest message
+		var DigestMessage:String = "";
+		if (stomachCurrent == 0 && emptyStomachCountdown < end/2) {
+			DigestMessage = "Your stomach growls hungrily.</p><br><p>";
+		} else {
+			var rndMsg:Int = Math.round(Math.random() * digestMessages.length - 1);
 			if (rndMsg > 0) 
-				digestMessage = digestMessages[rndMsg];
-			
-			while (time > 0) {
-				time -= 1;
-				var j:Int = 0;
-				while (j < stomachContents.length) {
-					if (this.stomachContents[j].healthCurr > 0) {
-						this.stomachContents[j].healthCurr -= this.digestDamage;
-					} else {
-						this.stomachCurrent -= this.digestDamage;
-						this.stomachContents[j].mass -= this.digestDamage;
-						
-						if (this.stomachContents[j].mass <= 0) {
-							digestedNPCs.push(this.stomachContents[j]);
-							if (globals.allowScat)
-								this.bowelsContents.push(this.stomachContents[j]);
-							stomachContents.remove(stomachContents[j]);
-							j--;
-						}
-					}
-					
-					j++;
+				DigestMessage = digestMessages[rndMsg];
+		}
+		
+		
+		// Check for expired prey
+		var RecentDeadPrey:Array<MyNPC> = pullDisgestedPrey();
+		for (CurPrey in RecentDeadPrey) {
+			DigestMessage += "You feel the " + CurPrey.name + "'s motions slow and finally stop.<br> ";
+		}
+		for(CurPrey in stomachContents) {
+			if (CurPrey.healthCurr > 0) {
+				if (CurPrey.likeVore) {
+					DigestMessage += "Muffled moans come from your belly as your prey uses their last moments to masturbate.<br>";
+				} else {
+					DigestMessage += "You feel the " + CurPrey.name + " struggling against your stomach.<br> ";
 				}
-			}
-			
-			for (i in 0...this.stomachContents.length) {
-				if (this.stomachContents[i].healthCurr == 0) {
-					digestMessage += "You feel your prey's motions slow and finally stop.<br> ";
-					this.stomachContents[i].healthCurr = -1;
-				}
-				if (this.stomachContents[i].healthCurr > 0) {
-					if (this.stomachContents[i].likeVore) {
-						digestMessage += "Muffled moans come from your belly as your prey uses their last moments to masturbate.<br>";
-					} else {
-						digestMessage += "You feel your prey struggling against your stomach.<br> ";
-					}
-				}
-			}
-			if (digestMessage.charAt( -1) == " ") {
-				digestMessage += "</p><br><p>";
 			}
 		}
 		
-		if (this.stomachCurrent < 0)
-			this.stomachCurrent = 0;
+		if (DigestMessage.charAt( -1) == " ") {
+			DigestMessage += "</p><br><p>";
+		}
 		
-		if (this.stomachCurrent >= this.stomachCap && this.stomachCurrent < this.stomachCap * 1.5) {
-			message += "Your stomach groans softly as the pressure of your recent meals lessens slightly.<br>";
-			this.stomachCap += this.stretchAmountStomach;
-			this.stomachStreachCountdown = this.stretchRateStomach;
-		}
-		if (this.stomachCurrent >= this.stomachCap * 1.5) {
-			return "#STOMACH";
-		}
-		if (!emptyStomach && isDig) {
-			this.emptyStomachCountdown = this.end;
-			if (this.healthCurr < this.healthMax) {
-				this.healthCurr += this.end;
-				if (this.healthCurr > this.healthMax) {
-					this.healthCurr = this.healthMax;
-				}
-			}
-		} 
-		if (emptyStomach && !isDig) {
-			digestMessage = "Your stomach cramps painfully and you feel yourself grow weaker.</p><br><p>";
-			this.healthCurr -= 1;
-			if (this.healthCurr == -1)
+		
+		// Starving checks
+		if(emptyStomachCountdown == 0){
+			DigestMessage = "Your stomach cramps painfully and you feel yourself grow weaker.</p><br><p>";
+			if (healthCurr < 0)
 				return this.die("starve");
 		}
+		if (this.healthCurr == 0) {
+			DigestMessage = "Your head spins and the world starts to go black. You need food. Now.</p><br><p>";
+		}
 		
+		if (DigestMessage == null) {
+			new AlertBox("digestMessage: null");
+			Message = "error";
+		}
+		
+		if (DigestMessage != "")
+			Message += DigestMessage;
+		
+		return Message;
+	}
+	
+	
+	
+	public function pullDisgestedPrey():Array<MyNPC> {
+		
+		// Return all prey who just died this tick (health == 0), then set
+		// 	their health to -1 so they don't get pulled again.
+		var RetArray:Array<MyNPC> = new Array();
+		
+		for (CurPrey in stomachContents) {
+			if (CurPrey.healthCurr == 0) {
+				RetArray.push(CurPrey);
+				CurPrey.healthCurr = -1;
+			}
+		}
+		
+		for (CurPrey in bowelsContents) {
+			if (CurPrey.healthCurr == 0) {
+				RetArray.push(CurPrey);
+				CurPrey.healthCurr = -1;
+			}
+		}
+		
+		return RetArray;
+	}
+	
+	
+	public function updateTime(minutes:Int):Void {
 		this.minute += minutes;
 		while (this.minute >= 60) {
 			this.minute -= 60;
@@ -440,21 +559,9 @@ class MyPlayerObject extends MyCharacter {
 			this.hour -= 24;
 			this.day += 1;
 		}
-		
-		if (this.healthCurr == 0) {
-			digestMessage = "Your head spins and the world starts to go black. You need food. Now.</p><br><p>";
-		}
-		
-		if (digestMessage == null) {
-			new AlertBox("digestMessage: null");
-			message = "error";
-		}
-		
-		if (digestMessage != "")
-			message += digestMessage;
-		
-		return message;
 	}
+	
+	
 	
 	public function newPlayer(species:MySpecies, breasts:Bool, vagina:Bool, penis:Bool, balls:Bool, str:Int, agi:Int, end:Int, int:Int, name:String, perks:Array<MyPerk>) {
 		newCharacter(species, breasts, vagina, penis, balls, str, agi, end, int, name, perks);

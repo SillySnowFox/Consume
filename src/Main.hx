@@ -53,7 +53,7 @@ class Main {
 	static var perksPicked:Array<Int>;
 	static var visiblePerks:Array<MyPerk>;
 	static var playerName:String;
-	static var finalPerks:Array<MyPerk> = new Array();
+	static var finalPerks:Array<MyPerk>;
 	static var quests:Array<Dynamic>;
 	static var newRoom:Bool = true;
 	static var doorFuckCount:Int;
@@ -92,12 +92,18 @@ class Main {
 		}
 		
 		//If the player signed up to be prey, we need to flip them right to the consumption scene rather then letting them move about.
-		
 		if (playerCharacter.quest[1].stage == 2) {
 			playerDied = "prey";
 			doDeath();
 			return;
 		}
+		
+		// If the player is overfull, skip to food coma
+		if (playerCharacter.stomachCurrent >= playerCharacter.stomachCap * 1.5) {
+			doFoodComa();
+			return;
+		}
+		
 		
 		if (newRoom) {
 			choice = e.currentTarget.btnID;
@@ -114,16 +120,16 @@ class Main {
 				switch (tempMsg) {
 				case "##STOMACH":
 					//Player's belly is too big to get through the door
-					message += "Your massive stomach bumps agianst the doorway, far too large to fit through. Looks like you're not going that way until you get a little smaller.<br>";
+					message += "Your massive stomach bumps against the doorway, far too large to fit through. Looks like you're not going that way until you get a little smaller.<br>";
 					timeGoesBy = 2;
 				case "##BREASTS":
 					//Player's boobs are too big to get through
-					message += "Your massive breasts bump agianst the doorway, far to huge to fit through. Looks like you're not going that way until you get a little smaller.<br>";
+					message += "Your massive breasts bump against the doorway, far to huge to fit through. Looks like you're not going that way until you get a little smaller.<br>";
 					timeGoesBy = 2;
 					playerCharacter.arousal += 5;
 				case "##BALLS":
 					//Player's balls are too big to get through
-					message += "Your massive balls bump agianst the doorway, far too huge to fit through. Looks like you're not going that way until you get a little smaller.<br>";
+					message += "Your massive balls bump against the doorway, far too huge to fit through. Looks like you're not going that way until you get a little smaller.<br>";
 					timeGoesBy = 2;
 					playerCharacter.arousal += 5;
 				case "##COCK":
@@ -145,7 +151,7 @@ class Main {
 				}
 			}
 			
-			timeMsg = playerCharacter.passTime(timeGoesBy);
+			timeMsg = playerCharacter.passTime_with_output(timeGoesBy);
 			if (timeMsg != "") {
 				if (timeMsg.charAt(0) == "#") {
 					timeReturnArray = timeMsg.split(":");
@@ -154,10 +160,6 @@ class Main {
 						//Player died
 						playerDied = timeReturnArray[1];
 						doDeath();
-						return;
-					case "#STOMACH":
-						//Player's stomach is overfilled, food coma time
-						doFoodComa();
 						return;
 					}
 				} else {
@@ -369,19 +371,14 @@ class Main {
 	
 	static function doFoodComa( ?e:MouseEvent ) {
 		var message:String = "";
-		var totalDigested:Float = 0; //How much the player digests during the food coma
-		var digested:Float = 0; //How much is digested during one tick
-		var tick:Int = 0; //How many minutes the player spends digesting before their stomach streaches
-		var fatGained:Int = 0;
-		var poopGained:Int = 0;
-		var cumGained:Float = 0;
-		var milkGained:Float = 0;
-		var stomachStreachTotal:Int = 0;
+		var TimeSpentInComa:Int = 0;
 		
-		var timeSpentInComa:Int = 0;
-		var comaCount:Int = 0;
-		var digestDamage:Int = 0;
-		var digestedNPCs:Array<MyNPC> = new Array();
+		var StartingFat:Int = playerCharacter.fat;
+		var StartingPoop:Float = playerCharacter.bowelsCurrent;
+		var StartingCum:Float = playerCharacter.cumCurrent;
+		var StartingMilk:Float = playerCharacter.breastCurrent;
+		var StartingStomachCap:Float = playerCharacter.stomachCap;
+		var StartingStomachFill:Float = playerCharacter.stomachCurrent;
 		
 		txtPublic.visible = false;
 		optionsBtn.visible = false;
@@ -393,86 +390,45 @@ class Main {
 		
 		clearAllEvents();
 		
-		/* How long does it take for the player's stomach to streach
-		 * how much mass does the player digest during that time
-		 * repeat until stomachCurrent <= stomachCap
-		 */
-		
 		while (playerCharacter.stomachCurrent > playerCharacter.stomachCap) {
-			comaCount++;
-			digested = playerCharacter.stomachCap;
-			totalDigested += digested;
-			
-			tick = Math.round(digested / playerCharacter.digestDamage);
-			
-			timeSpentInComa += tick;
-			
-			playerCharacter.stomachCurrent -= digested;
-			
-			if (playerCharacter.stomachStreachCountdown != playerCharacter.stretchRateStomach) {
-				stomachStreachTotal += playerCharacter.stretchAmountStomach;
-				playerCharacter.stomachStreachCountdown = playerCharacter.stretchRateStomach;
-			} else {
-				if (tick <= playerCharacter.stretchRateStomach) {
-					playerCharacter.stomachStreachCountdown -= tick;
-					tick = 0;
-				}
-			}
-			
-			while (tick > playerCharacter.stretchRateStomach) {
-				stomachStreachTotal += playerCharacter.stretchAmountStomach;
-				tick -= playerCharacter.stretchRateStomach;
-			}
-			
-			playerCharacter.stomachCap += stomachStreachTotal;
+			var TimeToDigest:Int = Math.ceil(playerCharacter.stomachCap / playerCharacter.digestDamage);
+			playerCharacter.passTime(TimeToDigest);
+			TimeSpentInComa += TimeToDigest;
 		}
+
+		message = "{Placeholder} You sleep for " + convertTime(TimeSpentInComa) + 
+				" and digested " + truncateDecimalPlaces(StartingStomachFill - playerCharacter.stomachCurrent) + " cubic inches of mass. " + 
+				"You gained " + truncateDecimalPlaces(playerCharacter.fat - StartingFat) + "lbs of fat, " + 
+				truncateDecimalPlaces(playerCharacter.bowelsCurrent - StartingPoop) + "lbs of poo, " + 
+				truncateDecimalPlaces(playerCharacter.cumCurrent - StartingCum) + "lbs of cum and " + 
+				truncateDecimalPlaces(playerCharacter.breastCurrent - StartingMilk) + "lbs of milk. " + 
+				"Your stomach stretched out by " + truncateDecimalPlaces(playerCharacter.stomachCap - StartingStomachCap) + ".<br>";
 		
-		fatGained = playerCharacter.fatGain * timeSpentInComa;
-		poopGained = Math.round(totalDigested / 3);
-		if (playerCharacter.balls || (playerCharacter.penis && playerCharacter.hasPerk("inbal")))
-			cumGained = playerCharacter.cumGain * timeSpentInComa;
-		if (playerCharacter.breasts && playerCharacter.lac)
-			milkGained = playerCharacter.milkGain * timeSpentInComa;
 		
-		playerCharacter.healthCurr = playerCharacter.healthMax;
-		playerCharacter.fat += fatGained;
-		playerCharacter.bowelsCurrent += poopGained;
-		playerCharacter.cumCurrent += cumGained;
-		playerCharacter.breastCurrent += milkGained;
-		
-		//NPCs in the belly
-		for (i in 0...playerCharacter.stomachContents.length) {
-			digestDamage = timeSpentInComa * playerCharacter.digestDamage;
-			if (playerCharacter.stomachContents[i].healthCurr > 0) {
-				var npcHealth = playerCharacter.stomachContents[i].healthCurr;
-				
-				playerCharacter.stomachContents[i].healthCurr -= digestDamage;
-				digestDamage -= npcHealth;
-			}
-			if (digestDamage > 0) {
-				playerCharacter.stomachContents[i].mass -= digestDamage;
-			}
-			if (playerCharacter.stomachContents[i].mass <= 0) {
-				digestedNPCs.push(playerCharacter.stomachContents[i]);
-			}
+		// Check for prey messages
+		// -- Note: This pullDisgestedPrey needs to be here even if messages aren't written- otherwise
+		//		the dead prey will show up in the player's next action after this.
+		var ExpiredPrey:Array<MyNPC> = playerCharacter.pullDisgestedPrey();
+		for (CurPrey in ExpiredPrey) {
+			//message += "The " + CurPrey.name + " you ate has stopped moving.";
 		}
-		
-		for (i in 0...digestedNPCs.length) {
-			if (globals.allowScat)
-				playerCharacter.bowelsContents.push(digestedNPCs[i]);
-			playerCharacter.stomachContents.remove(digestedNPCs[i]);
-		}
-		
-		message = "{Placeholder} You sleep for " + convertTime(timeSpentInComa) + " and digested " + totalDigested + " cubic inches of mass. You gained " + fatGained + "lbs of fat, " + poopGained + "lbs of poo, " + cumGained + "lbs of cum and " + milkGained + "lbs of milk. Your stomach streached out by " + stomachStreachTotal;
-		
-		
-		
+
 		outputText(message, "Food Coma");
 		updateHUD();
-		
 		btns[11].setButton("Next", null, 0);
 		btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
 	}
+	
+	
+	
+	static function truncateDecimalPlaces(InVal:Float):String {
+		// Round to 2 decimal places
+		InVal *= 100;
+		InVal = Math.ffloor(InVal);
+		InVal /= 100;
+		return "" + InVal;
+	}
+	
 	
 	static function doDeath( ?e:MouseEvent ) {
 		var message:String = "";
@@ -815,7 +771,13 @@ class Main {
 					poopScene += "The remains of a " + playerCharacter.bowelsContents[0].name;
 					
 					for (i in 1...playerCharacter.bowelsContents.length) {
-						poopScene += ", a " + playerCharacter.bowelsContents[i].name;
+						if (i == playerCharacter.bowelsContents.length - 1) {
+							poopScene += " and a ";
+						} else {
+							poopScene += ", a ";
+						}
+						
+						poopScene += playerCharacter.bowelsContents[i].name;
 					}
 					
 					poopScene += " slide from you and fill the bowl.</p>";
@@ -982,7 +944,7 @@ class Main {
 					if (playerCharacter.stomachContents[i].healthCurr > 0) {
 						message += "alive";
 						if (playerCharacter.stomachContents[i].likeVore) {
-							message += " and masterbating";
+							message += " and masturbating";
 						}
 					} else {
 						message += "dead";
@@ -1004,7 +966,7 @@ class Main {
 					if (playerCharacter.ballContents[i].healthCurr > 0) {
 						message += "alive";
 						if (playerCharacter.ballContents[i].likeVore) {
-							message += " and masterbating";
+							message += " and masturbating";
 						}
 					} else {
 						message += "dead";
@@ -1090,7 +1052,7 @@ class Main {
 		
 		playerCharacter.money += payment;
 		
-		playerCharacter.passTime(workTime * 60);
+		playerCharacter.passTime_with_output(workTime * 60);
 		
 		updateHUD();
 		
@@ -1402,14 +1364,14 @@ class Main {
 			
 			doorFuckCount = playerCharacter.end;
 			
-			if (playerCharacter.cumStreachCountdown == -1)
-				playerCharacter.cumStreachCountdown = playerCharacter.stretchRateCum;
-			if (playerCharacter.milkStreachCountdown == -1)
-				playerCharacter.milkStreachCountdown = playerCharacter.stretchRateMilk;
-			if (playerCharacter.bowelsStreachCountdown == -1)
-				playerCharacter.bowelsStreachCountdown = playerCharacter.stretchRateBowels;
-			if (playerCharacter.stomachStreachCountdown == -1)
-				playerCharacter.stomachStreachCountdown = playerCharacter.stretchRateStomach;
+			if (playerCharacter.cumStretchCountdown == -1)
+				playerCharacter.cumStretchCountdown = playerCharacter.stretchRateCum;
+			if (playerCharacter.milkStretchCountdown == -1)
+				playerCharacter.milkStretchCountdown = playerCharacter.stretchRateMilk;
+			if (playerCharacter.bowelsStretchCountdown == -1)
+				playerCharacter.bowelsStretchCountdown = playerCharacter.stretchRateBowels;
+			if (playerCharacter.stomachStretchCountdown == -1)
+				playerCharacter.stomachStretchCountdown = playerCharacter.stretchRateStomach;
 			
 			if (playerCharacter.quest.length != quests.length) {
 				for (i in playerCharacter.quest.length...quests.length) {
@@ -1420,7 +1382,6 @@ class Main {
 			
 			if (playerCharacter.sphincter == null && playerCharacter.species != null)
 				playerCharacter.sphincter = playerCharacter.species.sphincter;
-			
 			
 			updateHUD();
 			outputText("Game loaded from slot " + clicked, "Load Game");
@@ -1920,6 +1881,7 @@ class Main {
 				btns[2].addEventListener(MouseEvent.CLICK, newGame);
 			case 6:
 				//Create new player object
+				finalPerks = new Array();
 				for (i in 0...perksPicked.length) {
 					finalPerks.push(visiblePerks[perksPicked[i]]);
 				}
@@ -3454,7 +3416,7 @@ class Main {
 			btns[i].removeEventListener(MouseEvent.CLICK, playerStats);
 			btns[i].removeEventListener(MouseEvent.CLICK, statUpgrade);
 
-			btns[i].removeEventListener(MouseEvent.CLICK, doMasterbate);
+			btns[i].removeEventListener(MouseEvent.CLICK, doMasturbate);
 
 			btns[i].removeEventListener(MouseEvent.CLICK, eatNPC);
 			btns[i].removeEventListener(MouseEvent.CLICK, freeMoney);

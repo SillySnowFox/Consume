@@ -57,18 +57,18 @@ class PlayerCharacter {
 	public var hipSize:Float = 0; // size around hips, in inches
 	public var buttSize:Float = 0; // size of butt, in inches, beyond hipSize
 	
-	public var streach:Float = 0; // how much the player streaches when overfull
+	public var stretch:Float = 0; // how much the player stretches when overfull
 	public var stomachCap:Float = 0; // capacity of stomach, in cubic inches
 	public var stomachCurrent:Float = 0; // current fullness, in cubic inches
 	public var stomachContents:Array<Dynamic> = new Array(); // Current contants of player's stomach
-	public var stomachStreachRate:Float = 0; // # of minutes until the player's stomach streaches
-	public var stomachStreachTimer:Float = 0; // # of minutes remaining until the player's stomach streaches
+	public var stomachStretchRate:Float = 0; // # of minutes until the player's stomach stretches
+	public var stomachStretchTimer:Float = 0; // # of minutes remaining until the player's stomach stretches
 	public var bowelsCap:Float = 0; // capacity of bowels, in cubic inches
 	public var bowelsCurrent:Float = 0; 	// current bowel fullness, in cubic inches.
 											// Ignored if allowScat is false
 	public var bowelsContents:Array<Dynamic> = new Array(); //Current contents of player's bowels
-	public var bowelsStreachRate:Float = 0; // # of minutes until the player's gut streaches
-	public var bowelsStreachTimer: Float = 0; // # of minutes left until the player's gut streaches
+	public var bowelsStretchRate:Float = 0; // # of minutes until the player's gut stretches
+	public var bowelsStretchTimer: Float = 0; // # of minutes left until the player's gut stretches
 	public var healthCurr:Float = 0;
 	public var healthMax:Float = 0;
 	public var str:Int = 0;
@@ -93,8 +93,8 @@ class PlayerCharacter {
 	public var balls:Bool = false;
 	
 	public var breastSize:Float = 0; // cup size, in inches beyond chestSize
-	public var breastStreachRate:Float = 0;
-	public var breastStreachTimer:Float = 0;
+	public var breastStretchRate:Float = 0;
+	public var breastStretchTimer:Float = 0;
 	public var lac:Bool = false; // lactation
 	public var breastCap:Float = 0; // milk capacity, if lactating, in gallons
 	public var breastCurrent:Float = 0; // current milk fullness, in gallons
@@ -104,8 +104,8 @@ class PlayerCharacter {
 	public var ballSize:Float = 0; // testicle diamitar, in inches (of one)
 	public var cumCap:Float = 0; // ball cum capacity, in ounces
 	public var cumCurrent:Float = 0; // in ounces
-	public var cumStreachRate:Float = 0;
-	public var cumStreachTimer:Float = 0;
+	public var cumStretchRate:Float = 0;
+	public var cumStretchTimer:Float = 0;
 
 	// Digestion stuff
 	public var digRate:Float = 0; // cubic inches digested per hour, decreases stomachCurrent
