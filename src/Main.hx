@@ -419,17 +419,6 @@ class Main {
 		btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
 	}
 	
-	
-	
-	static function truncateDecimalPlaces(InVal:Float):String {
-		// Round to 2 decimal places
-		InVal *= 100;
-		InVal = Math.ffloor(InVal);
-		InVal /= 100;
-		return "" + InVal;
-	}
-	
-	
 	static function doDeath( ?e:MouseEvent ) {
 		var message:String = "";
 		var title:String = "You Died";
@@ -835,6 +824,8 @@ class Main {
 		
 		clearAllEvents();
 		
+		newRoom = false;
+		
 		if (Type.typeof(clicked) == ValueType.TInt) {
 			switch (clicked) {
 			case 0:
@@ -855,12 +846,70 @@ class Main {
 		} else {
 			split = clicked.split(":");
 			action = split[0];
-			value = split[1];
+			value = Std.parseInt(split[1]);
 			
 			switch (action) {
 			case "call":
 				switch (value) {
 				case 0: //Pizza
+					//First make sure the player hasn't been eating all of the pizza place's drivers. They do run out you know
+					if (playerCharacter.deliveryDriversEaten >= 51 && playerCharacter.deliveryDriversEaten < 100) {
+						// the pizza place has told the player no already
+						message = "You call up the pizza place, but before you can order the girl on the other end says, in a rather annoyed voice, &quot;Look, we already told you we're not deilvering to you anymore. Stop calling.&quot; And then she hangs up.";
+						
+						playerCharacter.deliveryDriversEaten++; // becuase I know players will keep calling.
+						
+						btns[11].setButton("Hang up");
+						btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+						return;
+					}
+					if (playerCharacter.deliveryDriversEaten == 50) {
+						// The player has eaten too many of thier delivery drivers, the pizza place won't deliver anymore.
+						message = "You call up the pizza place, but before you can order the girl on the other end says, &quot;The owner has told me to tell you that we won't be delivering any more to your address. Too many of our drivers haven't come back.&quot; She then hangs up.";
+						
+						playerCharacter.deliveryDriversEaten++; // add one more so the pizza place will remember they've told the player off already
+						
+						btns[11].setButton("Hang up");
+						btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+						return;
+					}
+					if (playerCharacter.deliveryDriversEaten >= 200) {
+						// Now they're trolling me
+						message = "Look, they're not going to bring you anymore pizza.";
+						
+						btns[11].setButton("Okay");
+						btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+						return;
+					}
+					if (playerCharacter.deliveryDriversEaten >= 100) {
+						//Now the player is just trolling.
+						message = "You dial the pizza place, it rings several times then clicks and the line goes dead. Seems they don't even want to talk to you now.";
+						
+						playerCharacter.deliveryDriversEaten++;
+						
+						btns[11].setButton("Hang up");
+						btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+						return;
+					}
+					
+					message = "You call up the pizza place, the person on the other end asks what you'd like;</p><br><li>Small: $5</li><li>Medium: $10</li><li>Large: $15</li><li>XLarge: $20</li><li>Fatass Special: $40</li>";
+					
+					//Do this after the player orders, so there isn't a stray NPC object floating around if they choose to hang up with out ordering
+					//globals.npcObject = new MyNPC();
+					
+					btns[0].setButton("Small", null, "order|0");
+					btns[0].addEventListener(MouseEvent.CLICK, doPizza);
+					btns[1].setButton("Medium", null, "order|1");
+					btns[1].addEventListener(MouseEvent.CLICK, doPizza);
+					btns[2].setButton("Large", null, "order|2");
+					btns[2].addEventListener(MouseEvent.CLICK, doPizza);
+					btns[3].setButton("XLarge", null, "order|3");
+					btns[3].addEventListener(MouseEvent.CLICK, doPizza);
+					btns[4].setButton("Fatass", null, "order|4");
+					btns[4].addEventListener(MouseEvent.CLICK, doPizza);
+					
+					btns[11].setButton("Nothing");
+					btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
 					
 				case 1: //Hookers
 					
@@ -871,6 +920,106 @@ class Main {
 		}
 		
 		outputText(message, "Phone");
+	}
+	
+	static function doPizza( e:MouseEvent ) {
+		var clicked:String = e.currentTarget.btnID;
+		var action:String = "";
+		var pizzaSize:Int = -1;
+		var split:Array<String> = new Array();
+		var pizzaCost:Float = 0;
+		var pizzaCostDeliv:Float = 0;
+		var pizzaMass:Int = 0;
+		var message:String = "";
+		
+		clearAllEvents();
+		newRoom = false;
+		
+		split = clicked.split("|");
+		action = split[0];
+		pizzaSize = Std.parseInt(split[1]);
+		pizzaCostDeliv = Std.parseFloat(split[2]);
+		
+		switch (action) {
+		case "order":
+			globals.npcObject = new MyNPC();
+			globals.npcObject.randomNPC(species, playerCharacter, playerCharacter.pointsSpent);
+			
+			switch (pizzaSize) {
+			case 0:
+				pizzaCost = 5;
+				pizzaMass = 5;
+			case 1:
+				pizzaCost = 10;
+				pizzaMass = 10;
+			case 2:
+				pizzaCost = 15;
+				pizzaMass = 20;
+			case 3:
+				pizzaCost = 20;
+				pizzaMass = 40;
+			case 4:
+				pizzaCost = 40;
+				pizzaMass = 80;
+			default:
+				new AlertBox("Bad pizzaSize: " + pizzaSize);
+			}
+			
+			pizzaCost += (pizzaCost * .02); //Delivery charge
+			
+			pizzaCostDeliv = Std.parseFloat(truncateDecimalPlaces(pizzaCost));
+			
+			message = "About 30 minutes later there's a knock at your door. When you open it, you find a [NPCNAME] wearing the dark gray uniform of the pizza place. [SUBJ] checks the receipt, &quot;That'll be $" + pizzaCostDeliv + "&quot;";
+			
+			btns[0].setButton("No Tip", "Pay, but don't tip.", "notip|" + pizzaMass + "|" + pizzaCostDeliv);
+			btns[0].addEventListener(MouseEvent.CLICK, doPizza);
+			btns[1].setButton("Tip", "Pay and include a tip.", "tip|" + pizzaMass + "|" + pizzaCostDeliv);
+			btns[1].addEventListener(MouseEvent.CLICK, doPizza);
+			btns[2].setButton("Eat", "Gotta love the modern world, fresh food delivered to your door. And they even bring pizza!", "eat|" + pizzaMass + "|" + pizzaCostDeliv);
+			btns[2].addEventListener(MouseEvent.CLICK, doPizza);
+			
+			btns[3].setButton("Fuck", "Invite the driver in for a slice and a fuck.", "fuck|" + pizzaMass + "|" + pizzaCostDeliv);
+			btns[3].disableButton();
+			//btns[3].addEventListener(MouseEvent.CLICK, doPizza);
+			btns[4].setButton("Fuck and eat", "Invite the driver in and feed them the pizza. Then enjoy your pizza.", "fuckeat|" + pizzaMass + "|" + pizzaCostDeliv);
+			btns[4].disableButton();
+			//btns[4].addEventListener(MouseEvent.CLICK, doPizza);
+		case "notip":
+			//Pay but don't tip the driver
+			
+			pizzaMass = pizzaSize; //For readability
+			
+			//Money check
+			if (playerCharacter.money >= pizzaCostDeliv) {
+				message = "You hand the [NPCNAME] $" + pizzaCostDeliv + ". [SUBJC] looks at the money and gives you an indignant look, then turns and walks off without another word, leaving you with a steaming hot pizza. You go back into your apartment and set about devouring the pizza. You make short work of it, belly full of food and burp happily.";
+				playerCharacter.money -= pizzaCostDeliv;
+				playerCharacter.stomachCurrent += pizzaMass;
+				
+				//it shouldn't happen, but just in case we end up with a string of repeading decimals again...
+				playerCharacter.money = Std.parseFloat(truncateDecimalPlaces(playerCharacter.money));
+				
+				updateHUD();
+				
+				btns[11].setButton("Next");
+				btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			}
+		case "tip":
+			//Pay and tip the driver
+			
+		case "eat":
+			//Eat the pizza and the driver
+			
+		case "fuck":
+			//Screw the driver, eat the pizza
+			
+		case "fuckeat":
+			//screw the driver, eat the pizza and the driver
+			
+		default:
+			new AlertBox("Bad order action: " + action);
+		}
+		
+		outputText(message, "Pizza Delivery");
 	}
 	
 	static function doDescription( e:MouseEvent ) {
@@ -1404,6 +1553,8 @@ class Main {
 		var message:String = "";
 		var clicked:Dynamic = e.currentTarget.btnID;
 		
+		var saveResult:String = "";
+		
 		clearAllEvents();
 		
 		if (clicked == 0) {
@@ -1516,11 +1667,17 @@ class Main {
 			
 			var saving:AlertBox = new AlertBox("Saving, please wait", false);
 			
-			saveDataObject.flush();
+			saveResult = saveDataObject.flush(); //Something here is throwing an error, however FlashDevelop is fighting with me again about starting the debugger so I can't see anuything useful
 			
 			saving.remove();
 			
-			outputText("Game saved to slot " + clicked, "Save Game");
+			//The goal here is to display a message if the user has prevented flash from saving data locally, I think this code will work but I can't test it due to the issue with FlashDevelop's debugger
+			
+			if (saveResult == SharedObjectFlushStatus.FLUSHED || saveResult == SharedObjectFlushStatus.PENDING) {
+				outputText("Game saved to slot " + clicked, "Save Game");
+			} else {
+				outputText("Failed to save game. Is flash allowed to store data locally?", "Save Game");
+			}
 			
 			btns[11].setButton("Next");
 			btns[11].addEventListener(MouseEvent.CLICK, optionsScreen);
@@ -2260,6 +2417,7 @@ class Main {
 		credits.push("Ice cream shop content contributed by forum member Foxlets.");
 		credits.push("Scat and gym anal sex scenes contributed by forum member Victor Styche.");
 		credits.push("Gym female oral sex scenes contributed by forum member BeardyKomodo.");
+		credits.push("Bug fixes and code improvements by GitHub member s-r-g-i.");
 		
 		//oneLineBackers.push("pelle"); //Dropped to $1 Feb
 		oneLineBackers.push("Writer"); //Paid Feb #10
@@ -2316,6 +2474,7 @@ class Main {
 		//rndNumer = 26;
 		message = welcomeMessage[rndNumer];
 		
+		//Date specific messages
 		if (month == 7 && day == 8) // my birthday!
 			message = "Happy birthday Kyra!";
 		
@@ -2390,6 +2549,16 @@ class Main {
 	 * Non-cickable functions *
 	 *                        *
 	\**************************/
+	
+	static function truncateDecimalPlaces(InVal:Float):String {
+		//Thanks for this by the way, I couldn't figure out how to get it to work in HaXe since the ActionScript function doesn't work -- Kyra
+		
+		// Round to 2 decimal places
+		InVal *= 100;
+		InVal = Math.ffloor(InVal);
+		InVal /= 100;
+		return "" + InVal;
+	}
 	
 	static function rollDie( numDie:Int ):Int {
 		var rndNum:Int;
@@ -2643,7 +2812,7 @@ class Main {
 		txtStomach.htmlText = "<body><font size = '" + globals.textSize + "'><p>Fullness: " + Math.round(playerCharacter.stomachCurrent) + "/" + Math.round(playerCharacter.stomachCap) + "</p></font></body>";
 		txtWeight.htmlText = "<body><font size = '" + globals.textSize + "'><p>Weight: " + Math.round(playerCharacter.weight) + "lbs</p></font></body>";
 		txtFat.htmlText = "<body><font size = '" + globals.textSize + "'><p>Fatness: " + playerCharacter.fat + "</p></font></body>";
-		txtMoney.htmlText = "<body><font size = '" + globals.textSize + "'><p>$" + playerCharacter.money + ".00</p></font></body>";
+		txtMoney.htmlText = "<body><font size = '" + globals.textSize + "'><p>$" + playerCharacter.money + "</p></font></body>";
 		txtStr.htmlText = "<body><font size = '" + globals.textSize + "'><p>Strength: " + playerCharacter.str + "</p></font></body>";
 		txtAgi.htmlText = "<body><font size = '" + globals.textSize + "'><p>Agility: " + playerCharacter.agi + "</p></font></body>";
 		txtEnd.htmlText = "<body><font size = '" + globals.textSize + "'><p>Endurance: " + playerCharacter.end + "</p></font></body>";
@@ -3245,6 +3414,7 @@ class Main {
 		
 		
 		
+		
 		/* Conversation flags;
 		 * 0 - Normal
 		 * 1 - Quest
@@ -3402,6 +3572,7 @@ class Main {
 			btns[i].removeEventListener(MouseEvent.CLICK, doShop);
 			btns[i].removeEventListener(MouseEvent.CLICK, doWork);
 			btns[i].removeEventListener(MouseEvent.CLICK, doDeath);
+			btns[i].removeEventListener(MouseEvent.CLICK, doPizza);
 			
 		}
 			

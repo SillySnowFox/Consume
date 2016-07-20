@@ -4,7 +4,7 @@ import flash.utils.Object;
 import haxe.xml.Check.Attrib;
 
 class MyPlayerObject extends MyCharacter {
-	public var money:Int;
+	public var money:Float;
 	
 	public var numEaten:Int;
 	
@@ -30,8 +30,8 @@ class MyPlayerObject extends MyCharacter {
 	public var stomachStretchCountdown:Int = -1;
 	public var bowelsStretchCountdown:Int = -1;
 
-	
 	public var unlockedPhoneNumbers:Array<Bool>;
+	public var deliveryDriversEaten:Int;
 	
 	//Level Up
 	public var pointsSpent:Int;

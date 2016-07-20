@@ -5,6 +5,8 @@ import flash.utils.Object;
 class GlobalVars extends Sprite {
 
 	//The name of the save data file stored on the player's system. Flash will append '.sol' to the file when it saves.
+	//Not allowing flash to store data locally will prevent saves from being created, check if there's a way to check on that and display an error to the user
+	//Saving while in Privite Browsing will cause this file to be deleted when the user closes the window. There's nothing we can do about that.
 	public var gameSaveName:String = "Consume";
 	
 	//The following values are saved
@@ -30,7 +32,7 @@ class GlobalVars extends Sprite {
 	public var lastRoom:Int = -1;
 	public var prevKey:String = "";
 	
-	//Arrays of data, rooms, exits, npcs and items
+	//Arrays of data, rooms, exits, npcs and items, populated with a call to main.inilitize
 	public var welcomeMessage:Array<String> = new Array();
 	public var perks:Array<MyPerk>;
 	public var rooms:Array<Dynamic>;
@@ -42,10 +44,10 @@ class GlobalVars extends Sprite {
 	
 	public var shopLists:Array<Dynamic>;
 	
-	//The current NPC the player is interacting with. Not in use. Use roomNPC instead
+	//The current NPC the player is interacting with
 	public var npcObject:Object;
 	
-	//The player object, only for other objects to use
+	//The player object, use the global player object reference instead.
 	public var playerCharacter:MyPlayerObject;
 	
 	public function new() {
@@ -68,7 +70,8 @@ class GlobalVars extends Sprite {
 		welcomeMessage.push("Hidden chess moves: move two male pawns to the same square to cause all bishops on the table to throw a tantrum and leave.");
 		welcomeMessage.push("When you have eliminated the possible, whatever remains, no matter how improbable, must be the truth."); //Sherlock Holems
 		welcomeMessage.push("Cats were once worshiped as gods. They have not forgotten this.");
-		welcomeMessage.push("I thought what I'd do was, I'd pretend I was one of those deaf-mutes."); //Ghost in the Shell
+		welcomeMessage.push("I thought what I'd do was, I'd pretend I was one of those deaf-mutes.");
+		welcomeMessage.push("Or should I?");//Ghost in the Shell
 		welcomeMessage.push("Is it Thursday yet?");
 		welcomeMessage.push("How do you want to do this?"); //Critical Role
 		welcomeMessage.push("A man chooses. A slave obeys");
@@ -81,6 +84,11 @@ class GlobalVars extends Sprite {
 		welcomeMessage.push("01010100 01101000 01100101 01110010 01100101 00100000 01110111 01101001 01101100 01101100 00100000 01100010 01100101 00100000 01100001 00100000 01110011 01100101 01100011 01110010 01100101 01110100 00100000 01101000 01100101 01110010 01100101 00100000 01110011 01101111 01101111 01101110"); //There will be a secret here soon
 		welcomeMessage.push("Kyra's favroite flavor is strawberry.");
 		welcomeMessage.push("Now with updates!");
+		//This says; "Are you still translating these?"
+		welcomeMessage.push("01000001 01110010 01100101 00100000 01111001 01101111 01110101 00100000 01110011 01110100 01101001 01101100 01101100 00100000 01110100 01110010 01100001 01101110 01110011 01101100 01100001 01110100 01101001 01101110 01100111 00100000 01110100 01101000 01100101 01110011 01100101 00111111");
+		welcomeMessage.push("Walk down the right back alley... and you could find anything."); //Sin City
+		welcomeMessage.push("Even the smallest person can change the course of the future."); //The Lord of the Rings: The Fellowship of the Ring
+		welcomeMessage.push("The accumulated filth of all their sex and murder will foam up about their waists and all the whores and politicians will look up and shout 'Save us!'... And I'll look down and whisper 'no.'"); //Watchmen
 		
 	}
 	
