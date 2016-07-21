@@ -910,7 +910,6 @@ class Main {
 					
 					btns[11].setButton("Nothing");
 					btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
-					
 				case 1: //Hookers
 					
 				default:
@@ -942,8 +941,8 @@ class Main {
 		
 		switch (action) {
 		case "order":
-			globals.npcObject = new MyNPC();
-			globals.npcObject.randomNPC(species, playerCharacter, playerCharacter.pointsSpent);
+			roomNPC = new MyNPC();
+			roomNPC.randomNPC(species, playerCharacter, playerCharacter.pointsSpent);
 			
 			switch (pizzaSize) {
 			case 0:
@@ -969,7 +968,7 @@ class Main {
 			
 			pizzaCostDeliv = Std.parseFloat(truncateDecimalPlaces(pizzaCost));
 			
-			message = "About 30 minutes later there's a knock at your door. When you open it, you find a [NPCNAME] wearing the dark gray uniform of the pizza place. [SUBJ] checks the receipt, &quot;That'll be $" + pizzaCostDeliv + "&quot;";
+			message = "About 30 minutes later there's a knock at your door. When you open it, you find a [NPCNAME] wearing the dark gray uniform of the pizza place. [SUBJC] checks the receipt, &quot;That'll be $" + pizzaCostDeliv + "&quot;";
 			
 			btns[0].setButton("No Tip", "Pay, but don't tip.", "notip|" + pizzaMass + "|" + pizzaCostDeliv);
 			btns[0].addEventListener(MouseEvent.CLICK, doPizza);
@@ -986,7 +985,6 @@ class Main {
 			//btns[4].addEventListener(MouseEvent.CLICK, doPizza);
 		case "notip":
 			//Pay but don't tip the driver
-			
 			pizzaMass = pizzaSize; //For readability
 			
 			//Money check
@@ -1005,15 +1003,66 @@ class Main {
 			}
 		case "tip":
 			//Pay and tip the driver
+			pizzaMass = pizzaSize; //For readability
 			
+			pizzaCostDeliv += pizzaCostDeliv * .3;
+			
+			pizzaCostDeliv = Std.parseFloat(truncateDecimalPlaces(pizzaCostDeliv));
+			
+			if (playerCharacter.money < pizzaCostDeliv) {
+				// player doesn't have enough money to pay for the pizza. Only two options left
+				message = "You check your wallet to pay for the pizza, but you find you don't have enough money! Now what?";
+				
+				btns[0].setButton("Eat", "No money, but so hungry. Only one solution...", "eat|" + pizzaMass + "|" + pizzaCostDeliv);
+				btns[0].addEventListener(MouseEvent.CLICK, doPizza);
+				btns[2].setButton("Can't Pay", "Sorry, I can't pay.", "nopay|" + pizzaMass + "|0");
+				btns[2].addEventListener(MouseEvent.CLICK, doPizza);
+			} else {
+				// player has money, time to buy the pizza!
+				message = "You hand the [NPCNAME] $" + pizzaCostDeliv + ". [SUBJC] glances at the money and tucks it away, giving you a smile and saying &quot;Enjoy your pizza.&quot; Before turning and walking away down the hall.";
+				
+				playerCharacter.money -= pizzaCostDeliv;
+				playerCharacter.stomachCurrent += pizzaMass;
+				
+				playerCharacter.money = Std.parseFloat(truncateDecimalPlaces(playerCharacter.money));
+				
+				updateHUD();
+				
+				btns[11].setButton("Next");
+				btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			}
 		case "eat":
 			//Eat the pizza and the driver
+			pizzaMass = pizzaSize; //For readability
 			
+			var eatScenes:Array<String> = new Array();
+			
+			eatScenes.push("You smile and make as if to take the pizza from the [NPCNAME] but instead you grab [OBJ] and pull [OBJ] into your apartment, shutting the door after. [SUBJC] protests and struggles but you don't let [OBJ] go. Once inside with the door closed, you open your jaws and lunge forward, grabbing the [NPCNAME] around the waist and getting [POSA] head and shoulders down your throat before [SUBJ] has a chance to cry out. You push [OBJ] further down, swallowing eagerly as your belly stretches with your new meal. It isn't long before you're down to the last swallow, the delivery driver vanishing into your gut. You rub your stomach happily, then remember the pizza. Might as well have desert too.");
+			eatScenes.push("While getting your money together you hear the [NPCNAME]'s stomach rumble and an idea hits you. You ask if [SUBJ] would like to share your pizza. After some awkward fidgeting [SUBJ] nods and follows you into your apartment. The first few slices [SUBJ] eats without issues, after that it takes some cajoling to get [OBJ] to eat more. Soon only one slice remains, the stuffed [NPCNAME] refuses so you insist. Finally you give up, having the slice yourself.</p><br><p>You finish it off and eye the stuffed [NPCNAME] sitting in a stupor on your couch. Stomach stretched out over [POSA] lap. Your stomach rumbles, reminding you why you ordered a pizza in the first place. Starting at the stuffed [NPCNAME]'s feet you make it to [POSA] hips before [SUBJ] notices. However it isn't until you made it over [POSA] stomach that [SUBJ] is finally aware of what's happening and begins to thrash and struggle. By then it's too late and even [POSA] flailing arms don't stop you from swallowing the last of [OBJ]. Your stomach stretching out even fuller.");
+			
+			var rndMessage = Math.round(Math.random() * (eatScenes.length - 1));
+			
+			if (rndMessage > eatScenes.length - 1) {
+				message = "Missing scene, case #" + rndMessage;
+			} else {
+				message = eatScenes[rndMessage];
+			}
+			
+			playerCharacter.deliveryDriversEaten++;
+			
+			playerCharacter.stomachCurrent += pizzaMass + roomNPC.mass;
+			playerCharacter.stomachContents.push(roomNPC);
+			playerCharacter.numEaten++;
+			
+			btns[11].setButton("Next");
+			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
 		case "fuck":
 			//Screw the driver, eat the pizza
+			pizzaMass = pizzaSize; //For readability
 			
 		case "fuckeat":
 			//screw the driver, eat the pizza and the driver
+			pizzaMass = pizzaSize; //For readability
 			
 		default:
 			new AlertBox("Bad order action: " + action);
@@ -2687,6 +2736,7 @@ class Main {
 		var toBtm:Object = Lib.current.getChildByName("D2B");
 		
 		var formattedText:String = "<body>";
+		var parsedText:String = "";
 		
 		var text:TextField = new TextField();
 		
@@ -2698,9 +2748,10 @@ class Main {
 			formattedText += "<br>";
 		}
 		
-		//this is where the text will get run through the parse system, for now skip it
+		//parse in-text variables
+		parsedText = textParse(body);
 		
-		formattedText += "<font size = '" + textSize + "'><p>" + body + "</p></font></body>";
+		formattedText += "<font size = '" + textSize + "'><p>" + parsedText + "</p></font></body>";
 		
 		txtOutput.htmlText = formattedText;
 		
@@ -2757,7 +2808,7 @@ class Main {
 				extraToHold = " ";
 			}
 			if (subArray[0].substr(0, 1) == "[") {
-				stringToTest = subArray[0].substr(0);
+				stringToTest = subArray[0].substr(1);
 				
 				switch (stringToTest) {
 				case "PCNAME":
@@ -2778,18 +2829,33 @@ class Main {
 					parsedText += playerCharacter.hands;
 				case "PCFEETS":
 					parsedText += playerCharacter.feet;
+				case "NPCNAME":
+					parsedText += roomNPC.name;
+				case "SUBJC":
+					parsedText += roomNPC.gender("sub");
+				case "SUBJ":
+					parsedText += roomNPC.gender("sub").toLowerCase();
+				case "OBJC":
+					parsedText += roomNPC.gender("obj");
+				case "OBJ":
+					parsedText += roomNPC.gender("obj").toLowerCase();
+				case "POSC":
+					parsedText += roomNPC.gender("pos");
+				case "POS":
+					parsedText += roomNPC.gender("pos").toLowerCase();
 					
-					
-					
-					
+				default:
+					parsedText += "{Unknown variable: " + stringToTest + "}";
 				}
 				
 				parsedText += extraToHold;
+			} else {
+				parsedText += arrayToParse[i] + " ";
 			}
 		}
 		
 		
-		return "AAAAAAAAAAAAAAAAAAAAH";
+		return parsedText;
 	}
 	
 	static function updateHUD() {
@@ -3251,7 +3317,7 @@ class Main {
 		
 		perks.push(["taur",		"Taur",				"You have the elongated lower half of a taur.",						"TAUR WEIGHT:+100 STOMACHCAP:+100 IMMOBILE:-100", true]);
 		
-		perks.push(["dbg1",		"DEBUG1 -- Huge",	"For debugging only; hugeness",										"BREASTSIZE:+24 BELLYSIZE:+65000 BALLSIZE:+24 PENISLENGTH:+50 PENISWIDTH:+45",	false]);
+		perks.push(["dbg1",		"DEBUG1 -- Huge",	"For debugging only; hugeness -- Warning may cause problems, enable at own risk", "BREASTSIZE:+24 BELLYSIZE:+65000 BALLSIZE:+24 PENISLENGTH:+50 PENISWIDTH:+45",	true]);
 		
 		
 		
