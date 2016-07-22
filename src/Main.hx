@@ -894,9 +894,6 @@ class Main {
 					
 					message = "You call up the pizza place, the person on the other end asks what you'd like;</p><br><li>Small: $5</li><li>Medium: $10</li><li>Large: $15</li><li>XLarge: $20</li><li>Fatass Special: $40</li>";
 					
-					//Do this after the player orders, so there isn't a stray NPC object floating around if they choose to hang up with out ordering
-					//globals.npcObject = new MyNPC();
-					
 					btns[0].setButton("Small", null, "order|0");
 					btns[0].addEventListener(MouseEvent.CLICK, doPizza);
 					btns[1].setButton("Medium", null, "order|1");
@@ -1059,6 +1056,32 @@ class Main {
 		case "fuck":
 			//Screw the driver, eat the pizza
 			pizzaMass = pizzaSize; //For readability
+			
+			message = "You smile as the [NPCNAME] hands you your pizza. You set it aside and smile, then ask if [SUBJ] would like to join you for a slice. [SUBJC] wavers for a moment then comes to a decision and steps into your apartment. You open the box and the two of you dig into the pizza. As your stomach fills your arousal grows and you notice [SUBJ] is eyeing you the same as you are [OBJ].";
+			
+			//Need to finish writing these eventually
+			switch (playerCharacter.gender("gender")) {
+			case "Female":
+				// player is female
+			case "Male":
+				//player is male
+			case "Herm":
+				//player is herm
+			case "Dickgirl":
+				//player is dickgirl
+			case "Doll":
+				//player is doll
+			case "Cuntboy":
+				//player is cuntboy
+			case "Neuter":
+				//player is neuter
+				
+			}
+			
+			message += "</p><br>{Scene missing}";
+			
+			btns[11].changeName("Next");
+			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
 			
 		case "fuckeat":
 			//screw the driver, eat the pizza and the driver
