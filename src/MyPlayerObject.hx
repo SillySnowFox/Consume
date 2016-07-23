@@ -271,14 +271,10 @@ class MyPlayerObject extends MyCharacter {
 		return message;
 	}
 	
-	
-	
 	public function fitHeight(doorSize:Int):String {
 		
 		return "";
 	}
-	
-	
 	
 	private function checkStretching():Void {
 		
@@ -311,8 +307,6 @@ class MyPlayerObject extends MyCharacter {
 			}
 		}
 	}
-	
-	
 	
 	private function digestTick():Void {
 		
@@ -399,8 +393,6 @@ class MyPlayerObject extends MyCharacter {
 		}
 	}
 	
-	
-	
 	private function advanceOneTick():Void {
 		digestTick();
 		
@@ -419,14 +411,12 @@ class MyPlayerObject extends MyCharacter {
 		
 	}
 	
-	
 	public function passTime(minutes:Int):Void {
 		updateTime(minutes);
 		for (i in 0...minutes) {
 			advanceOneTick();
 		}
 	}
-	
 	
 	public function passTime_with_output(minutes:Int):String {
 		
@@ -523,8 +513,6 @@ class MyPlayerObject extends MyCharacter {
 		return Message;
 	}
 	
-	
-	
 	public function pullDisgestedPrey():Array<MyNPC> {
 		
 		// Return all prey who just died this tick (health == 0), then set
@@ -548,7 +536,6 @@ class MyPlayerObject extends MyCharacter {
 		return RetArray;
 	}
 	
-	
 	public function updateTime(minutes:Int):Void {
 		this.minute += minutes;
 		while (this.minute >= 60) {
@@ -560,8 +547,6 @@ class MyPlayerObject extends MyCharacter {
 			this.day += 1;
 		}
 	}
-	
-	
 	
 	public function newPlayer(species:MySpecies, breasts:Bool, vagina:Bool, penis:Bool, balls:Bool, str:Int, agi:Int, end:Int, int:Int, name:String, perks:Array<MyPerk>) {
 		newCharacter(species, breasts, vagina, penis, balls, str, agi, end, int, name, perks);
@@ -603,7 +588,6 @@ class MyPlayerObject extends MyCharacter {
 		
 		unlockedPhoneNumbers = [true, true];
 	}
-	
 	
 	public function new() {
 		super();

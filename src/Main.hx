@@ -297,7 +297,10 @@ class Main {
 				btns[11 - i].addEventListener(MouseEvent.CLICK, doPhone);
 			case 8:
 				//Workout
-				
+				message += "Workout equipment lines the walls.<br>";
+				btns[11 - i].setButton("Workout", null, "choose");
+				btns[11 - i].disableButton();
+				//btns[11 - i].addEventListener(MouseEvent.CLICK, doGym);
 			case 9:
 				//Gold room
 			case 10:
@@ -368,6 +371,44 @@ class Main {
 		
 	}
 	
+	
+	
+	static function doGym( e:MouseEvent ) {
+		var clicked:Dynamic = e.currentTarget.btnID;
+		var message:String = "";
+		var rndNPCChance:Int = -1;
+		
+		if (optionsBtn.visible) {
+			//First time into this function, make a few adjustments
+			newRoom = false;
+			optionsBtn.visible = false;
+			charDesc.visible = false;
+			if (globals.debugMode)
+				txtDebug.removeEventListener(MouseEvent.CLICK, debugMenu);
+		}
+		
+		clearAllEvents();
+		
+		//Check the player is a gold memeber, they don't need to pay, or if they've already paid for the day
+		if (playerCharacter.quest[2].stage >= 3 || playerCharacter.lastDayTrained == playerCharacter.day) {
+			playerCharacter.lastDayTrained = playerCharacter.day; //There are other things that use this value, need to keep it accurate
+		} else {
+			//Player needs to pay, make sure they have the money to do so
+			message = "You head towards the bank of machines, swiping your card as you do so.</p><br>";
+			
+			if (playerCharacter.money >= globals.gymFee) {
+				message += "The card reader beeps and your account is lighter by $" + globals.gymFee + "</p><br>";
+				playerCharacter.money -= globals.gymFee;
+				playerCharacter.lastDayTrained = playerCharacter.day;
+			} else {
+				//Not enough money
+				message += "The card reader buzzes and displays a message, apparently you're a little short on funds today. You need $" + globals.gymFee + ".</p>br>";
+				clicked = "leave";
+			}
+		}
+		
+		
+	}
 	
 	static function doFoodComa( ?e:MouseEvent ) {
 		var message:String = "";
@@ -1063,24 +1104,32 @@ class Main {
 			switch (playerCharacter.gender("gender")) {
 			case "Female":
 				// player is female
+				message += "</p><br>{Scene missing}";
 			case "Male":
 				//player is male
+				message += "</p><br>{Scene missing}";
 			case "Herm":
 				//player is herm
+				message += "</p><br>{Scene missing}";
 			case "Dickgirl":
 				//player is dickgirl
+				message += "</p><br>{Scene missing}";
 			case "Doll":
 				//player is doll
+				message += "</p><br>{Scene missing}";
 			case "Cuntboy":
 				//player is cuntboy
+				message += "</p><br>{Scene missing}";
 			case "Neuter":
 				//player is neuter
-				
+				message += "</p><br>{Scene missing}";
+			default:
+				new AlertBox("ERROR: Bad player gender string: " + playerCharacter.gender("gender"));
 			}
 			
-			message += "</p><br>{Scene missing}";
 			
-			btns[11].changeName("Next");
+			
+			btns[11].setButton("Next");
 			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
 			
 		case "fuckeat":
@@ -3662,13 +3711,13 @@ class Main {
 			btns[i].removeEventListener(MouseEvent.CLICK, doWork);
 			btns[i].removeEventListener(MouseEvent.CLICK, doDeath);
 			btns[i].removeEventListener(MouseEvent.CLICK, doPizza);
+			btns[i].removeEventListener(MouseEvent.CLICK, doGym);
 			
 		}
 			
 			/*
 			btns[i].removeEventListener(MouseEvent.CLICK, buyDrink);
 			btns[i].removeEventListener(MouseEvent.CLICK, doSell);
-			btns[i].removeEventListener(MouseEvent.CLICK, doGym);
 			btns[i].removeEventListener(MouseEvent.CLICK, giveItem);
 			btns[i].removeEventListener(MouseEvent.CLICK, combatHeal);
 			btns[i].removeEventListener(MouseEvent.CLICK, doCombat);
@@ -3684,7 +3733,6 @@ class Main {
 			btns[i].removeEventListener(MouseEvent.CLICK, playerInv);
 			btns[i].removeEventListener(MouseEvent.CLICK, itemFunction);
 			
-			btns[i].removeEventListener(MouseEvent.CLICK, orderPizza);
 			btns[i].removeEventListener(MouseEvent.CLICK, gymTalk);
 			btns[i].removeEventListener(MouseEvent.CLICK, quickTime);
 			btns[i].removeEventListener(MouseEvent.CLICK, goldGymRoom);

@@ -44,7 +44,10 @@ class GlobalVars extends Sprite {
 	
 	public var shopLists:Array<Dynamic>;
 	
-	//The current NPC the player is interacting with
+	public var gymFee:Int = 20; //Cost to use the gym, futureproofing
+	
+	//Leftovers from old code. Planning to remove in 0.40, check for code that's using them
+	//The current NPC the player is interacting with, use roomNPC instead
 	public var npcObject:Object;
 	
 	//The player object, use the global player object reference instead.
