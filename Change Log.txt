@@ -1,6 +1,24 @@
 Visit the forums and say Hi! http://dancingfoxstudios.com/phpBB3/
 Support the game on Pateron! https://www.patreon.com/SillySnowFox?ty=h
 
+v0.40
+
+New
+
+ *
+
+Changes
+
+ * Changed some messages so they will only display with debug mode on
+ *
+
+Bugfixes
+
+ * Slowed digestion rates for all species
+ * Fixed food coma timing
+ *
+ 
+ 
 v0.39
 
 New
