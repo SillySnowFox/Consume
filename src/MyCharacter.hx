@@ -61,7 +61,7 @@ class MyCharacter {
 	public var fatGain:Int; //fat gain rate
 	public var milkGain:Float; //milk gain rate
 	public var cumGain:Float; //cum gain rate
-	public var digestDamage:Int; //How much damage per tick (minute) the character's stomach does to consumed objects
+	public var digestDamage:Float; //How much damage per tick (minute) the character's stomach does to consumed objects
 	
 	//Streatching
 	public var stretchRateStomach:Int; //How many ticks (minutes) the character's stomach needs to be over capacity to stretch larger

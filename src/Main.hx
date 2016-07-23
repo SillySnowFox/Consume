@@ -431,20 +431,32 @@ class Main {
 		
 		clearAllEvents();
 		
-		while (playerCharacter.stomachCurrent > playerCharacter.stomachCap) {
-			var TimeToDigest:Int = Math.ceil(playerCharacter.stomachCap / playerCharacter.digestDamage);
-			playerCharacter.passTime(TimeToDigest);
-			TimeSpentInComa += TimeToDigest;
-		}
-
-		message = "{Placeholder} You sleep for " + convertTime(TimeSpentInComa) + 
-				" and digested " + truncateDecimalPlaces(StartingStomachFill - playerCharacter.stomachCurrent) + " cubic inches of mass. " + 
-				"You gained " + truncateDecimalPlaces(playerCharacter.fat - StartingFat) + "lbs of fat, " + 
-				truncateDecimalPlaces(playerCharacter.bowelsCurrent - StartingPoop) + "lbs of poo, " + 
-				truncateDecimalPlaces(playerCharacter.cumCurrent - StartingCum) + "lbs of cum and " + 
-				truncateDecimalPlaces(playerCharacter.breastCurrent - StartingMilk) + "lbs of milk. " + 
-				"Your stomach stretched out by " + truncateDecimalPlaces(playerCharacter.stomachCap - StartingStomachCap) + ".<br>";
+		/* So here's what's supposed to happen when a player goes into a food coma;
+		 * They pass out for an amount of time equal to the time it takes for them to digest
+		 * the food that has put them over stomachCap. So when the coma ends stomachCurrent
+		 * should be equal too or slightly less then stomachCap
+		 * 
+		 * The tricky part here is that stomach streching still happens
+		 */
 		
+		while (playerCharacter.stomachCurrent > playerCharacter.stomachCap) {
+			// So this should be all we need to do here with the changes to the digestion system
+			// The only issue is that Flash has an aubratray limit on the number of times a loop can exicute before it gets stopped.
+			playerCharacter.passTime(1);
+			TimeSpentInComa++;
+		}
+		
+		message = "{Food coma message}";
+		
+		if (globals.debugMode) {
+			message += "</p><br><p>{Placeholder} Sleep for " + convertTime(TimeSpentInComa) + 
+					" and digested " + truncateDecimalPlaces(StartingStomachFill - playerCharacter.stomachCurrent) + " cubic inches of mass. " + 
+					"You gained " + truncateDecimalPlaces(playerCharacter.fat - StartingFat) + "lbs of fat, " + 
+					truncateDecimalPlaces(playerCharacter.bowelsCurrent - StartingPoop) + "lbs of poo, " + 
+					truncateDecimalPlaces(playerCharacter.cumCurrent - StartingCum) + "lbs of cum and " + 
+					truncateDecimalPlaces(playerCharacter.breastCurrent - StartingMilk) + "lbs of milk. " + 
+					"Your stomach stretched out by " + truncateDecimalPlaces(playerCharacter.stomachCap - StartingStomachCap) + ".<br>";
+		}
 		
 		// Check for prey messages
 		// -- Note: This pullDisgestedPrey needs to be here even if messages aren't written- otherwise
@@ -3326,13 +3338,13 @@ class Main {
 		
 		//																																Height			Weight			Chest			Waist			Hips			Butt																													Gain
 		//allSpecies = [0 name,		1 skin,		2 tail,		3 tailDesc,		4 mouth,	5 legs,		6 arms,		7 hands,	8 feet,		9 min,	10 max,	11 min,	12 max,	13 min,	14 max, 15 min,	16 max,	17 min,	18 max, 19 min, 20 max, 21 breasts, 22 penisL,	23 penisW,	24 balls,	25 errect,	26 stomach, 27 bowels,	28 milk,	29 cum, 30 fat, 31 milk, 32 cum, 33 digestDamage,	34 stretchRateStomach,	35 stretchRateBowels,	36 stretchRateMilk, 37 stretchRateCum,	38 stretchAmountStomach,	39 stretchAmountBowels, 40 stretchAmountMilk,	41 stretchAmountCum,	42 sphincter
-		allSpecies[0] = ["Human",	"skin",		false,		"none",			"mouth",	"legs",		"arms",		"hands",	"feet",		63,		72,		90,		140,	24,		30,		22,		29,		22,		26, 	1,		2,		3,			4,			1,			.5,			2,			20,			10,			3,			1,		5,		.5,		 .1,	 1,					30,						20,						20,					15,					20,							10,						1,						.5,						"asshole"];
-		allSpecies[1] = ["Fox",		"fur",		true,		"large fluffy",	"muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	60,		69,		85,		100,	22,		26,		20,		25,		20,		24,		1,		3,		8,			3,			1.5,		.5,			3,			15,			15,			2.5,		2,		4,		.3,		 .4,	 2,					15,						10,						15,					20,					15,							15,						1.5,					2,						"tailhole"];
-		allSpecies[2] = ["Dragon",	"scales",	true,		"thick scally",	"maw",		"legs",		"arms",		"claws",	"feet",		78,		82,		150,	210,	30,		38,		28,		37,		30,		34,		1,		4,		10,			6,			2,			1,			3.5,		30,			20,			4,			4,		6,		1.5,	 .7,	 5,					40,						10,						5,					5,					40,							5,						10,						2,						"tailhole"];
-		allSpecies[3] = ["Wolf",	"fur",		true,		"thin fluffy",	"muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	63,		72,		100,	150,	26,		32,		26,		31,		28,		28,		1,		2,		4,			5,			2.5,		1,			2,			25,			10,			5,			1,		3,		1,		 2,		 10,				30,						20,						10,					10,					30,							10,						10,						5,						"tailhole"];
-		allSpecies[4] = ["Bovine",	"skin",		true,		"thin whiplike", "muzzle",	"legs",		"arms",		"handhoofs", "foothoofs", 65,	80,		160,	210,	34,		36,		30,		31,		30,		46,		1,		6,		9,			8,			3,			2.5,		4,			40,			30,			10,			6,		10,		3,		 .2,	 10,				20,						15,						15,					10,					50,							20,						20,						10,						"tailhole"];
-		allSpecies[5] = ["Tiger",	"fur",		true,		"long fluffy",	"muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	64,		73,		95,		100,	22,		31,		18,		31,		29,		32,		1,		5,		2,			4,			2,			1,			2,			25,			20,			3,			3,		2,		1,		 .3,	 6,					40,						30,						30,					15,					5,							10,						5,						2,						"tailhole"];
-		allSpecies[6] = ["Rat",		"fur",		true,		"thin hairless", "muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	55,		59,		70,		85,		20,		25,		18,		24,		20,		25,		1,		2,		1,			2,			1,			.25,		1.5,		50,			10,			3,			2,		2,		1,		 2,		 5,					70,						40,						30,					10,					20,							20,						10,						5,						"tailhole"];
+		allSpecies[0] = ["Human",	"skin",		false,		"none",			"mouth",	"legs",		"arms",		"hands",	"feet",		63,		72,		90,		140,	24,		30,		22,		29,		22,		26, 	1,		2,		3,			4,			1,			.5,			2,			20,			10,			3,			1,		5,		.5,		 .1,	 .1,				30,						20,						20,					15,					20,							10,						1,						.5,						"asshole"];
+		allSpecies[1] = ["Fox",		"fur",		true,		"large fluffy",	"muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	60,		69,		85,		100,	22,		26,		20,		25,		20,		24,		1,		3,		8,			3,			1.5,		.5,			3,			15,			15,			2.5,		2,		4,		.3,		 .4,	 .2,				15,						10,						15,					20,					15,							15,						1.5,					2,						"tailhole"];
+		allSpecies[2] = ["Dragon",	"scales",	true,		"thick scally",	"maw",		"legs",		"arms",		"claws",	"feet",		78,		82,		150,	210,	30,		38,		28,		37,		30,		34,		1,		4,		10,			6,			2,			1,			3.5,		30,			20,			4,			4,		6,		1.5,	 .7,	 .5,				40,						10,						5,					5,					40,							5,						10,						2,						"tailhole"];
+		allSpecies[3] = ["Wolf",	"fur",		true,		"thin fluffy",	"muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	63,		72,		100,	150,	26,		32,		26,		31,		28,		28,		1,		2,		4,			5,			2.5,		1,			2,			25,			10,			5,			1,		3,		1,		 2,		 1,					30,						20,						10,					10,					30,							10,						10,						5,						"tailhole"];
+		allSpecies[4] = ["Bovine",	"skin",		true,		"thin whiplike", "muzzle",	"legs",		"arms",		"handhoofs", "foothoofs", 65,	80,		160,	210,	34,		36,		30,		31,		30,		46,		1,		6,		9,			8,			3,			2.5,		4,			40,			30,			10,			6,		10,		3,		 .2,	 1,					20,						15,						15,					10,					50,							20,						20,						10,						"tailhole"];
+		allSpecies[5] = ["Tiger",	"fur",		true,		"long fluffy",	"muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	64,		73,		95,		100,	22,		31,		18,		31,		29,		32,		1,		5,		2,			4,			2,			1,			2,			25,			20,			3,			3,		2,		1,		 .3,	 .6,				40,						30,						30,					15,					5,							10,						5,						2,						"tailhole"];
+		allSpecies[6] = ["Rat",		"fur",		true,		"thin hairless", "muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	55,		59,		70,		85,		20,		25,		18,		24,		20,		25,		1,		2,		1,			2,			1,			.25,		1.5,		50,			10,			3,			2,		2,		1,		 2,		 .5,				70,						40,						30,					10,					20,							20,						10,						5,						"tailhole"];
 		
 		
 		
