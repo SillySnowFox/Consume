@@ -14,7 +14,7 @@ Changes
 
 Bugfixes
 
- * Slowed digestion rates for all species
+ * Slowed digestion rates for all species, existing saves will reduce digestion rates by 1/10th
  * Fixed food coma timing
  *
  
