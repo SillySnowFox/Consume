@@ -468,7 +468,7 @@ class Main {
 		case "workout":
 			//Doing the workouts
 			
-			if (playerCharacter.fat == 0) {
+			if (playerCharacter.fat == 0 && !globals.debugMode) {
 				outputText("You find yourself too tired to make use of any machines right now.", "Working Out");
 				btns[11].setButton("Leave", "Head to the showers and get cleaned up", "leave");
 				btns[11].addEventListener(MouseEvent.CLICK, doGym);
@@ -523,6 +523,40 @@ class Main {
 				message += "You tackle the path with glee and even do an extra set on each machine. You made amazing progress today.</p><br>";
 			
 			//Random NPC encounter
+			rndNPCChance = Math.round(Math.random() * 10);
+			
+			roomNPC = new MyNPC();
+			roomNPC.name = "NULL";
+			
+			switch (rndNPCChance) {
+			case 0:
+				//Gold member
+				message += "<p>A tall, massively muscular human sits at the machine next to you.</p><br>";
+				
+				roomNPC.newNPC(nonPlayerCharacters[7]); //Erik, need to check on this.
+			//Random Named NPCs
+			case 1:
+				//Kyra
+				
+			case 2:
+				// Empty Slot
+			case 3:
+				// Empty Slot
+			case 4:
+				// Empty Slot
+			case 5:
+				// Randomly generated NPC
+				roomNPC.randomNPC(species, playerCharacter);
+				
+				message += "<p>A [NPCNAME] sits at the machine next to you.</p><br>";
+			default:
+				// No NPC appears
+			}
+			
+			if (roomNPC.name != "NULL") {
+				btns[9].setButton("Talk", "Talk to the " + roomNPC.species.name.toLowerCase(), 0);
+				btns[9].addEventListener(MouseEvent.CLICK, doTalk);
+			}
 			
 			//Time pass, this might need to get tweaked for the gym
 			playerCharacter.passTime(workoutTime);
