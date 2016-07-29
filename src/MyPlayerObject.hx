@@ -40,6 +40,7 @@ class MyPlayerObject extends MyCharacter {
 	public var endNeededToUp:Int;
 	public var intNeededToUp:Int;
 	
+	private var starvationCheck:Bool; //True if we haven't checked yet this action, false if we have
 	private var massToPooRatio:Float = 0.33;	// $design: Arbitrary amount of poo from each unit of mass
 	private static var digestMessages:Array<String> = 
 		[
@@ -322,11 +323,17 @@ class MyPlayerObject extends MyCharacter {
 				}
 				emptyStomachCountdown = end;
 			} else {
-				if(emptyStomachCountdown > 0) {
-					emptyStomachCountdown--;
-				}else {
-					healthCurr--;
+				//Time-To-Starve countdown. This should be in actions, not ticks, giving the player a chance to get somewhere with food, rather then just passing out between rooms
+				if (starvationCheck) {
+					//Check once per action if the player is starving
+					starvationCheck = false;
+					if(emptyStomachCountdown > 0) {
+						emptyStomachCountdown--;
+					} else {
+						healthCurr--;
+					}
 				}
+				
 			}
 			return;
 		}
@@ -413,6 +420,7 @@ class MyPlayerObject extends MyCharacter {
 	
 	public function passTime(minutes:Int):Void {
 		updateTime(minutes);
+		starvationCheck = true;
 		for (i in 0...minutes) {
 			advanceOneTick();
 		}

@@ -1,6 +1,23 @@
 Visit the forums and say Hi! http://dancingfoxstudios.com/phpBB3/
 Support the game on Pateron! https://www.patreon.com/SillySnowFox?ty=h
 
+v0.40
+
+New
+
+ * Text parsing system can now display messages based on generated NPC's bits.
+ * Gym is now fully implamented, random NPC intereactions are still being worked on.
+
+Changes
+
+ * Changed some messages so they will only display with debug mode on
+
+Bugfixes
+
+ * Slowed digestion rates for all species, existing saves will reduce digestion rates by 1/10th
+ * Fixed food coma timing
+ 
+ 
 v0.39
 
 New

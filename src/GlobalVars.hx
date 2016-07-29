@@ -18,11 +18,11 @@ class GlobalVars extends Sprite {
 	public var currentRoomID:Int;
 	
 	//This value tells the game if the save data is going to be missing values so we don't look for them. Saves with a buldNumer lower then 11 are not compatable with this game engine at all.
-	public var buildNumber:Int = 13;
+	public var buildNumber:Int = 14;
 	public var minBuildNumber:Int = 12; //If the saved build number is below this number, don't allow players to load that file. Otherwise the game will attempt to update the file
 	
 	//Changes the number that displays in the corner of the play field
-	public var buildVersion:String = "0.39";
+	public var buildVersion:String = "0.40";
 	
 	//Global vars holding temp data
 	public var backTo:String;
@@ -69,6 +69,7 @@ class GlobalVars extends Sprite {
 		welcomeMessage.push("Tip your driver.");
 		welcomeMessage.push("Now with our own forum! Come say hi!");
 		welcomeMessage.push("Sufficiently advanced my ass."); //Dresden Files
+		welcomeMessage.push("It's like riding a zombie T-Rex through downtown Chicago on Halloween night while polka music plays in the background.");
 		welcomeMessage.push("Rule 9: Always carry a knife."); //NCIS
 		welcomeMessage.push("Hidden chess moves: move two male pawns to the same square to cause all bishops on the table to throw a tantrum and leave.");
 		welcomeMessage.push("When you have eliminated the possible, whatever remains, no matter how improbable, must be the truth."); //Sherlock Holems

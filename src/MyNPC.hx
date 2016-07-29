@@ -305,6 +305,19 @@ class MyNPC extends MyCharacter {
 		} else {
 			this.likeVore = false;
 		}
+		
+		//Basic NPC dialog.
+		talk = new Array();
+		if (globals.currentRoomID == 21) { //Checking for the gym, this will let NPCs have other conversation options in other rooms.
+			if (playerObject.quest[2].stage >= 3) {
+				talk[0] = ["The [NPCNAME] smiles as you move over to [OBJ]. &quot;Hi, sorry, were you going to use this machine?&quot;", ["talk"], [["Flirt", "Sure why not?", 1], ["Hungry", "See if the [NPCNAME] is willing to go to lunch with you.", 2], ["Leave", null, -1]]];
+			} else {
+				talk[0] = ["The [NPCNAME] smiles as you move over to [OBJ]. &quot;Hi, sorry, were you going to use this machine?&quot;", ["talk"], [["Flirt", "Sure why not?", 1], ["Hungry", "See if the [NPCNAME] is willing to go to lunch with you.", 2], ["Gold Member?", "Ask if the [NPCNAME] is a gold member.", 3], ["Leave", null, -1]]];
+			}
+			talk[1] = ["You spend some time flirting with the [NPCNAME] until [SUBJ] shyly asks if you would be interested in visiting the showers for a little, washing.", ["talk"], [["Sex", "Have sex with the [NPCNAME]", 4], ["Sex & Eat", "Fuck, then eat the [NPCNAME]", 5], ["No", null, -1]]];
+			//talk[2] = ["You ask the [NPCNAME] if [SUBJ]'d like to be lunch. [SUBJC] blinks a little, not really understanding your meaning until you grin hungerly and it clicks. [SUBJC] look around nervously then follow you to the bathroom. You lock the door behind the two of you, and look over the [NPCNAME] who smiles shyly.</p><br><p>You tell the [NPCNAME] to undress and [SUBJ] slowly removes [POS] clothes, blushing when"
+			
+		}
 	}
 	
 	public function new() {

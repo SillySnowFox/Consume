@@ -255,7 +255,8 @@ class Main {
 					message += roomNPC.name + " has something to sell.<br>";
 					
 					btns[9].setButton("Buy", "Take a look at the " + roomNPC.species.name + "'s stock", "gen:0");
-					btns[9].addEventListener(MouseEvent.CLICK, doShop);
+					btns[9].disableButton();
+					//btns[9].addEventListener(MouseEvent.CLICK, doShop);
 				case "rat":
 					//The rat's illegal shop
 					message += roomNPC.name + " has something to sell.<br>";
@@ -299,8 +300,7 @@ class Main {
 				//Workout
 				message += "Workout equipment lines the walls.<br>";
 				btns[11 - i].setButton("Workout", null, "choose");
-				btns[11 - i].disableButton();
-				//btns[11 - i].addEventListener(MouseEvent.CLICK, doGym);
+				btns[11 - i].addEventListener(MouseEvent.CLICK, doGym);
 			case 9:
 				//Gold room
 			case 10:
@@ -374,9 +374,33 @@ class Main {
 	
 	
 	static function doGym( e:MouseEvent ) {
-		var clicked:Dynamic = e.currentTarget.btnID;
+		var clicked:String = e.currentTarget.btnID;
+		var splitArray:Array<String> = new Array();
+		var action:String = "";
+		var choice:String = "";
 		var message:String = "";
 		var rndNPCChance:Int = -1;
+		var strWorkoutMessages:Array<String> = new Array();
+		var agiWorkoutMessages:Array<String> = new Array();
+		var endWorkoutMessages:Array<String> = new Array();
+		var skillTrainSucc:Int = -1;
+		var workoutMessage:String = "";
+		var workoutTime:Int = 0;
+		
+		strWorkoutMessages = ["You decide to start at the beginning of the strength path and work your way to the end. The going is easy, with a light warm up at the beginning followed by some intense work focusing on your different muscle groups and finally ending with some easy cool downs.",
+			"You decide to mix things up a little this time. You start with the warm up exercises but then switch around the focused machines, getting the same workout but keeping it from being too repetitive. The cool downs at the end are welcome.",
+			"After doing your warmups you find someone else is using the first of the muscle group machines. So you move to the other end and work through them backwards, then return to do your cool downs."
+			];
+		
+		agiWorkoutMessages = ["The agility path seems to mostly consist of a number of stretches done on a mat and a few machines. You work your way down the chart, doing one after the other in the order they're listed.",
+			"The agility path seems to mostly consist of a number of stretches done on a mat and a few machines. You work your way up the chart, doing one after the other in the reverse order they're listed.",
+			"The agility path seems to mostly consist of a number of stretches done on a mat and a few machines. You try and work through the stretches randomly, but you soon loose track of which one you've done and which you haven't and give up, doing them in order."
+			];
+		
+		endWorkoutMessages = ["After doing your warmups you hit the track running round the outside of the gym. Coming back to do your cool downs after several laps.",
+			"Your warmups done you hop on one of the stationary bikes and set a program, riding hard until it tells you you've finished and move off to do your cooldowns.",
+			"You do your warmups quickly, then follow signs around the gym using machines from both the strength and agility paths that help you build your endurance up."
+			];
 		
 		if (optionsBtn.visible) {
 			//First time into this function, make a few adjustments
@@ -389,25 +413,170 @@ class Main {
 		
 		clearAllEvents();
 		
+		splitArray = clicked.split(":");
+		action = splitArray[0];
+		choice = splitArray[1];
+		
 		//Check the player is a gold memeber, they don't need to pay, or if they've already paid for the day
 		if (playerCharacter.quest[2].stage >= 3 || playerCharacter.lastDayTrained == playerCharacter.day) {
 			playerCharacter.lastDayTrained = playerCharacter.day; //There are other things that use this value, need to keep it accurate
 		} else {
 			//Player needs to pay, make sure they have the money to do so
-			message = "You head towards the bank of machines, swiping your card as you do so.</p><br>";
+			message = "You head towards the bank of machines, swiping your card as you do so.</p><br><p>";
 			
 			if (playerCharacter.money >= globals.gymFee) {
-				message += "The card reader beeps and your account is lighter by $" + globals.gymFee + "</p><br>";
+				message += "The card reader beeps and your account is lighter by $" + globals.gymFee + ".</p><br><p>";
 				playerCharacter.money -= globals.gymFee;
 				playerCharacter.lastDayTrained = playerCharacter.day;
 			} else {
 				//Not enough money
-				message += "The card reader buzzes and displays a message, apparently you're a little short on funds today. You need $" + globals.gymFee + ".</p>br>";
+				message += "The card reader buzzes and displays a message, apparently you're a little short on funds today. You need $" + globals.gymFee + ".</p><br>";
 				clicked = "leave";
 			}
 		}
 		
+		/* Training paths
+		 * Strength
+		 * Agility
+		 * Endurance
+		 */
 		
+		switch (action) {
+		case "choose":
+			//Inital landing point
+			message += "There are signs giving you several different options on ways to use the equipment in this room, from what you can tell there are three paths you can take, one for Strength, one for Agility and one for Endurance. Which do you wish to use first?</p><br><p>";
+			
+			btns[0].setButton("Strength", "Follow the signs marked for strength traning. Should take about an hour to finish.", "workout:str");
+			btns[0].addEventListener(MouseEvent.CLICK, doGym);
+			btns[1].setButton("Agility", "Follow the signs marked for agility traning. Should take about an hour to finish.", "workout:agi");
+			btns[1].addEventListener(MouseEvent.CLICK, doGym);
+			btns[2].setButton("Endurance", "Follow the signs marked for endurance traning. Should take about an hour and a half to finish.", "workout:end");
+			btns[2].addEventListener(MouseEvent.CLICK, doGym);
+			
+			btns[11].setButton("Leave", "Head to the showers and get cleaned up", "leave");
+			btns[11].addEventListener(MouseEvent.CLICK, doGym);
+		case "leave":
+			//Player is done with the machines
+			message += "You leave the workout area and move to the showers to wash your workout sweat off you.</p><br>";
+			
+			//To-Do: Add an NPC encounter event here.
+			
+			newRoom = true;
+			
+			btns[11].setButton("Leave", null, 25);
+			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+		case "workout":
+			//Doing the workouts
+			
+			if (playerCharacter.fat == 0 && !globals.debugMode) {
+				outputText("You find yourself too tired to make use of any machines right now.", "Working Out");
+				btns[11].setButton("Leave", "Head to the showers and get cleaned up", "leave");
+				btns[11].addEventListener(MouseEvent.CLICK, doGym);
+				return;
+			}
+			
+			btns[0].setButton("Strength", "Follow the signs marked for strength traning. Should take about an hour to finish.", "workout:str");
+			btns[0].addEventListener(MouseEvent.CLICK, doGym);
+			btns[1].setButton("Agility", "Follow the signs marked for agility traning. Should take about an hour to finish.", "workout:agi");
+			btns[1].addEventListener(MouseEvent.CLICK, doGym);
+			btns[2].setButton("Endurance", "Follow the signs marked for endurance traning. Should take about an hour and a half to finish.", "workout:end");
+			btns[2].addEventListener(MouseEvent.CLICK, doGym);
+			
+			btns[11].setButton("Leave", "Head to the showers and get cleaned up", "leave");
+			btns[11].addEventListener(MouseEvent.CLICK, doGym);
+			
+			switch (choice) {
+			case "str":
+				workoutMessage = strWorkoutMessages[Math.round(Math.random() * (strWorkoutMessages.length - 1))] + "</p><br><p>";
+				skillTrainSucc = rollDie(playerCharacter.str + 10);
+				advanceSkill(skillTrainSucc, "str");
+				workoutTime = 60;
+				
+				btns[0].setButton("Strength", "Follow the Strength path again.", "workout:str");
+			case "agi":
+				workoutMessage = agiWorkoutMessages[Math.round(Math.random() * (agiWorkoutMessages.length - 1))] + "</p><br><p>";
+				skillTrainSucc = rollDie(playerCharacter.agi + 10);
+				advanceSkill(skillTrainSucc, "agi");
+				workoutTime = 60;
+				
+				btns[1].setButton("Agility", "Follow the Agility path again.", "workout:agi");
+			case "end":
+				workoutMessage = endWorkoutMessages[Math.round(Math.random() * (endWorkoutMessages.length - 1))] + "</p><br><p>";
+				skillTrainSucc = rollDie(playerCharacter.end + 10);
+				advanceSkill(skillTrainSucc, "end");
+				workoutTime = 90;
+				
+				btns[2].setButton("Endurance", "Follow the Endurance path again.", "workout:end");
+			}
+			
+			message += workoutMessage;
+			
+			if (skillTrainSucc < 0)
+				message += "This message is a bug, please report the skillup roll failed.";
+			if (skillTrainSucc == 0)
+				message += "You do your best, but don't feel like you made any progress today.</p><br>";
+			if ((skillTrainSucc > 0) && (skillTrainSucc <= 10))
+				message += "You work out and build up a sweat, feeling like you made good progress.</p><br>";
+			if ((skillTrainSucc > 10) && (skillTrainSucc <= 20))
+				message += "You work out, feeling your muscles burn with the effort. You made great progress today.</p><br>";
+			if (skillTrainSucc > 20)
+				message += "You tackle the path with glee and even do an extra set on each machine. You made amazing progress today.</p><br>";
+			
+			//Random NPC encounter
+			rndNPCChance = Math.round(Math.random() * 10);
+			
+			roomNPC = new MyNPC();
+			roomNPC.name = "NULL";
+			
+			switch (rndNPCChance) {
+			case 0:
+				//Gold member
+				message += "<p>A tall, massively muscular human sits at the machine next to you.</p><br>";
+				
+				roomNPC.newNPC(nonPlayerCharacters[7]); //Erik, need to check on this.
+			//Random Named NPCs
+			case 1:
+				//Kyra
+				
+			case 2:
+				// Empty Slot
+			case 3:
+				// Empty Slot
+			case 4:
+				// Empty Slot
+			case 5:
+				// Randomly generated NPC
+				roomNPC.randomNPC(species, playerCharacter);
+				
+				message += "<p>A [NPCNAME] sits at the machine next to you.</p><br>";
+			default:
+				// No NPC appears
+			}
+			
+			if (roomNPC.name != "NULL") {
+				btns[9].setButton("Talk", "Talk to the " + roomNPC.species.name.toLowerCase(), 0);
+				btns[9].disableButton();
+				//btns[9].addEventListener(MouseEvent.CLICK, doTalk);
+			}
+			
+			//Time pass, this might need to get tweaked for the gym
+			playerCharacter.passTime(workoutTime);
+			
+			//Player fat burn, the more fat they have, the more should be burned off with each seasion.
+			if (playerCharacter.fat >= 10)
+				playerCharacter.fat -= Math.round(playerCharacter.fat * 0.9); //Aubatray number, might need some tweaking still. Also I can't spell. I am aware of this.
+			//This should also keep the fat level from going into the negitives.
+			if (playerCharacter.fat < 10)
+				playerCharacter.fat = 0;
+			
+			if (globals.debugMode) {
+				message += "<p>{Debug} Workout time: " + workoutTime + ", fat burn: " + Math.round(playerCharacter.fat * 0.9) + "</p>";
+			}
+		}
+		
+		
+		updateHUD();
+		outputText(message, "Working Out");
 	}
 	
 	static function doFoodComa( ?e:MouseEvent ) {
@@ -431,20 +600,32 @@ class Main {
 		
 		clearAllEvents();
 		
-		while (playerCharacter.stomachCurrent > playerCharacter.stomachCap) {
-			var TimeToDigest:Int = Math.ceil(playerCharacter.stomachCap / playerCharacter.digestDamage);
-			playerCharacter.passTime(TimeToDigest);
-			TimeSpentInComa += TimeToDigest;
-		}
-
-		message = "{Placeholder} You sleep for " + convertTime(TimeSpentInComa) + 
-				" and digested " + truncateDecimalPlaces(StartingStomachFill - playerCharacter.stomachCurrent) + " cubic inches of mass. " + 
-				"You gained " + truncateDecimalPlaces(playerCharacter.fat - StartingFat) + "lbs of fat, " + 
-				truncateDecimalPlaces(playerCharacter.bowelsCurrent - StartingPoop) + "lbs of poo, " + 
-				truncateDecimalPlaces(playerCharacter.cumCurrent - StartingCum) + "lbs of cum and " + 
-				truncateDecimalPlaces(playerCharacter.breastCurrent - StartingMilk) + "lbs of milk. " + 
-				"Your stomach stretched out by " + truncateDecimalPlaces(playerCharacter.stomachCap - StartingStomachCap) + ".<br>";
+		/* So here's what's supposed to happen when a player goes into a food coma;
+		 * They pass out for an amount of time equal to the time it takes for them to digest
+		 * the food that has put them over stomachCap. So when the coma ends stomachCurrent
+		 * should be equal too or slightly less then stomachCap
+		 * 
+		 * The tricky part here is that stomach streching still happens
+		 */
 		
+		while (playerCharacter.stomachCurrent > playerCharacter.stomachCap) {
+			// So this should be all we need to do here with the changes to the digestion system
+			// The only issue is that Flash has an aubratray limit on the number of times a loop can exicute before it gets stopped.
+			playerCharacter.passTime(1);
+			TimeSpentInComa++;
+		}
+		
+		message = "{Food coma message}";
+		
+		if (globals.debugMode) {
+			message += "</p><br><p>{Placeholder} Sleep for " + convertTime(TimeSpentInComa) + 
+					" and digested " + truncateDecimalPlaces(StartingStomachFill - playerCharacter.stomachCurrent) + " cubic inches of mass. " + 
+					"You gained " + truncateDecimalPlaces(playerCharacter.fat - StartingFat) + "lbs of fat, " + 
+					truncateDecimalPlaces(playerCharacter.bowelsCurrent - StartingPoop) + "lbs of poo, " + 
+					truncateDecimalPlaces(playerCharacter.cumCurrent - StartingCum) + "lbs of cum and " + 
+					truncateDecimalPlaces(playerCharacter.breastCurrent - StartingMilk) + "lbs of milk. " + 
+					"Your stomach stretched out by " + truncateDecimalPlaces(playerCharacter.stomachCap - StartingStomachCap) + ".<br>";
+		}
 		
 		// Check for prey messages
 		// -- Note: This pullDisgestedPrey needs to be here even if messages aren't written- otherwise
@@ -1075,8 +1256,8 @@ class Main {
 			
 			var eatScenes:Array<String> = new Array();
 			
-			eatScenes.push("You smile and make as if to take the pizza from the [NPCNAME] but instead you grab [OBJ] and pull [OBJ] into your apartment, shutting the door after. [SUBJC] protests and struggles but you don't let [OBJ] go. Once inside with the door closed, you open your jaws and lunge forward, grabbing the [NPCNAME] around the waist and getting [POSA] head and shoulders down your throat before [SUBJ] has a chance to cry out. You push [OBJ] further down, swallowing eagerly as your belly stretches with your new meal. It isn't long before you're down to the last swallow, the delivery driver vanishing into your gut. You rub your stomach happily, then remember the pizza. Might as well have desert too.");
-			eatScenes.push("While getting your money together you hear the [NPCNAME]'s stomach rumble and an idea hits you. You ask if [SUBJ] would like to share your pizza. After some awkward fidgeting [SUBJ] nods and follows you into your apartment. The first few slices [SUBJ] eats without issues, after that it takes some cajoling to get [OBJ] to eat more. Soon only one slice remains, the stuffed [NPCNAME] refuses so you insist. Finally you give up, having the slice yourself.</p><br><p>You finish it off and eye the stuffed [NPCNAME] sitting in a stupor on your couch. Stomach stretched out over [POSA] lap. Your stomach rumbles, reminding you why you ordered a pizza in the first place. Starting at the stuffed [NPCNAME]'s feet you make it to [POSA] hips before [SUBJ] notices. However it isn't until you made it over [POSA] stomach that [SUBJ] is finally aware of what's happening and begins to thrash and struggle. By then it's too late and even [POSA] flailing arms don't stop you from swallowing the last of [OBJ]. Your stomach stretching out even fuller.");
+			eatScenes.push("You smile and make as if to take the pizza from the [NPCNAME] but instead you grab [OBJ] and pull [OBJ] into your apartment, shutting the door after. [SUBJC] protests and struggles but you don't let [OBJ] go. Once inside with the door closed, you open your jaws and lunge forward, grabbing the [NPCNAME] around the waist and getting [POS] head and shoulders down your throat before [SUBJ] has a chance to cry out. You push [OBJ] further down, swallowing eagerly as your belly stretches with your new meal. It isn't long before you're down to the last swallow, the delivery driver vanishing into your gut. You rub your stomach happily, then remember the pizza. Might as well have desert too.");
+			eatScenes.push("While getting your money together you hear the [NPCNAME]'s stomach rumble and an idea hits you. You ask if [SUBJ] would like to share your pizza. After some awkward fidgeting [SUBJ] nods and follows you into your apartment. The first few slices [SUBJ] eats without issues, after that it takes some cajoling to get [OBJ] to eat more. Soon only one slice remains, the stuffed [NPCNAME] refuses so you insist. Finally you give up, having the slice yourself.</p><br><p>You finish it off and eye the stuffed [NPCNAME] sitting in a stupor on your couch. Stomach stretched out over [POS] lap. Your stomach rumbles, reminding you why you ordered a pizza in the first place. Starting at the stuffed [NPCNAME]'s feet you make it to [POS] hips before [SUBJ] notices. However it isn't until you made it over [POS] stomach that [SUBJ] is finally aware of what's happening and begins to thrash and struggle. By then it's too late and even [POS] flailing arms don't stop you from swallowing the last of [OBJ]. Your stomach stretching out even fuller.");
 			
 			var rndMessage = Math.round(Math.random() * (eatScenes.length - 1));
 			
@@ -1404,6 +1585,8 @@ class Main {
 			btns[1].addEventListener(MouseEvent.CLICK, debugMenu);
 			btns[2].setButton("Jump To", "Teleport around the map", 5);
 			btns[2].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[3].setButton("Logic Test", null, 7);
+			btns[3].addEventListener(MouseEvent.CLICK, debugMenu);
 			
 			btns[11].setButton("Back");
 			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
@@ -1486,6 +1669,23 @@ class Main {
 			
 			btns[0].setButton("Next", null, jumpTo);
 			btns[0].addEventListener(MouseEvent.CLICK, movePlayer);
+		case 7:
+			//text parsing system logic testing
+			roomNPC = new MyNPC();
+			roomNPC.randomNPC(species, playerCharacter);
+			
+			message = "Randomly generated NPC is [NPCGENDER].</p><br>";
+			message += "<p>What follows is a test of the logic parsing system.</p><br>";
+			message += "<p>This sentance should appear for everyone. ";
+			message += "[HasBreasts:This_sentance_should_appear_for_NPCs_with_breasts.] ";
+			message += "[HasVagina:This_sentance_should_appear_for_NPCs_with_a_vagina.] ";
+			message += "[HasPenis:This_sentance_should_appear_for_NPCs_with_a_penis.] ";
+			message += "[HasBalls:This_sentance_should_appear_for_NPCs_with_balls.] ";
+			
+			btns[0].setButton("Test Again", null, 7);
+			btns[0].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[11].setButton("Main", null, 0);
+			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
 		}
 		
 		outputText(message, "Debug Menu");
@@ -1527,9 +1727,14 @@ class Main {
 							save1Tip = "Load " + saveDataObject.data.player1.name;
 						} else {
 							//Out of date save data
+							//Automagically update the save files where possible.
 							if (saveDataObject.data.save1[0] == 12) { //Version 12 was missing unlockedPhoneNumbers
 								saveDataObject.data.player1.unlockedPhoneNumbers = [true, true];
 								saveDataObject.data.save1[0] = 13;
+							}
+							if (saveDataObject.data.save1[0] == 13) { //Version 13 had digestion rates too high
+								saveDataObject.data.player1.digestDamage = saveDataObject.data.player1.digestDamage / 10;
+								saveDataObject.data.save1[0] = 14;
 							}
 							save1Name = saveDataObject.data.player1.name + " -- Updated";
 							save1Tip = "Load " + saveDataObject.data.player1.name;
@@ -1551,6 +1756,10 @@ class Main {
 								saveDataObject.data.player2.unlockedPhoneNumbers = [true, true];
 								saveDataObject.data.save2[0] = 13;
 							}
+							if (saveDataObject.data.save2[0] == 13) { //Version 13 had digestion rates too high
+								saveDataObject.data.player2.digestDamage = saveDataObject.data.player1.digestDamage / 10;
+								saveDataObject.data.save2[0] = 14;
+							}
 							save2Name = saveDataObject.data.player2.name + " -- Updated";
 							save2Tip = "Load " + saveDataObject.data.player2.name;
 						}
@@ -1570,6 +1779,10 @@ class Main {
 							if (saveDataObject.data.save3[0] == 12) { //Version 12 was missing unlockedPhoneNumbers
 								saveDataObject.data.player3.unlockedPhoneNumbers = [true, true];
 								saveDataObject.data.save3[0] = 13;
+							}
+							if (saveDataObject.data.save3[0] == 13) { //Version 13 had digestion rates too high
+								saveDataObject.data.player3.digestDamage = saveDataObject.data.player1.digestDamage / 10;
+								saveDataObject.data.save3[0] = 14;
 							}
 							save3Name = saveDataObject.data.player3.name + " -- Updated";
 							save3Tip = "Load " + saveDataObject.data.player3.name;
@@ -2865,9 +3078,11 @@ class Main {
 	static function textParse(text:String):String {
 		var arrayToParse:Array<String> = new Array();
 		var subArray:Array<String> = new Array();
+		var logicArray:Array<String> = new Array();
 		var extraToHold:String = "";
 		var stringToTest:String = "";
 		var parsedText:String = "";
+		var parsedCharCount:Int = 0;
 		
 		arrayToParse = text.split(" ");
 		
@@ -2881,6 +3096,11 @@ class Main {
 			}
 			if (subArray[0].substr(0, 1) == "[") {
 				stringToTest = subArray[0].substr(1);
+				
+				logicArray = stringToTest.split(":");
+				
+				if (logicArray.length > 1)
+					stringToTest = logicArray[0];
 				
 				switch (stringToTest) {
 				case "PCNAME":
@@ -2903,6 +3123,8 @@ class Main {
 					parsedText += playerCharacter.feet;
 				case "NPCNAME":
 					parsedText += roomNPC.name;
+				case "NPCGENDER":
+					parsedText += roomNPC.gender("gender");
 				case "SUBJC":
 					parsedText += roomNPC.gender("sub");
 				case "SUBJ":
@@ -2915,19 +3137,50 @@ class Main {
 					parsedText += roomNPC.gender("pos");
 				case "POS":
 					parsedText += roomNPC.gender("pos").toLowerCase();
-					
+				
+				//Logic
+				case "HasBreasts":
+					if (roomNPC.breasts) 
+						parsedText += convertSpaces(logicArray[1]);
+				case "HasVagina":
+					if (roomNPC.vagina)
+						parsedText += convertSpaces(logicArray[1]);
+				case "HasPenis":
+					if (roomNPC.penis)
+						parsedText += convertSpaces(logicArray[1]);
+				case "HasBalls":
+					if (roomNPC.balls)
+						parsedText += convertSpaces(logicArray[1]);
+				
 				default:
 					parsedText += "{Unknown variable: " + stringToTest + "}";
 				}
 				
-				parsedText += extraToHold;
+				if (parsedText.length > parsedCharCount)
+					parsedText += extraToHold;
+				parsedCharCount = parsedText.length;
 			} else {
 				parsedText += arrayToParse[i] + " ";
+				parsedCharCount = parsedText.length;
 			}
 		}
 		
 		
 		return parsedText;
+	}
+	
+	static function convertSpaces(textToConvert:String):String {
+		var spacedLine:String = "";
+		
+		for (i in 0...textToConvert.length) {
+			if (textToConvert.charAt(i) == "_") {
+				spacedLine += " ";
+			} else {
+				spacedLine += textToConvert.charAt(i);
+			}
+		}
+		
+		return spacedLine;
 	}
 	
 	static function updateHUD() {
@@ -3326,13 +3579,13 @@ class Main {
 		
 		//																																Height			Weight			Chest			Waist			Hips			Butt																													Gain
 		//allSpecies = [0 name,		1 skin,		2 tail,		3 tailDesc,		4 mouth,	5 legs,		6 arms,		7 hands,	8 feet,		9 min,	10 max,	11 min,	12 max,	13 min,	14 max, 15 min,	16 max,	17 min,	18 max, 19 min, 20 max, 21 breasts, 22 penisL,	23 penisW,	24 balls,	25 errect,	26 stomach, 27 bowels,	28 milk,	29 cum, 30 fat, 31 milk, 32 cum, 33 digestDamage,	34 stretchRateStomach,	35 stretchRateBowels,	36 stretchRateMilk, 37 stretchRateCum,	38 stretchAmountStomach,	39 stretchAmountBowels, 40 stretchAmountMilk,	41 stretchAmountCum,	42 sphincter
-		allSpecies[0] = ["Human",	"skin",		false,		"none",			"mouth",	"legs",		"arms",		"hands",	"feet",		63,		72,		90,		140,	24,		30,		22,		29,		22,		26, 	1,		2,		3,			4,			1,			.5,			2,			20,			10,			3,			1,		5,		.5,		 .1,	 1,					30,						20,						20,					15,					20,							10,						1,						.5,						"asshole"];
-		allSpecies[1] = ["Fox",		"fur",		true,		"large fluffy",	"muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	60,		69,		85,		100,	22,		26,		20,		25,		20,		24,		1,		3,		8,			3,			1.5,		.5,			3,			15,			15,			2.5,		2,		4,		.3,		 .4,	 2,					15,						10,						15,					20,					15,							15,						1.5,					2,						"tailhole"];
-		allSpecies[2] = ["Dragon",	"scales",	true,		"thick scally",	"maw",		"legs",		"arms",		"claws",	"feet",		78,		82,		150,	210,	30,		38,		28,		37,		30,		34,		1,		4,		10,			6,			2,			1,			3.5,		30,			20,			4,			4,		6,		1.5,	 .7,	 5,					40,						10,						5,					5,					40,							5,						10,						2,						"tailhole"];
-		allSpecies[3] = ["Wolf",	"fur",		true,		"thin fluffy",	"muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	63,		72,		100,	150,	26,		32,		26,		31,		28,		28,		1,		2,		4,			5,			2.5,		1,			2,			25,			10,			5,			1,		3,		1,		 2,		 10,				30,						20,						10,					10,					30,							10,						10,						5,						"tailhole"];
-		allSpecies[4] = ["Bovine",	"skin",		true,		"thin whiplike", "muzzle",	"legs",		"arms",		"handhoofs", "foothoofs", 65,	80,		160,	210,	34,		36,		30,		31,		30,		46,		1,		6,		9,			8,			3,			2.5,		4,			40,			30,			10,			6,		10,		3,		 .2,	 10,				20,						15,						15,					10,					50,							20,						20,						10,						"tailhole"];
-		allSpecies[5] = ["Tiger",	"fur",		true,		"long fluffy",	"muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	64,		73,		95,		100,	22,		31,		18,		31,		29,		32,		1,		5,		2,			4,			2,			1,			2,			25,			20,			3,			3,		2,		1,		 .3,	 6,					40,						30,						30,					15,					5,							10,						5,						2,						"tailhole"];
-		allSpecies[6] = ["Rat",		"fur",		true,		"thin hairless", "muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	55,		59,		70,		85,		20,		25,		18,		24,		20,		25,		1,		2,		1,			2,			1,			.25,		1.5,		50,			10,			3,			2,		2,		1,		 2,		 5,					70,						40,						30,					10,					20,							20,						10,						5,						"tailhole"];
+		allSpecies[0] = ["Human",	"skin",		false,		"none",			"mouth",	"legs",		"arms",		"hands",	"feet",		63,		72,		90,		140,	24,		30,		22,		29,		22,		26, 	1,		2,		3,			4,			1,			.5,			2,			20,			10,			3,			1,		5,		.5,		 .1,	 .1,				30,						20,						20,					15,					20,							10,						1,						.5,						"asshole"];
+		allSpecies[1] = ["Fox",		"fur",		true,		"large fluffy",	"muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	60,		69,		85,		100,	22,		26,		20,		25,		20,		24,		1,		3,		8,			3,			1.5,		.5,			3,			15,			15,			2.5,		2,		4,		.3,		 .4,	 .2,				15,						10,						15,					20,					15,							15,						1.5,					2,						"tailhole"];
+		allSpecies[2] = ["Dragon",	"scales",	true,		"thick scally",	"maw",		"legs",		"arms",		"claws",	"feet",		78,		82,		150,	210,	30,		38,		28,		37,		30,		34,		1,		4,		10,			6,			2,			1,			3.5,		30,			20,			4,			4,		6,		1.5,	 .7,	 .5,				40,						10,						5,					5,					40,							5,						10,						2,						"tailhole"];
+		allSpecies[3] = ["Wolf",	"fur",		true,		"thin fluffy",	"muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	63,		72,		100,	150,	26,		32,		26,		31,		28,		28,		1,		2,		4,			5,			2.5,		1,			2,			25,			10,			5,			1,		3,		1,		 2,		 1,					30,						20,						10,					10,					30,							10,						10,						5,						"tailhole"];
+		allSpecies[4] = ["Bovine",	"skin",		true,		"thin whiplike", "muzzle",	"legs",		"arms",		"handhoofs", "foothoofs", 65,	80,		160,	210,	34,		36,		30,		31,		30,		46,		1,		6,		9,			8,			3,			2.5,		4,			40,			30,			10,			6,		10,		3,		 .2,	 1,					20,						15,						15,					10,					50,							20,						20,						10,						"tailhole"];
+		allSpecies[5] = ["Tiger",	"fur",		true,		"long fluffy",	"muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	64,		73,		95,		100,	22,		31,		18,		31,		29,		32,		1,		5,		2,			4,			2,			1,			2,			25,			20,			3,			3,		2,		1,		 .3,	 .6,				40,						30,						30,					15,					5,							10,						5,						2,						"tailhole"];
+		allSpecies[6] = ["Rat",		"fur",		true,		"thin hairless", "muzzle",	"legs",		"arms",		"handpaws",	"footpaws",	55,		59,		70,		85,		20,		25,		18,		24,		20,		25,		1,		2,		1,			2,			1,			.25,		1.5,		50,			10,			3,			2,		2,		1,		 2,		 .5,				70,						40,						30,					10,					20,							20,						10,						5,						"tailhole"];
 		
 		
 		

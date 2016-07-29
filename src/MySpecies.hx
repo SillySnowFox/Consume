@@ -44,7 +44,7 @@ class MySpecies {
 	public var fatGain:Int; //starting fat gain rate
 	public var milkGain:Float; //starting milk gain rate
 	public var cumGain:Float; //starting cum gain rate
-	public var digestDamage:Int; //How much damage per tick (minute) the player's stomach does to consumed objects
+	public var digestDamage:Float; //How much damage per tick (minute) the player's stomach does to consumed objects
 	
 	public var stretchRateStomach:Int; //How many ticks (minutes) the player's stomach needs to be over capacity to stretch larger
 	public var stretchRateBowels:Int; //Ticks to stretch bowels
