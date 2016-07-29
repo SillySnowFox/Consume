@@ -555,7 +555,8 @@ class Main {
 			
 			if (roomNPC.name != "NULL") {
 				btns[9].setButton("Talk", "Talk to the " + roomNPC.species.name.toLowerCase(), 0);
-				btns[9].addEventListener(MouseEvent.CLICK, doTalk);
+				btns[9].disableButton();
+				//btns[9].addEventListener(MouseEvent.CLICK, doTalk);
 			}
 			
 			//Time pass, this might need to get tweaked for the gym
@@ -1255,8 +1256,8 @@ class Main {
 			
 			var eatScenes:Array<String> = new Array();
 			
-			eatScenes.push("You smile and make as if to take the pizza from the [NPCNAME] but instead you grab [OBJ] and pull [OBJ] into your apartment, shutting the door after. [SUBJC] protests and struggles but you don't let [OBJ] go. Once inside with the door closed, you open your jaws and lunge forward, grabbing the [NPCNAME] around the waist and getting [POSA] head and shoulders down your throat before [SUBJ] has a chance to cry out. You push [OBJ] further down, swallowing eagerly as your belly stretches with your new meal. It isn't long before you're down to the last swallow, the delivery driver vanishing into your gut. You rub your stomach happily, then remember the pizza. Might as well have desert too.");
-			eatScenes.push("While getting your money together you hear the [NPCNAME]'s stomach rumble and an idea hits you. You ask if [SUBJ] would like to share your pizza. After some awkward fidgeting [SUBJ] nods and follows you into your apartment. The first few slices [SUBJ] eats without issues, after that it takes some cajoling to get [OBJ] to eat more. Soon only one slice remains, the stuffed [NPCNAME] refuses so you insist. Finally you give up, having the slice yourself.</p><br><p>You finish it off and eye the stuffed [NPCNAME] sitting in a stupor on your couch. Stomach stretched out over [POSA] lap. Your stomach rumbles, reminding you why you ordered a pizza in the first place. Starting at the stuffed [NPCNAME]'s feet you make it to [POSA] hips before [SUBJ] notices. However it isn't until you made it over [POSA] stomach that [SUBJ] is finally aware of what's happening and begins to thrash and struggle. By then it's too late and even [POSA] flailing arms don't stop you from swallowing the last of [OBJ]. Your stomach stretching out even fuller.");
+			eatScenes.push("You smile and make as if to take the pizza from the [NPCNAME] but instead you grab [OBJ] and pull [OBJ] into your apartment, shutting the door after. [SUBJC] protests and struggles but you don't let [OBJ] go. Once inside with the door closed, you open your jaws and lunge forward, grabbing the [NPCNAME] around the waist and getting [POS] head and shoulders down your throat before [SUBJ] has a chance to cry out. You push [OBJ] further down, swallowing eagerly as your belly stretches with your new meal. It isn't long before you're down to the last swallow, the delivery driver vanishing into your gut. You rub your stomach happily, then remember the pizza. Might as well have desert too.");
+			eatScenes.push("While getting your money together you hear the [NPCNAME]'s stomach rumble and an idea hits you. You ask if [SUBJ] would like to share your pizza. After some awkward fidgeting [SUBJ] nods and follows you into your apartment. The first few slices [SUBJ] eats without issues, after that it takes some cajoling to get [OBJ] to eat more. Soon only one slice remains, the stuffed [NPCNAME] refuses so you insist. Finally you give up, having the slice yourself.</p><br><p>You finish it off and eye the stuffed [NPCNAME] sitting in a stupor on your couch. Stomach stretched out over [POS] lap. Your stomach rumbles, reminding you why you ordered a pizza in the first place. Starting at the stuffed [NPCNAME]'s feet you make it to [POS] hips before [SUBJ] notices. However it isn't until you made it over [POS] stomach that [SUBJ] is finally aware of what's happening and begins to thrash and struggle. By then it's too late and even [POS] flailing arms don't stop you from swallowing the last of [OBJ]. Your stomach stretching out even fuller.");
 			
 			var rndMessage = Math.round(Math.random() * (eatScenes.length - 1));
 			
@@ -1584,6 +1585,8 @@ class Main {
 			btns[1].addEventListener(MouseEvent.CLICK, debugMenu);
 			btns[2].setButton("Jump To", "Teleport around the map", 5);
 			btns[2].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[3].setButton("Logic Test", null, 7);
+			btns[3].addEventListener(MouseEvent.CLICK, debugMenu);
 			
 			btns[11].setButton("Back");
 			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
@@ -1666,6 +1669,23 @@ class Main {
 			
 			btns[0].setButton("Next", null, jumpTo);
 			btns[0].addEventListener(MouseEvent.CLICK, movePlayer);
+		case 7:
+			//text parsing system logic testing
+			roomNPC = new MyNPC();
+			roomNPC.randomNPC(species, playerCharacter);
+			
+			message = "Randomly generated NPC is [NPCGENDER].</p><br>";
+			message += "<p>What follows is a test of the logic parsing system.</p><br>";
+			message += "<p>This sentance should appear for everyone. ";
+			message += "[HasBreasts:This_sentance_should_appear_for_NPCs_with_breasts.] ";
+			message += "[HasVagina:This_sentance_should_appear_for_NPCs_with_a_vagina.] ";
+			message += "[HasPenis:This_sentance_should_appear_for_NPCs_with_a_penis.] ";
+			message += "[HasBalls:This_sentance_should_appear_for_NPCs_with_balls.] ";
+			
+			btns[0].setButton("Test Again", null, 7);
+			btns[0].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[11].setButton("Main", null, 0);
+			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
 		}
 		
 		outputText(message, "Debug Menu");
@@ -3058,9 +3078,11 @@ class Main {
 	static function textParse(text:String):String {
 		var arrayToParse:Array<String> = new Array();
 		var subArray:Array<String> = new Array();
+		var logicArray:Array<String> = new Array();
 		var extraToHold:String = "";
 		var stringToTest:String = "";
 		var parsedText:String = "";
+		var parsedCharCount:Int = 0;
 		
 		arrayToParse = text.split(" ");
 		
@@ -3074,6 +3096,11 @@ class Main {
 			}
 			if (subArray[0].substr(0, 1) == "[") {
 				stringToTest = subArray[0].substr(1);
+				
+				logicArray = stringToTest.split(":");
+				
+				if (logicArray.length > 1)
+					stringToTest = logicArray[0];
 				
 				switch (stringToTest) {
 				case "PCNAME":
@@ -3096,6 +3123,8 @@ class Main {
 					parsedText += playerCharacter.feet;
 				case "NPCNAME":
 					parsedText += roomNPC.name;
+				case "NPCGENDER":
+					parsedText += roomNPC.gender("gender");
 				case "SUBJC":
 					parsedText += roomNPC.gender("sub");
 				case "SUBJ":
@@ -3108,19 +3137,50 @@ class Main {
 					parsedText += roomNPC.gender("pos");
 				case "POS":
 					parsedText += roomNPC.gender("pos").toLowerCase();
-					
+				
+				//Logic
+				case "HasBreasts":
+					if (roomNPC.breasts) 
+						parsedText += convertSpaces(logicArray[1]);
+				case "HasVagina":
+					if (roomNPC.vagina)
+						parsedText += convertSpaces(logicArray[1]);
+				case "HasPenis":
+					if (roomNPC.penis)
+						parsedText += convertSpaces(logicArray[1]);
+				case "HasBalls":
+					if (roomNPC.balls)
+						parsedText += convertSpaces(logicArray[1]);
+				
 				default:
 					parsedText += "{Unknown variable: " + stringToTest + "}";
 				}
 				
-				parsedText += extraToHold;
+				if (parsedText.length > parsedCharCount)
+					parsedText += extraToHold;
+				parsedCharCount = parsedText.length;
 			} else {
 				parsedText += arrayToParse[i] + " ";
+				parsedCharCount = parsedText.length;
 			}
 		}
 		
 		
 		return parsedText;
+	}
+	
+	static function convertSpaces(textToConvert:String):String {
+		var spacedLine:String = "";
+		
+		for (i in 0...textToConvert.length) {
+			if (textToConvert.charAt(i) == "_") {
+				spacedLine += " ";
+			} else {
+				spacedLine += textToConvert.charAt(i);
+			}
+		}
+		
+		return spacedLine;
 	}
 	
 	static function updateHUD() {
