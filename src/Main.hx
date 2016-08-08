@@ -214,7 +214,7 @@ class Main {
 				case "active":
 					message += "The area whispers with hidden enemies.<br>";
 					btns[11 - i].setButton("Hunt");
-					//btns[11 - i].addEventListener(MouseEvent.CLICK, doCombat);
+					//btns[11 - i].setClickFunc(doCombat);
 					btns[11 - i].disableButton();
 				case "passive":
 					if (playerCharacter.lastClubDay != playerCharacter.day && globals.lastRoom == 7) {
@@ -224,7 +224,7 @@ class Main {
 					}
 					message += "Prey wander the area, wating to be consumed.<br>";
 					btns[11 - i].setButton("Hunt", null, 0);
-					btns[11 - i].addEventListener(MouseEvent.CLICK, doHunt);
+					btns[11 - i].setClickFunc(doHunt);
 				}
 			case 2:
 				//Shop
@@ -243,12 +243,12 @@ class Main {
 						roomNPC.newNPC(nonPlayerCharacters[4]);
 					
 					btns[9].setButton("Buy", "Buy some tasty Ice Cream.", "ic:0");
-					//btns[9].addEventListener(MouseEvent.CLICK, doShop);
+					//btns[9].setClickFunc(doShop);
 					btns[9].disableButton();
 					if (roomNPC != null) {
 						message += roomNPC.name + " is standing behind it.<br>";
 						btns[11].setButton("Talk", "Talk to " + roomNPC.name, 0);
-						btns[11].addEventListener(MouseEvent.CLICK, doTalk);
+						btns[11].setClickFunc(doTalk);
 					}
 				case "general":
 					//general store
@@ -256,51 +256,51 @@ class Main {
 					
 					btns[9].setButton("Buy", "Take a look at the " + roomNPC.species.name + "'s stock", "gen:0");
 					btns[9].disableButton();
-					//btns[9].addEventListener(MouseEvent.CLICK, doShop);
+					//btns[9].setClickFunc(doShop);
 				case "rat":
 					//The rat's illegal shop
 					message += roomNPC.name + " has something to sell.<br>";
 					
 					btns[9].setButton("Buy", "Take a look at the rat's offerings.", "rat:0");
-					//btns[9].addEventListener(MouseEvent.CLICK, doShop);
+					//btns[9].setClickFunc(doShop);
 					btns[9].disableButton();
 				}
 			case 3:
 				//Talk
 				message += roomNPC.name + " is here.<br>";
 				btns[11 - i].setButton("Talk", "Talk to " + roomNPC.name, 0);
-				btns[11 - i].addEventListener(MouseEvent.CLICK, doTalk);
+				btns[11 - i].setClickFunc(doTalk);
 			case 4:
 				//Work
 				message += "Plenty of work awaits you here.<br>";
 				
 				btns[9].setButton("Work 2", "Work for two hours", 2);
-				btns[9].addEventListener(MouseEvent.CLICK, doWork);
+				btns[9].setClickFunc(doWork);
 				btns[10].setButton("Work 4", "Work for four hours", 4);
-				btns[10].addEventListener(MouseEvent.CLICK, doWork);
+				btns[10].setClickFunc(doWork);
 				btns[11].setButton("Work 8", "Work for eight hours", 8);
-				btns[11].addEventListener(MouseEvent.CLICK, doWork);
+				btns[11].setClickFunc(doWork);
 			case 5:
 				//Toilet
 				message += "There is a toilet here you can use.<br>";
 				btns[11 - i].setButton("Toilet", null, 0);
-				btns[11 - i].addEventListener(MouseEvent.CLICK, doPoop);
+				btns[11 - i].setClickFunc(doPoop);
 			case 6:
 				//Sleep
 				message += "Your bed looks inviting.<br>";
 				btns[11 - i].setButton("Sleep");
-				//btns[11 - i].addEventListener(MouseEvent.CLICK, doSleep);
+				//btns[11 - i].setClickFunc(doSleep);
 				btns[11 - i].disableButton();
 			case 7:
 				//Phone
 				message += "There is a phone on the wall here.<br>";
 				btns[11 - i].setButton("Phone", null, 0);
-				btns[11 - i].addEventListener(MouseEvent.CLICK, doPhone);
+				btns[11 - i].setClickFunc(doPhone);
 			case 8:
 				//Workout
 				message += "Workout equipment lines the walls.<br>";
 				btns[11 - i].setButton("Workout", null, "choose");
-				btns[11 - i].addEventListener(MouseEvent.CLICK, doGym);
+				btns[11 - i].setClickFunc(doGym);
 			case 9:
 				//Gold room
 			case 10:
@@ -337,20 +337,19 @@ class Main {
 				if (exit[i].exitClosed || exit[i].travelTo == -1) {
 					btns[i].disableButton();
 				} else {
-					btns[i].addEventListener(MouseEvent.CLICK, movePlayer);
+					btns[i].setClickFunc(movePlayer);
 				}
 				if (exit[i].hidden) {
 					if (playerCharacter.quest[exit[i].hiddenQuestID].stage == 0) {
 						btns[i].setButton(exitDirection[i], null, exitDirShort[i]);
 						btns[i].disableButton();
-						btns[i].addEventListener(MouseEvent.CLICK, showHidden);
-						btns[i].removeEventListener(MouseEvent.CLICK, movePlayer);
+						btns[i].setClickFunc(showHidden);
 					}
 				}
 				if (exit[i].keyID != -1) {
 					if (playerCharacter.hasKey(exit[i].keyID) == -1) {
 						btns[i].disableButton();
-						btns[i].removeEventListener(MouseEvent.CLICK, movePlayer);
+						btns[i].clearClickFunc();
 					}
 				}
 			} else {
@@ -364,7 +363,7 @@ class Main {
 		//Wait, btn 4
 		if (currentRoom.allowWait) {
 			btns[4].setButton("Wait", null, "WAIT:15");
-			btns[4].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[4].setClickFunc(movePlayer);
 		}
 		
 		
@@ -447,14 +446,14 @@ class Main {
 			message += "There are signs giving you several different options on ways to use the equipment in this room, from what you can tell there are three paths you can take, one for Strength, one for Agility and one for Endurance. Which do you wish to use first?</p><br><p>";
 			
 			btns[0].setButton("Strength", "Follow the signs marked for strength traning. Should take about an hour to finish.", "workout:str");
-			btns[0].addEventListener(MouseEvent.CLICK, doGym);
+			btns[0].setClickFunc(doGym);
 			btns[1].setButton("Agility", "Follow the signs marked for agility traning. Should take about an hour to finish.", "workout:agi");
-			btns[1].addEventListener(MouseEvent.CLICK, doGym);
+			btns[1].setClickFunc(doGym);
 			btns[2].setButton("Endurance", "Follow the signs marked for endurance traning. Should take about an hour and a half to finish.", "workout:end");
-			btns[2].addEventListener(MouseEvent.CLICK, doGym);
+			btns[2].setClickFunc(doGym);
 			
 			btns[11].setButton("Leave", "Head to the showers and get cleaned up", "leave");
-			btns[11].addEventListener(MouseEvent.CLICK, doGym);
+			btns[11].setClickFunc(doGym);
 		case "leave":
 			//Player is done with the machines
 			message += "You leave the workout area and move to the showers to wash your workout sweat off you.</p><br>";
@@ -464,26 +463,26 @@ class Main {
 			newRoom = true;
 			
 			btns[11].setButton("Leave", null, 25);
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 		case "workout":
 			//Doing the workouts
 			
 			if (playerCharacter.fat == 0 && !globals.debugMode) {
 				outputText("You find yourself too tired to make use of any machines right now.", "Working Out");
 				btns[11].setButton("Leave", "Head to the showers and get cleaned up", "leave");
-				btns[11].addEventListener(MouseEvent.CLICK, doGym);
+				btns[11].setClickFunc(doGym);
 				return;
 			}
 			
 			btns[0].setButton("Strength", "Follow the signs marked for strength traning. Should take about an hour to finish.", "workout:str");
-			btns[0].addEventListener(MouseEvent.CLICK, doGym);
+			btns[0].setClickFunc(doGym);
 			btns[1].setButton("Agility", "Follow the signs marked for agility traning. Should take about an hour to finish.", "workout:agi");
-			btns[1].addEventListener(MouseEvent.CLICK, doGym);
+			btns[1].setClickFunc(doGym);
 			btns[2].setButton("Endurance", "Follow the signs marked for endurance traning. Should take about an hour and a half to finish.", "workout:end");
-			btns[2].addEventListener(MouseEvent.CLICK, doGym);
+			btns[2].setClickFunc(doGym);
 			
 			btns[11].setButton("Leave", "Head to the showers and get cleaned up", "leave");
-			btns[11].addEventListener(MouseEvent.CLICK, doGym);
+			btns[11].setClickFunc(doGym);
 			
 			switch (choice) {
 			case "str":
@@ -556,7 +555,7 @@ class Main {
 			if (roomNPC.name != "NULL") {
 				btns[9].setButton("Talk", "Talk to the " + roomNPC.species.name.toLowerCase(), 0);
 				btns[9].disableButton();
-				//btns[9].addEventListener(MouseEvent.CLICK, doTalk);
+				//btns[9].setClickFunc(doTalk);
 			}
 			
 			//Time pass, this might need to get tweaked for the gym
@@ -638,7 +637,7 @@ class Main {
 		outputText(message, "Food Coma");
 		updateHUD();
 		btns[11].setButton("Next", null, 0);
-		btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+		btns[11].setClickFunc(movePlayer);
 	}
 	
 	static function doDeath( ?e:MouseEvent ) {
@@ -664,7 +663,7 @@ class Main {
 			playerDied = "eaten";
 			
 			btns[0].setButton("Next", null, "eaten");
-			btns[0].addEventListener(MouseEvent.CLICK, doDeath);
+			btns[0].setClickFunc(doDeath);
 		default:
 			switch (clicked) {
 			case "eaten":
@@ -679,7 +678,7 @@ class Main {
 			//Deal with death
 			
 			btns[11].setButton("Main Menu");
-			btns[11].addEventListener(MouseEvent.CLICK, resetGame);
+			btns[11].setClickFunc(resetGame);
 		}
 		
 		outputText(message, title);
@@ -719,16 +718,16 @@ class Main {
 			message += " as you run your eyes over " + roomNPC.gender("obj").toLowerCase() + ".";
 			
 			btns[0].setButton("Consume", "Take " + roomNPC.gender("obj").toLowerCase() + " to the backroom and fill your belly.", 1);
-			btns[0].addEventListener(MouseEvent.CLICK, doHunt);
+			btns[0].setClickFunc(doHunt);
 			
 			if (playerCharacter.arousal >= 50 && globals.allowSex) {
 				btns[2].setButton("Fuck", "Take " + roomNPC.gender("obj").toLowerCase() + " to the backroom and sate yourself", 3);
-				btns[2].addEventListener(MouseEvent.CLICK, doHunt);
+				btns[2].setClickFunc(doHunt);
 			}
 			btns[9].setButton("Look Again", "Take another look around the room", 0);
-			btns[9].addEventListener(MouseEvent.CLICK, doHunt);
+			btns[9].setClickFunc(doHunt);
 			btns[11].setButton("Leave", "Stop looking for prey", 0);
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 		case 1:
 			//Consume options
 			txtPublic.visible = false;
@@ -741,34 +740,34 @@ class Main {
 			newRoom = true;
 			
 			btns[0].setButton("Eat", "Your belly rumbles as you eye your prey.", 2);
-			btns[0].addEventListener(MouseEvent.CLICK, doHunt);
+			btns[0].setClickFunc(doHunt);
 			if (playerCharacter.arousal >= 50 && globals.allowSex) {
 				btns[2].setButton("Fuck", "You need to sate yourself, perhaps then you'll fill your belly.", 3);
-				btns[2].addEventListener(MouseEvent.CLICK, doHunt);
+				btns[2].setClickFunc(doHunt);
 			}
 			if (playerCharacter.hasPerk("cv") && playerCharacter.penis) {
 				btns[3].setButton("CockVore", "Use your cock to consume your prey", 4);
 				btns[3].disableButton();
-				//btns[3].addEventListener(MouseEvent.CLICK, doHunt);
+				//btns[3].setClickFunc(doHunt);
 			}
 			if (playerCharacter.hasPerk("bv") && playerCharacter.breasts) {
 				btns[4].setButton("BreastVore", "Use your breasts to consume your prey", 5);
 				btns[4].disableButton();
-				//btns[4].addEventListener(MouseEvent.CLICK, doHunt);
+				//btns[4].setClickFunc(doHunt);
 			}
 			if (playerCharacter.hasPerk("av")) {
 				btns[5].setButton("AnalVore", "Use your ass to consume your prey", 6);
 				btns[5].disableButton();
-				//btns[5].addEventListener(MouseEvent.CLICK, doHunt);
+				//btns[5].setClickFunc(doHunt);
 			}
 			if (playerCharacter.hasPerk("ub") && playerCharacter.vagina) {
 				btns[6].setButton("Unbirth", "Slide your prey into your vagina", 7);
 				btns[6].disableButton();
-				//btns[6].addEventListener(MouseEvent.CLICK, doHunt);
+				//btns[6].setClickFunc(doHunt);
 			}
 			
 			btns[11].setButton("Leave", "You changed your mind, perhaps you'll seek other prey.", 10);
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 		case 2:
 			//Do the eating
 			title = "Consume - Consumption Room";
@@ -780,7 +779,7 @@ class Main {
 			playerCharacter.numEaten++;
 			
 			btns[11].setButton("Next", null, 10);
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 		case 3:
 			//Sex
 			title = "Consume - Consumption Room";
@@ -789,7 +788,7 @@ class Main {
 			message += "{Placeholder} Sex, " + playerCharacter.cum("NPC");
 			
 			btns[0].setButton("Eat", "You've emptied yourself, now fill yourself back up.", 2);
-			btns[0].addEventListener(MouseEvent.CLICK, doHunt);
+			btns[0].setClickFunc(doHunt);
 		case 4:
 			//Cockvore
 		case 5:
@@ -911,12 +910,12 @@ class Main {
 			switch (roomNPC.talk[clicked][2][i][2]) {
 			case -1:
 				//Exit option
-				btns[i].addEventListener(MouseEvent.CLICK, movePlayer);
+				btns[i].setClickFunc(movePlayer);
 			case -7:
 				//Drop into QTE, for now just turn that button off
 				btns[i].disableButton();
 			default:
-				btns[i].addEventListener(MouseEvent.CLICK, doTalk);
+				btns[i].setClickFunc(doTalk);
 			}
 		}
 		
@@ -1006,10 +1005,10 @@ class Main {
 				
 				btns[0].setButton("Items", null, 1);
 				btns[0].disableButton();
-				//btns[0].addEventListener(MouseEvent.CLICK, doPoop);
+				//btns[0].setClickFunc(doPoop);
 				
 				btns[11].setButton("Finish");
-				btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+				btns[11].setClickFunc(movePlayer);
 			case 1:
 				//Item screen
 				
@@ -1024,7 +1023,7 @@ class Main {
 			newRoom = false;
 			
 			btns[11].setButton("Next");
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 		}
 		
 		outputText(message, title);
@@ -1056,7 +1055,7 @@ class Main {
 						callList += "<li>" + phoneNames[i][1] + "</li>";
 						btns[i].setButton(phoneNames[i][0], phoneNames[i][2], "call:" + i);
 						if (i == 0) {
-							btns[i].addEventListener(MouseEvent.CLICK, doPhone);
+							btns[i].setClickFunc(doPhone);
 						} else {
 							btns[i].disableButton();
 						}
@@ -1082,7 +1081,7 @@ class Main {
 						playerCharacter.deliveryDriversEaten++; // becuase I know players will keep calling.
 						
 						btns[11].setButton("Hang up");
-						btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+						btns[11].setClickFunc(movePlayer);
 						return;
 					}
 					if (playerCharacter.deliveryDriversEaten == 50) {
@@ -1092,7 +1091,7 @@ class Main {
 						playerCharacter.deliveryDriversEaten++; // add one more so the pizza place will remember they've told the player off already
 						
 						btns[11].setButton("Hang up");
-						btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+						btns[11].setClickFunc(movePlayer);
 						return;
 					}
 					if (playerCharacter.deliveryDriversEaten >= 200) {
@@ -1100,7 +1099,7 @@ class Main {
 						message = "Look, they're not going to bring you anymore pizza.";
 						
 						btns[11].setButton("Okay");
-						btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+						btns[11].setClickFunc(movePlayer);
 						return;
 					}
 					if (playerCharacter.deliveryDriversEaten >= 100) {
@@ -1110,25 +1109,25 @@ class Main {
 						playerCharacter.deliveryDriversEaten++;
 						
 						btns[11].setButton("Hang up");
-						btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+						btns[11].setClickFunc(movePlayer);
 						return;
 					}
 					
 					message = "You call up the pizza place, the person on the other end asks what you'd like;</p><br><li>Small: $5</li><li>Medium: $10</li><li>Large: $15</li><li>XLarge: $20</li><li>Fatass Special: $40</li>";
 					
 					btns[0].setButton("Small", null, "order|0");
-					btns[0].addEventListener(MouseEvent.CLICK, doPizza);
+					btns[0].setClickFunc(doPizza);
 					btns[1].setButton("Medium", null, "order|1");
-					btns[1].addEventListener(MouseEvent.CLICK, doPizza);
+					btns[1].setClickFunc(doPizza);
 					btns[2].setButton("Large", null, "order|2");
-					btns[2].addEventListener(MouseEvent.CLICK, doPizza);
+					btns[2].setClickFunc(doPizza);
 					btns[3].setButton("XLarge", null, "order|3");
-					btns[3].addEventListener(MouseEvent.CLICK, doPizza);
+					btns[3].setClickFunc(doPizza);
 					btns[4].setButton("Fatass", null, "order|4");
-					btns[4].addEventListener(MouseEvent.CLICK, doPizza);
+					btns[4].setClickFunc(doPizza);
 					
 					btns[11].setButton("Nothing");
-					btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+					btns[11].setClickFunc(movePlayer);
 				case 1: //Hookers
 					
 				default:
@@ -1190,18 +1189,18 @@ class Main {
 			message = "About 30 minutes later there's a knock at your door. When you open it, you find a [NPCNAME] wearing the dark gray uniform of the pizza place. [SUBJC] checks the receipt, &quot;That'll be $" + pizzaCostDeliv + "&quot;";
 			
 			btns[0].setButton("No Tip", "Pay, but don't tip.", "notip|" + pizzaMass + "|" + pizzaCostDeliv);
-			btns[0].addEventListener(MouseEvent.CLICK, doPizza);
+			btns[0].setClickFunc(doPizza);
 			btns[1].setButton("Tip", "Pay and include a tip.", "tip|" + pizzaMass + "|" + pizzaCostDeliv);
-			btns[1].addEventListener(MouseEvent.CLICK, doPizza);
+			btns[1].setClickFunc(doPizza);
 			btns[2].setButton("Eat", "Gotta love the modern world, fresh food delivered to your door. And they even bring pizza!", "eat|" + pizzaMass + "|" + pizzaCostDeliv);
-			btns[2].addEventListener(MouseEvent.CLICK, doPizza);
+			btns[2].setClickFunc(doPizza);
 			
 			btns[3].setButton("Fuck", "Invite the driver in for a slice and a fuck.", "fuck|" + pizzaMass + "|" + pizzaCostDeliv);
 			btns[3].disableButton();
-			//btns[3].addEventListener(MouseEvent.CLICK, doPizza);
+			//btns[3].setClickFunc(doPizza);
 			btns[4].setButton("Fuck and eat", "Invite the driver in and feed them the pizza. Then enjoy your pizza.", "fuckeat|" + pizzaMass + "|" + pizzaCostDeliv);
 			btns[4].disableButton();
-			//btns[4].addEventListener(MouseEvent.CLICK, doPizza);
+			//btns[4].setClickFunc(doPizza);
 		case "notip":
 			//Pay but don't tip the driver
 			pizzaMass = pizzaSize; //For readability
@@ -1218,7 +1217,7 @@ class Main {
 				updateHUD();
 				
 				btns[11].setButton("Next");
-				btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+				btns[11].setClickFunc(movePlayer);
 			}
 		case "tip":
 			//Pay and tip the driver
@@ -1233,9 +1232,9 @@ class Main {
 				message = "You check your wallet to pay for the pizza, but you find you don't have enough money! Now what?";
 				
 				btns[0].setButton("Eat", "No money, but so hungry. Only one solution...", "eat|" + pizzaMass + "|" + pizzaCostDeliv);
-				btns[0].addEventListener(MouseEvent.CLICK, doPizza);
+				btns[0].setClickFunc(doPizza);
 				btns[2].setButton("Can't Pay", "Sorry, I can't pay.", "nopay|" + pizzaMass + "|0");
-				btns[2].addEventListener(MouseEvent.CLICK, doPizza);
+				btns[2].setClickFunc(doPizza);
 			} else {
 				// player has money, time to buy the pizza!
 				message = "You hand the [NPCNAME] $" + pizzaCostDeliv + ". [SUBJC] glances at the money and tucks it away, giving you a smile and saying &quot;Enjoy your pizza.&quot; Before turning and walking away down the hall.";
@@ -1248,7 +1247,7 @@ class Main {
 				updateHUD();
 				
 				btns[11].setButton("Next");
-				btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+				btns[11].setClickFunc(movePlayer);
 			}
 		case "eat":
 			//Eat the pizza and the driver
@@ -1274,7 +1273,7 @@ class Main {
 			playerCharacter.numEaten++;
 			
 			btns[11].setButton("Next");
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 		case "fuck":
 			//Screw the driver, eat the pizza
 			pizzaMass = pizzaSize; //For readability
@@ -1311,7 +1310,7 @@ class Main {
 			
 			
 			btns[11].setButton("Next");
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 			
 		case "fuckeat":
 			//screw the driver, eat the pizza and the driver
@@ -1350,20 +1349,20 @@ class Main {
 			message += "You have eaten " + playerCharacter.numEaten + " prey.";
 			
 			btns[0].setButton("Inventory", "View your inventory", 1);
-			//btns[0].addEventListener(MouseEvent.CLICK, doDescription);
+			//btns[0].setClickFunc(doDescription);
 			btns[0].disableButton();
 			
 			btns[1].setButton("Keys", "View your keys", 2);
-			btns[1].addEventListener(MouseEvent.CLICK, doDescription);
+			btns[1].setClickFunc(doDescription);
 			
 			btns[2].setButton("Prey", "See what you've consumed", 3);
-			btns[2].addEventListener(MouseEvent.CLICK, doDescription);
+			btns[2].setClickFunc(doDescription);
 			
 			btns[3].setButton("Quests", "View your active quests", 4);
-			btns[3].addEventListener(MouseEvent.CLICK, doDescription);
+			btns[3].setClickFunc(doDescription);
 			
 			btns[11].setButton("Back", "Back to the game");
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 			
 		case 1:
 			//Player invintory
@@ -1383,7 +1382,7 @@ class Main {
 			message += "</p><br><p>";
 			
 			btns[11].setButton("Back", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, doDescription);
+			btns[11].setClickFunc(doDescription);
 		case 3:
 			//Prey
 			title = "Consumed Prey";
@@ -1434,7 +1433,7 @@ class Main {
 			}
 			
 			btns[11].setButton("Back", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, doDescription);
+			btns[11].setClickFunc(doDescription);
 		case 4:
 			//Quests
 			title = "Quests";
@@ -1455,7 +1454,7 @@ class Main {
 			}
 			
 			btns[11].setButton("Back", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, doDescription);
+			btns[11].setClickFunc(doDescription);
 		}
 		
 		outputText(message, title);
@@ -1512,7 +1511,7 @@ class Main {
 		newRoom = true;
 		
 		btns[0].setButton("Next", null, 19);
-		btns[0].addEventListener(MouseEvent.CLICK, movePlayer);
+		btns[0].setClickFunc(movePlayer);
 	}
 	
 	static function resetGame( e:MouseEvent ) {
@@ -1525,9 +1524,9 @@ class Main {
 			outputText("Return to the main menu? Anything not saved will be lost.", "Reset Game");
 			
 			btns[0].setButton("Yes", null, 1);
-			btns[0].addEventListener(MouseEvent.CLICK, resetGame);
+			btns[0].setClickFunc(resetGame);
 			btns[2].setButton("No");
-			btns[2].addEventListener(MouseEvent.CLICK, optionsScreen);
+			btns[2].setClickFunc(optionsScreen);
 		case 1:
 			Lib.current.removeChildren();
 			globals = new GlobalVars();
@@ -1580,16 +1579,16 @@ class Main {
 			message += ".</p><br><p>";
 			
 			btns[0].setButton("Toggle Lactation", null, 1);
-			btns[0].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[0].setClickFunc(debugMenu);
 			btns[1].setButton("Set Quest stage", null, 2);
-			btns[1].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[1].setClickFunc(debugMenu);
 			btns[2].setButton("Jump To", "Teleport around the map", 5);
-			btns[2].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[2].setClickFunc(debugMenu);
 			btns[3].setButton("Logic Test", null, 7);
-			btns[3].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[3].setClickFunc(debugMenu);
 			
 			btns[11].setButton("Back");
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 			
 		case 1:
 			message = "Lactation is now ";
@@ -1604,34 +1603,34 @@ class Main {
 			message += ".";
 			
 			btns[11].setButton("Next", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[11].setClickFunc(debugMenu);
 		case 2:
 			message = "Quest?";
 			
 			for (i in 0...playerCharacter.quest.length) {
 				btns[i].setButton(playerCharacter.quest[i].name, null, "3|" + i);
-				btns[i].addEventListener(MouseEvent.CLICK, debugMenu);
+				btns[i].setClickFunc(debugMenu);
 			}
 			
 			btns[11].setButton("Cancel", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[11].setClickFunc(debugMenu);
 		case 3:
 			message = "Set stage to?";
 			
 			for (i in 0...playerCharacter.quest[questID].stageDesc.length) {
 				btns[i].setButton("#" + i, null, "4|" + questID + "|" + i);
-				btns[i].addEventListener(MouseEvent.CLICK, debugMenu);
+				btns[i].setClickFunc(debugMenu);
 			}
 			
 			btns[11].setButton("Cancel", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[11].setClickFunc(debugMenu);
 		case 4:
 			playerCharacter.quest[questID].stage = stage;
 			
 			message = "Quest '" + playerCharacter.quest[questID].dispName + "' set to stage '" + stage + "': " + playerCharacter.quest[questID].stageDesc[stage];
 			
 			btns[11].setButton("Back", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[11].setClickFunc(debugMenu);
 		case 5:
 			//Teleport
 			message = "Enter Room ID to teleport to:<br><br>(Tip: Your bedroom has an ID of 0)";
@@ -1653,10 +1652,10 @@ class Main {
 			Lib.current.addChild(txtJump);
 			
 			btns[0].setButton("Jump", null, 6);
-			btns[0].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[0].setClickFunc(debugMenu);
 			
 			btns[2].setButton("Back", null, 0);
-			btns[2].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[2].setClickFunc(debugMenu);
 		case 6:
 			var txtJump:Object = Lib.current.getChildByName("jumpTo");
 			var jumpTo:Int = Std.parseInt(txtJump.text);
@@ -1668,7 +1667,7 @@ class Main {
 			newRoom = true;
 			
 			btns[0].setButton("Next", null, jumpTo);
-			btns[0].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[0].setClickFunc(movePlayer);
 		case 7:
 			//text parsing system logic testing
 			roomNPC = new MyNPC();
@@ -1683,9 +1682,9 @@ class Main {
 			message += "[HasBalls:This_sentance_should_appear_for_NPCs_with_balls.] ";
 			
 			btns[0].setButton("Test Again", null, 7);
-			btns[0].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[0].setClickFunc(debugMenu);
 			btns[11].setButton("Main", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[11].setClickFunc(debugMenu);
 		}
 		
 		outputText(message, "Debug Menu");
@@ -1805,20 +1804,20 @@ class Main {
 			
 			btns[0].setButton("Slot 1", save1Tip, 1);
 			if (slot1Filled)
-				btns[0].addEventListener(MouseEvent.CLICK, loadGame);
+				btns[0].setClickFunc(loadGame);
 			btns[1].setButton("Slot 2", save2Tip, 2);
 			if (slot2Filled)
-				btns[1].addEventListener(MouseEvent.CLICK, loadGame);
+				btns[1].setClickFunc(loadGame);
 			btns[2].setButton("Slot 3", save3Tip, 3);
 			if (slot3Filled)
-				btns[2].addEventListener(MouseEvent.CLICK, loadGame);
+				btns[2].setClickFunc(loadGame);
 			
 			btns[11].setButton("Back");
 			switch (globals.backTo) {
 			case "Welcome":
-				btns[11].addEventListener(MouseEvent.CLICK, welcomeScreen);
+				btns[11].setClickFunc(welcomeScreen);
 			case "move":
-				btns[11].addEventListener(MouseEvent.CLICK, optionsScreen);
+				btns[11].setClickFunc(optionsScreen);
 			}
 		} else {
 			var loadedPlayer:Object = null;
@@ -1870,7 +1869,7 @@ class Main {
 			outputText("Game loaded from slot " + clicked, "Load Game");
 			
 			btns[11].setButton("Next", null, globals.currentRoomID + ":" + 0);
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 		}
 	}
 	
@@ -1962,14 +1961,14 @@ class Main {
 			
 			outputText(message, "Save Game");
 			btns[0].setButton("Slot 1", save1Tip, 1);
-			btns[0].addEventListener(MouseEvent.CLICK, saveGame);
+			btns[0].setClickFunc(saveGame);
 			btns[1].setButton("Slot 2", save2Tip, 2);
-			btns[1].addEventListener(MouseEvent.CLICK, saveGame);
+			btns[1].setClickFunc(saveGame);
 			btns[2].setButton("Slot 3", save3Tip, 3);
-			btns[2].addEventListener(MouseEvent.CLICK, saveGame);
+			btns[2].setClickFunc(saveGame);
 			
 			btns[11].setButton("Back");
-			btns[11].addEventListener(MouseEvent.CLICK, optionsScreen);
+			btns[11].setClickFunc(optionsScreen);
 		} else {
 			var globalSaveArray:Array<Dynamic> = new Array();
 			var playerSaveArray:Array<Dynamic> = new Array();
@@ -2014,7 +2013,7 @@ class Main {
 			}
 			
 			btns[11].setButton("Next");
-			btns[11].addEventListener(MouseEvent.CLICK, optionsScreen);
+			btns[11].setClickFunc(optionsScreen);
 		}
 	}
 	
@@ -2119,15 +2118,15 @@ class Main {
 					if (i + offset == species.length)
 						break;
 					btns[i].setButton(species[i + offset].name, null, "Species " + (i + offset));
-					btns[i].addEventListener(MouseEvent.CLICK, newGame);
+					btns[i].setClickFunc(newGame);
 				}
 				if (species.length - offset > 9) {
 					btns[11].setButton("More", null, -1);
-					btns[11].addEventListener(MouseEvent.CLICK, newGame);
+					btns[11].setClickFunc(newGame);
 				}
 				if (offset != 0) {
 					btns[9].setButton("Prev", null, -2);
-					btns[9].addEventListener(MouseEvent.CLICK, newGame);
+					btns[9].setClickFunc(newGame);
 				}
 				
 				step = 0;
@@ -2187,21 +2186,21 @@ class Main {
 				}
 				
 				btns[0].setButton("Breasts", null, -3);
-				btns[0].addEventListener(MouseEvent.CLICK, newGame);
+				btns[0].setClickFunc(newGame);
 				btns[1].setButton("Vagina", null, -4);
-				btns[1].addEventListener(MouseEvent.CLICK, newGame);
+				btns[1].setClickFunc(newGame);
 				btns[2].setButton("Penis", null, -5);
-				btns[2].addEventListener(MouseEvent.CLICK, newGame);
+				btns[2].setClickFunc(newGame);
 				if (penis) {
 					btns[3].setButton("Balls", null, -6);
-					btns[3].addEventListener(MouseEvent.CLICK, newGame);
+					btns[3].setClickFunc(newGame);
 				}
 				
 				btns[9].setButton("Back", null, 0);
-				btns[9].addEventListener(MouseEvent.CLICK, newGame);
+				btns[9].setClickFunc(newGame);
 				
 				btns[11].setButton("Next", null, 2);
-				btns[11].addEventListener(MouseEvent.CLICK, newGame);
+				btns[11].setClickFunc(newGame);
 				
 				outputText(message, "New Game");
 				step = 1;
@@ -2217,39 +2216,39 @@ class Main {
 				
 				if (pointsAvail != 0) {
 					btns[0].setButton("Strength+", null, -7);
-					btns[0].addEventListener(MouseEvent.CLICK, newGame);
+					btns[0].setClickFunc(newGame);
 					btns[3].setButton("Agility+", null, -9);
-					btns[3].addEventListener(MouseEvent.CLICK, newGame);
+					btns[3].setClickFunc(newGame);
 					btns[6].setButton("Endurance+", null, -11);
-					btns[6].addEventListener(MouseEvent.CLICK, newGame);
+					btns[6].setClickFunc(newGame);
 					btns[9].setButton("Intelligence+", null, -13);
-					btns[9].addEventListener(MouseEvent.CLICK, newGame);
+					btns[9].setClickFunc(newGame);
 				}
 				
 				if (str != 1) {
 					btns[1].setButton("Strength-", null, -8);
-					btns[1].addEventListener(MouseEvent.CLICK, newGame);
+					btns[1].setClickFunc(newGame);
 				}
 				if (agi != 1) {
 					btns[4].setButton("Agility-", null, -10);
-					btns[4].addEventListener(MouseEvent.CLICK, newGame);
+					btns[4].setClickFunc(newGame);
 				}
 				if (end != 1) {
 					btns[7].setButton("Endurance-", null, -12);
-					btns[7].addEventListener(MouseEvent.CLICK, newGame);
+					btns[7].setClickFunc(newGame);
 				}
 				if (int != 1) {
 					btns[10].setButton("Intelligence-", null, -14);
-					btns[10].addEventListener(MouseEvent.CLICK, newGame);
+					btns[10].setClickFunc(newGame);
 				}
 				
 				
 				btns[8].setButton("Back", null, 1);
-				btns[8].addEventListener(MouseEvent.CLICK, newGame);
+				btns[8].setClickFunc(newGame);
 				
 				if (pointsAvail == 0) {
 					btns[11].setButton("Next", null, 3);
-					btns[11].addEventListener(MouseEvent.CLICK, newGame);
+					btns[11].setClickFunc(newGame);
 				}
 				
 				outputText(message, "New Game");
@@ -2289,20 +2288,20 @@ class Main {
 					}
 					message += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + visiblePerks[i + offset].desc + "<br><br>";
 					btns[btnNum].setButton(visiblePerks[i + offset].dispName, null, ("perk " + (i + offset)));
-					btns[btnNum].addEventListener(MouseEvent.CLICK, newGame);
+					btns[btnNum].setClickFunc(newGame);
 					btnNum += 1;
 				}
 				if (visiblePerks.length - offset > 9) {
 					btns[11].setButton("More", null, -1);
-					btns[11].addEventListener(MouseEvent.CLICK, newGame);
+					btns[11].setClickFunc(newGame);
 				}
 				if (offset != 0) {
 					btns[9].setButton("Prev", null, -2);
-					btns[9].addEventListener(MouseEvent.CLICK, newGame);
+					btns[9].setClickFunc(newGame);
 				}
 				
 				btns[10].setButton("Back", null, 2);
-				btns[10].addEventListener(MouseEvent.CLICK, newGame);
+				btns[10].setClickFunc(newGame);
 				
 				if (perksToPick == 0) {
 					btns[10].setButton("Next", null, 4);
@@ -2339,7 +2338,7 @@ class Main {
 				message += "Name?";
 				
 				btns[11].setButton("Next", null, 5);
-				btns[11].addEventListener(MouseEvent.CLICK, newGame);
+				btns[11].setClickFunc(newGame);
 				
 				outputText(message, "New Game");
 			case 5:
@@ -2366,10 +2365,10 @@ class Main {
 				outputText(message, "New Game");
 				
 				btns[0].setButton("Yes", null, 6);
-				btns[0].addEventListener(MouseEvent.CLICK, newGame);
+				btns[0].setClickFunc(newGame);
 				
 				btns[2].setButton("No", null, 4);
-				btns[2].addEventListener(MouseEvent.CLICK, newGame);
+				btns[2].setClickFunc(newGame);
 			case 6:
 				//Create new player object
 				finalPerks = new Array();
@@ -2398,7 +2397,7 @@ class Main {
 				outputText(message, "BEEP! BEEP! BEEP! BEEP!");
 				
 				btns[11].setButton("Next", null, 0);
-				btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+				btns[11].setClickFunc(movePlayer);
 				
 				//Look into variable destructors, take out all the ones used in character creation don't need them past this point.
 			}
@@ -2437,9 +2436,9 @@ class Main {
 				outputText(message, "New Game");
 				
 				btns[0].setButton("Yes", null, 1);
-				btns[0].addEventListener(MouseEvent.CLICK, newGame);
+				btns[0].setClickFunc(newGame);
 				btns[2].setButton("No", null, 0);
-				btns[2].addEventListener(MouseEvent.CLICK, newGame);
+				btns[2].setClickFunc(newGame);
 			case "perk":
 				var perkID:Int = Std.parseInt(clicked.split(" ")[1]);
 				
@@ -2465,7 +2464,7 @@ class Main {
 			
 		case "Welcome":
 			btns[10].setButton("Back", "Back to the welcome screen");
-			btns[10].addEventListener(MouseEvent.CLICK, welcomeScreen);
+			btns[10].setClickFunc(welcomeScreen);
 		}
 	}
 	
@@ -2499,31 +2498,31 @@ class Main {
 		switch (clicked) {
 		case 0:
 			btns[0].setButton("Scat", "Allow/disallow scat. Controls if your character poops or not.", 1);
-			btns[0].addEventListener(MouseEvent.CLICK, optionsScreen);
+			btns[0].setClickFunc(optionsScreen);
 			btns[1].setButton("Arousal", "Allow/disallow sex. Controls if your character becomes aroused.", 3);
-			btns[1].addEventListener(MouseEvent.CLICK, optionsScreen);
+			btns[1].setClickFunc(optionsScreen);
 			btns[2].setButton("Debug", "Toggle debug mode.", 2);
-			btns[2].addEventListener(MouseEvent.CLICK, optionsScreen);
+			btns[2].setClickFunc(optionsScreen);
 			btns[3].setButton("Font Size+");
-			btns[3].addEventListener(MouseEvent.CLICK, increaseFontSize);
+			btns[3].setClickFunc(increaseFontSize);
 			btns[4].setButton("Font Size-");
-			btns[4].addEventListener(MouseEvent.CLICK, decreaseFontSize);
+			btns[4].setClickFunc(decreaseFontSize);
 			
 			if (globals.backTo != "Welcome") {
 				btns[6].setButton("Main Menu", "Start a new game. Current game will be lost.", 0);
-				btns[6].addEventListener(MouseEvent.CLICK, resetGame);
+				btns[6].setClickFunc(resetGame);
 			}
 			
 			btns[11].setButton("Back");
 			
 			switch (globals.backTo) {
 				case "Welcome":
-					btns[11].addEventListener(MouseEvent.CLICK, welcomeScreen);
+					btns[11].setClickFunc(welcomeScreen);
 				case "move":
 					btns[9].setButton("Save", null, 0);
-					btns[9].addEventListener(MouseEvent.CLICK, saveGame);
+					btns[9].setClickFunc(saveGame);
 					
-					btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+					btns[11].setClickFunc(movePlayer);
 				default:
 					new AlertBox("Bad options screen backTo: " + globals.backTo);
 			}
@@ -2656,50 +2655,42 @@ class Main {
 		switch (clickedBtn) {
 		case "nw":
 			btns[0].setButton(currentRoom.exitNW.name, currentRoom.exitNW.desc, currentRoom.exitNW.travelTo + ":" + currentRoom.exitNW.travelTime);
-			btns[0].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[0].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[0].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitNW.hiddenQuestID].stage = 1;
 		case "n":
 			btns[1].setButton(currentRoom.exitN.name, currentRoom.exitN.desc, currentRoom.exitN.travelTo + ":" + currentRoom.exitN.travelTime);
-			btns[1].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[1].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[1].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitN.hiddenQuestID].stage = 1;
 		case "ne":
 			btns[2].setButton(currentRoom.exitNE.name, currentRoom.exitNE.desc, currentRoom.exitNE.travelTo + ":" + currentRoom.exitNE.travelTime);
-			btns[2].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[2].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[2].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitNE.hiddenQuestID].stage = 1;
 		case "w":
 			btns[3].setButton(currentRoom.exitW.name, currentRoom.exitW.desc, currentRoom.exitW.travelTo + ":" + currentRoom.exitW.travelTime);
-			btns[3].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[3].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[3].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitW.hiddenQuestID].stage = 1;
 		case "e":
 			btns[5].setButton(currentRoom.exitE.name, currentRoom.exitE.desc, currentRoom.exitE.travelTo + ":" + currentRoom.exitE.travelTime);
-			btns[5].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[5].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[5].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitE.hiddenQuestID].stage = 1;
 		case "sw":
 			btns[6].setButton(currentRoom.exitSW.name, currentRoom.exitSW.desc, currentRoom.exitSW.travelTo + ":" + currentRoom.exitSW.travelTime);
-			btns[6].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[6].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[6].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitSW.hiddenQuestID].stage = 1;
 		case "s":
 			btns[7].setButton(currentRoom.exitS.name, currentRoom.exitS.desc, currentRoom.exitS.travelTo + ":" + currentRoom.exitS.travelTime);
-			btns[7].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[7].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[7].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitS.hiddenQuestID].stage = 1;
 		case "se":
 			btns[8].setButton(currentRoom.exitSE.name, currentRoom.exitSE.desc, currentRoom.exitSE.travelTo + ":" + currentRoom.exitSE.travelTime);
-			btns[8].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[8].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[8].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitSE.hiddenQuestID].stage = 1;
 		}
@@ -2732,7 +2723,7 @@ class Main {
 		outputText(message, "Frequently Asked Questions");
 		
 		btns[8].setButton("Back");
-		btns[8].addEventListener(MouseEvent.CLICK, welcomeScreen);
+		btns[8].setClickFunc(welcomeScreen);
 	}	
 	
 	static function displayCredits( e:MouseEvent ) {
@@ -2784,7 +2775,7 @@ class Main {
 		outputText("Game code and story by Kyra Sunseeker.</b></p><br>" + message, "Credits");
 		
 		btns[8].setButton("Back");
-		btns[8].addEventListener(MouseEvent.CLICK, welcomeScreen);
+		btns[8].setClickFunc(welcomeScreen);
 	}
 
 	static function welcomeScreen(?event:MouseEvent) {
@@ -2839,17 +2830,17 @@ class Main {
 		clearAllEvents();
 		
 		btns[0].setButton("New Game", "Start a new game", 0);
-		btns[0].addEventListener(MouseEvent.CLICK, newGame);
+		btns[0].setClickFunc(newGame);
 		btns[1].setButton("Load", "Load a saved game", 0);
-		btns[1].addEventListener(MouseEvent.CLICK, loadGame);
+		btns[1].setClickFunc(loadGame);
 		btns[2].setButton("Options");
-		btns[2].addEventListener(MouseEvent.CLICK, optionsScreen);
+		btns[2].setClickFunc(optionsScreen);
 		
 		btns[6].setButton("F.A.Q.");
-		btns[6].addEventListener(MouseEvent.CLICK, displayFAQ);
+		btns[6].setClickFunc(displayFAQ);
 		
 		btns[8].setButton("Credits");
-		btns[8].addEventListener(MouseEvent.CLICK, displayCredits);
+		btns[8].setClickFunc(displayCredits);
 		
 		globals.backTo = "Welcome";
 	}
@@ -3938,65 +3929,8 @@ class Main {
 	static function clearAllEvents() {
 		for (i in 0...btns.length) {
 			btns[i].setButton(" ");
-			
-			btns[i].removeEventListener(MouseEvent.CLICK, welcomeScreen);
-			btns[i].removeEventListener(MouseEvent.CLICK, displayCredits);
-			btns[i].removeEventListener(MouseEvent.CLICK, displayFAQ);
-			btns[i].removeEventListener(MouseEvent.CLICK, optionsScreen);
-			btns[i].removeEventListener(MouseEvent.CLICK, increaseFontSize);
-			btns[i].removeEventListener(MouseEvent.CLICK, decreaseFontSize);
-			btns[i].removeEventListener(MouseEvent.CLICK, newGame);
-			btns[i].removeEventListener(MouseEvent.CLICK, movePlayer);
-			btns[i].removeEventListener(MouseEvent.CLICK, saveGame);
-			btns[i].removeEventListener(MouseEvent.CLICK, loadGame);
-			btns[i].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[i].removeEventListener(MouseEvent.CLICK, debugMenu);
-			btns[i].removeEventListener(MouseEvent.CLICK, resetGame);
-			
-			btns[i].removeEventListener(MouseEvent.CLICK, doTalk);
-			btns[i].removeEventListener(MouseEvent.CLICK, doSleep);
-			btns[i].removeEventListener(MouseEvent.CLICK, doPoop);
-			btns[i].removeEventListener(MouseEvent.CLICK, doPhone);
-			btns[i].removeEventListener(MouseEvent.CLICK, doHunt);
-			btns[i].removeEventListener(MouseEvent.CLICK, doDescription);
-			btns[i].removeEventListener(MouseEvent.CLICK, doFoodComa);
-			btns[i].removeEventListener(MouseEvent.CLICK, doShop);
-			btns[i].removeEventListener(MouseEvent.CLICK, doWork);
-			btns[i].removeEventListener(MouseEvent.CLICK, doDeath);
-			btns[i].removeEventListener(MouseEvent.CLICK, doPizza);
-			btns[i].removeEventListener(MouseEvent.CLICK, doGym);
-			
+			btns[i].clearClickFunc();
 		}
-			
-			/*
-			btns[i].removeEventListener(MouseEvent.CLICK, buyDrink);
-			btns[i].removeEventListener(MouseEvent.CLICK, doSell);
-			btns[i].removeEventListener(MouseEvent.CLICK, giveItem);
-			btns[i].removeEventListener(MouseEvent.CLICK, combatHeal);
-			btns[i].removeEventListener(MouseEvent.CLICK, doCombat);
-			btns[i].removeEventListener(MouseEvent.CLICK, meetDeath);
-			btns[i].removeEventListener(MouseEvent.CLICK, playerStats);
-			btns[i].removeEventListener(MouseEvent.CLICK, statUpgrade);
-
-			btns[i].removeEventListener(MouseEvent.CLICK, doMasturbate);
-
-			btns[i].removeEventListener(MouseEvent.CLICK, eatNPC);
-			btns[i].removeEventListener(MouseEvent.CLICK, freeMoney);
-			
-			btns[i].removeEventListener(MouseEvent.CLICK, playerInv);
-			btns[i].removeEventListener(MouseEvent.CLICK, itemFunction);
-			
-			btns[i].removeEventListener(MouseEvent.CLICK, gymTalk);
-			btns[i].removeEventListener(MouseEvent.CLICK, quickTime);
-			btns[i].removeEventListener(MouseEvent.CLICK, goldGymRoom);
-			
-			btns[i].removeEventListener(MouseEvent.CLICK, useVend);
-			btns[i].removeEventListener(MouseEvent.CLICK, resetGymTrain);
-			btns[i].removeEventListener(MouseEvent.CLICK, useMachine);
-			btns[i].removeEventListener(MouseEvent.CLICK, orderHooker);
-			btns[i].removeEventListener(MouseEvent.CLICK, shopOffice);
-			*/
-		
 	}
 	
 	static function main() {

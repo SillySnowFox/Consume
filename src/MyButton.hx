@@ -16,6 +16,7 @@ class MyButton extends Sprite {
 
 	private var inRect:Sprite = new Sprite();
 	private var btnLabel:TextField = new TextField();
+	private var curClickFunc:Function = null;	
 	
 	public function new(x:Int, y:Int, ?size:String) {
 		super();
@@ -114,6 +115,23 @@ class MyButton extends Sprite {
 		changeName(setName);
 		this.btnID = setID;
 	}
+	
+	public function setClickFunc(newFunc:Function):Void {
+		if (curClickFunc != null) {
+			removeEventListener(MouseEvent.CLICK, curClickFunc);
+		}
+		
+		if (newFunc != null) {
+			addEventListener(MouseEvent.CLICK, newFunc);
+		}
+		
+		curClickFunc = newFunc;
+	}
+	
+	public function clearClickFunc():Void {
+		setClickFunc(null);
+	}
+	
 	
 	private function removeToolTip ( ?e:MouseEvent ) {
 		var toolTip:Object = this.getChildByName("Tool Tip");
