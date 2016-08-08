@@ -349,7 +349,7 @@ class Main {
 				if (exit[i].keyID != -1) {
 					if (playerCharacter.hasKey(exit[i].keyID) == -1) {
 						btns[i].disableButton();
-						btns[i].clearClickFunc();
+						//btns[i].clearClickFunc(); Redundant
 					}
 				}
 			} else {
@@ -820,6 +820,9 @@ class Main {
 		var butt:Bool = false;
 		var buttAmount:Int = -1;
 		var talkCommandArray:Array<Dynamic> = new Array();
+		var move:Bool = false;
+		var moveTo:Int = 0;
+		var consume:Bool = false;
 		
 		var message:String = "";
 		var returnMessage:String = "";
@@ -864,6 +867,11 @@ class Main {
 			case "bowels":
 				butt = true;
 				buttAmount = Std.parseInt(talkCommandArray[i].split(" ")[1]);
+			case "eat": //Consume the roomNPC
+				consume = true;
+			case "move": //Move the player to a new room
+				move = true;
+				moveTo = Std.parseInt(talkCommandArray[i].split(" ")[1]);
 			}
 			
 			if (quest) {
@@ -899,6 +907,16 @@ class Main {
 			playerCharacter.stomachCurrent += feedAmount;
 		if (butt)
 			playerCharacter.bowelsCurrent += buttAmount;
+		if (move) {
+			globals.lastRoom = globals.currentRoomID;
+			currentRoom = new MyRoom(moveTo);
+			globals.currentRoomID = moveTo;
+		}
+		if (consume) {
+			playerCharacter.stomachCurrent += roomNPC.mass;
+			playerCharacter.stomachContents.push(roomNPC);
+			playerCharacter.numEaten++;
+		}
 		
 		message = roomNPC.talk[clicked][0];
 		
@@ -1676,7 +1694,7 @@ class Main {
 			message = "Randomly generated NPC is [NPCGENDER].</p><br>";
 			message += "<p>What follows is a test of the logic parsing system.</p><br>";
 			message += "<p>This sentance should appear for everyone. ";
-			message += "[HasBreasts:This_sentance_should_appear_for_NPCs_with_breasts.] ";
+			message += "[HasBreasts:This_sentance_should_appear_for_NPCs_with_<POS>_breasts.] ";
 			message += "[HasVagina:This_sentance_should_appear_for_NPCs_with_a_vagina.] ";
 			message += "[HasPenis:This_sentance_should_appear_for_NPCs_with_a_penis.] ";
 			message += "[HasBalls:This_sentance_should_appear_for_NPCs_with_balls.] ";
@@ -3074,11 +3092,42 @@ class Main {
 		var stringToTest:String = "";
 		var parsedText:String = "";
 		var parsedCharCount:Int = 0;
+		var subSplit:Array<String> = new Array();
 		
 		arrayToParse = text.split(" ");
 		
 		for (i in 0...arrayToParse.length) {
 			subArray = arrayToParse[i].split("]");
+			
+			if (subArray[0].substr(0, 4) == "[Has") {
+				//Logic
+				logicArray = subArray[0].split(":");
+				
+				if (logicArray.length > 1)
+					stringToTest = logicArray[0];
+				
+				if (stringToTest == "[HasBreasts") {
+					if (roomNPC.breasts) 
+						parsedText += textParse(convertSpaces(logicArray[1]));
+				}
+				if (stringToTest == "[HasVagina") {
+					if (roomNPC.vagina)
+						parsedText += convertSpaces(logicArray[1]);
+				}
+				if (stringToTest == "[HasPenis") {
+					if (roomNPC.penis)
+						parsedText += convertSpaces(logicArray[1]);
+				}
+				if (stringToTest == "[HasBalls") {
+					if (roomNPC.balls)
+						parsedText += convertSpaces(logicArray[1]);
+				}
+				if (stringToTest == "[HasPandV") { //NPC has both a cock and vagina
+					if (roomNPC.penis && roomNPC.vagina)
+						parsedText += convertSpaces(logicArray[1]);
+				}
+			}
+			
 			
 			if (subArray.length > 1) {
 				extraToHold = subArray[1] + " ";
@@ -3128,20 +3177,14 @@ class Main {
 					parsedText += roomNPC.gender("pos");
 				case "POS":
 					parsedText += roomNPC.gender("pos").toLowerCase();
-				
-				//Logic
 				case "HasBreasts":
-					if (roomNPC.breasts) 
-						parsedText += convertSpaces(logicArray[1]);
+					
 				case "HasVagina":
-					if (roomNPC.vagina)
-						parsedText += convertSpaces(logicArray[1]);
+					
 				case "HasPenis":
-					if (roomNPC.penis)
-						parsedText += convertSpaces(logicArray[1]);
+					
 				case "HasBalls":
-					if (roomNPC.balls)
-						parsedText += convertSpaces(logicArray[1]);
+					
 				
 				default:
 					parsedText += "{Unknown variable: " + stringToTest + "}";
@@ -3161,17 +3204,33 @@ class Main {
 	}
 	
 	static function convertSpaces(textToConvert:String):String {
-		var spacedLine:String = "";
+		var pass1:String = "";
+		var pass2:String = "";
+		var pass3:String = "";
 		
 		for (i in 0...textToConvert.length) {
 			if (textToConvert.charAt(i) == "_") {
-				spacedLine += " ";
+				pass1 += " ";
 			} else {
-				spacedLine += textToConvert.charAt(i);
+				pass1 += textToConvert.charAt(i);
+			}
+		}
+		for (i in 0...pass1.length) {
+			if (pass1.charAt(i) == "<") {
+				pass2 += "[";
+			} else {
+				pass2 += pass1.charAt(i);
+			}
+		}
+		for (i in 0...pass2.length) {
+			if (pass2.charAt(i) == ">") {
+				pass3 += "]";
+			} else {
+				pass3 += pass2.charAt(i);
 			}
 		}
 		
-		return spacedLine;
+		return pass3;
 	}
 	
 	static function updateHUD() {

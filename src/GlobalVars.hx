@@ -22,7 +22,7 @@ class GlobalVars extends Sprite {
 	public var minBuildNumber:Int = 12; //If the saved build number is below this number, don't allow players to load that file. Otherwise the game will attempt to update the file
 	
 	//Changes the number that displays in the corner of the play field
-	public var buildVersion:String = "0.40";
+	public var buildVersion:String = "0.41";
 	
 	//Global vars holding temp data
 	public var backTo:String;

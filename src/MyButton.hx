@@ -58,6 +58,7 @@ class MyButton extends Sprite {
 	}
 
 	private function changeName(newName:String) {
+		//This function changes the button's name, don't call this directly, use setButton
 		var labelFormat:TextFormat = new TextFormat();
 		var globals:Object = Lib.current.getChildByName("GlobalVars");
 		var color:String = "#000000";
@@ -96,11 +97,15 @@ class MyButton extends Sprite {
 	}
 	
 	public function disableButton() {
+		//This function greys out the button text to show it's disabled.
 		this.open = false;
 		changeName(this.btnName);
+		clearClickFunc();
 	}
 	
 	public function setButton(setName:String, ?setTip:String, setID:Dynamic = null) {
+		//This function configures the button, setting the name, any tooltip and the button's ID
+		//With setClickFunc working, I might add that to this as well so we only have one button call to make rather then two
 		if (setTip != null && setTip != " ") {
 			this.hasToolTip = true;
 			this.toolTip = setTip;

@@ -1,6 +1,22 @@
 Visit the forums and say Hi! http://dancingfoxstudios.com/phpBB3/
 Support the game on Pateron! https://www.patreon.com/SillySnowFox?ty=h
 
+v0.41
+
+New
+
+ *
+
+Changes
+
+ * Buttons cleaned up. Should help prevent future oddness with buttons. (Thanks to s-r-g-i)
+ * 
+
+Bugfixes
+
+ *
+
+
 v0.40
 
 New
