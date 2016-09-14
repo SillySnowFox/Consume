@@ -554,8 +554,11 @@ class Main {
 			
 			if (roomNPC.name != "NULL") {
 				btns[9].setButton("Talk", "Talk to the " + roomNPC.species.name.toLowerCase(), 0);
-				btns[9].disableButton();
-				//btns[9].setClickFunc(doTalk);
+				if (globals.debugMode) {
+					btns[9].setClickFunc(doTalk);
+				} else {
+					btns[9].disableButton();
+				}
 			}
 			
 			//Time pass, this might need to get tweaked for the gym
@@ -909,7 +912,7 @@ class Main {
 			playerCharacter.bowelsCurrent += buttAmount;
 		if (move) {
 			globals.lastRoom = globals.currentRoomID;
-			currentRoom = new MyRoom(moveTo);
+			currentRoom = new MyRoom(globals.rooms[moveTo]);
 			globals.currentRoomID = moveTo;
 		}
 		if (consume) {
@@ -3085,152 +3088,145 @@ class Main {
 	}
 	
 	static function textParse(text:String):String {
-		var arrayToParse:Array<String> = new Array();
-		var subArray:Array<String> = new Array();
-		var logicArray:Array<String> = new Array();
-		var extraToHold:String = "";
-		var stringToTest:String = "";
+		var variableText:String = "";
+		var valueText:String = "";
+		var variableArray:Array<String> = new Array();
+		var valueArray:Array<String> = new Array();
+		var parseArray:Array<String> = new Array();
 		var parsedText:String = "";
-		var parsedCharCount:Int = 0;
-		var subSplit:Array<String> = new Array();
+		var outputText:String = "";
 		
-		arrayToParse = text.split(" ");
+		var recordingVar:Bool = false;
+		var recordingValue:Bool = false;
 		
-		for (i in 0...arrayToParse.length) {
-			subArray = arrayToParse[i].split("]");
-			
-			if (subArray[0].substr(0, 4) == "[Has") {
-				//Logic
-				logicArray = subArray[0].split(":");
-				
-				if (logicArray.length > 1)
-					stringToTest = logicArray[0];
-				
-				if (stringToTest == "[HasBreasts") {
-					if (roomNPC.breasts) 
-						parsedText += textParse(convertSpaces(logicArray[1]));
-				}
-				if (stringToTest == "[HasVagina") {
-					if (roomNPC.vagina)
-						parsedText += convertSpaces(logicArray[1]);
-				}
-				if (stringToTest == "[HasPenis") {
-					if (roomNPC.penis)
-						parsedText += convertSpaces(logicArray[1]);
-				}
-				if (stringToTest == "[HasBalls") {
-					if (roomNPC.balls)
-						parsedText += convertSpaces(logicArray[1]);
-				}
-				if (stringToTest == "[HasPandV") { //NPC has both a cock and vagina
-					if (roomNPC.penis && roomNPC.vagina)
-						parsedText += convertSpaces(logicArray[1]);
-				}
+		var i:Int = 0;
+		
+		while (i < text.length) {
+			if (text.substr(i, 1) == "]" && recordingValue) {
+				valueArray.push(valueText);
+				recordingValue = false;
+				i++;
 			}
-			
-			
-			if (subArray.length > 1) {
-				extraToHold = subArray[1] + " ";
-			} else {
-				extraToHold = " ";
+			if (text.substr(i, 1) == "]" && !recordingValue) {
+				variableArray.push(variableText);
+				valueArray.push(null);
+				recordingVar = false;
+				i++;
 			}
-			if (subArray[0].substr(0, 1) == "[") {
-				stringToTest = subArray[0].substr(1);
-				
-				logicArray = stringToTest.split(":");
-				
-				if (logicArray.length > 1)
-					stringToTest = logicArray[0];
-				
-				switch (stringToTest) {
-				case "PCNAME":
-					parsedText += playerCharacter.name;
-				case "PCSPECIESC":
-					parsedText += playerCharacter.species.name;
-				case "PCSPECIESL":
-					parsedText += playerCharacter.species.name.toLowerCase();
-				case "PCARMS":
-					parsedText += playerCharacter.arms;
-				case "PCLEGS":
-					parsedText += playerCharacter.legs;
-				case "PCSKIN":
-					parsedText += playerCharacter.skin;
-				case "PCMOUTH":
-					parsedText += playerCharacter.mouth;
-				case "PCHANDS":
-					parsedText += playerCharacter.hands;
-				case "PCFEETS":
-					parsedText += playerCharacter.feet;
-				case "NPCNAME":
-					parsedText += roomNPC.name;
-				case "NPCGENDER":
-					parsedText += roomNPC.gender("gender");
-				case "SUBJC":
-					parsedText += roomNPC.gender("sub");
-				case "SUBJ":
-					parsedText += roomNPC.gender("sub").toLowerCase();
-				case "OBJC":
-					parsedText += roomNPC.gender("obj");
-				case "OBJ":
-					parsedText += roomNPC.gender("obj").toLowerCase();
-				case "POSC":
-					parsedText += roomNPC.gender("pos");
-				case "POS":
-					parsedText += roomNPC.gender("pos").toLowerCase();
-				case "HasBreasts":
-					
-				case "HasVagina":
-					
-				case "HasPenis":
-					
-				case "HasBalls":
-					
-				
-				default:
-					parsedText += "{Unknown variable: " + stringToTest + "}";
+			if (text.substr(i, 1) == "[") {
+				parseArray.push(parsedText);
+				parsedText = "";
+				recordingVar = true;
+				variableText = "";
+				i++;
+			}
+			if (text.substr(i, 1) == ":" && recordingVar) {
+				recordingVar = false;
+				variableArray.push(variableText);
+				recordingValue = true;
+				valueText = "";
+				i++;
+			}
+			if (recordingVar) {
+				variableText += text.substr(i, 1);
+				i++;
+			}
+			if (recordingValue) {
+				if (text.substr(i, 1) == "{" || text.substr(i, 1) == "}") {
+					if (text.substr(i, 1) == "{")
+						valueText += "[";
+					if (text.substr(i, 1) == "}")
+						valueText += "]";
+				} else {
+					valueText += text.substr(i, 1);
 				}
-				
-				if (parsedText.length > parsedCharCount)
-					parsedText += extraToHold;
-				parsedCharCount = parsedText.length;
-			} else {
-				parsedText += arrayToParse[i] + " ";
-				parsedCharCount = parsedText.length;
+				i++;
+			}
+			if (!recordingValue && !recordingVar) {
+				parsedText += text.substr(i, 1);
+				i++;
 			}
 		}
 		
+		parseArray.push(parsedText);
 		
-		return parsedText;
+		for (n in 0...valueArray.length) {
+			if (valueArray[n] != null)
+				valueArray[n] = textParseRedux(valueArray[n]);
+		}
+		
+		var m:Int = 0;
+		
+		for (n in 0...parseArray.length) {
+			outputText += parseArray[n];
+			if (variableArray.length > m) {
+				outputText += checkVar(variableArray[m], valueArray[m]);
+				m++;
+			}
+		}
+		
+		return outputText;
 	}
 	
-	static function convertSpaces(textToConvert:String):String {
-		var pass1:String = "";
-		var pass2:String = "";
-		var pass3:String = "";
+	static function checkVar(text:String, ?value:String):String {
+		var parsedText:String = "";
 		
-		for (i in 0...textToConvert.length) {
-			if (textToConvert.charAt(i) == "_") {
-				pass1 += " ";
-			} else {
-				pass1 += textToConvert.charAt(i);
-			}
-		}
-		for (i in 0...pass1.length) {
-			if (pass1.charAt(i) == "<") {
-				pass2 += "[";
-			} else {
-				pass2 += pass1.charAt(i);
-			}
-		}
-		for (i in 0...pass2.length) {
-			if (pass2.charAt(i) == ">") {
-				pass3 += "]";
-			} else {
-				pass3 += pass2.charAt(i);
-			}
+		switch (text) {
+		case "PCNAME":
+			parsedText = playerCharacter.name;
+		case "PCSPECIESC":
+			parsedText = playerCharacter.species.name;
+		case "PCSPECIESL":
+			parsedText = playerCharacter.species.name.toLowerCase();
+		case "PCARMS":
+			parsedText = playerCharacter.arms;
+		case "PCLEGS":
+			parsedText = playerCharacter.legs;
+		case "PCSKIN":
+			parsedText = playerCharacter.skin;
+		case "PCMOUTH":
+			parsedText = playerCharacter.mouth;
+		case "PCHANDS":
+			parsedText = playerCharacter.hands;
+		case "PCFEETS":
+			parsedText = playerCharacter.feet;
+		case "NPCNAME":
+			parsedText = roomNPC.name;
+		case "NPCGENDER":
+			parsedText = roomNPC.gender("gender");
+		case "SUBJC":
+			parsedText = roomNPC.gender("sub");
+		case "SUBJ":
+			parsedText = roomNPC.gender("sub").toLowerCase();
+		case "OBJC":
+			parsedText = roomNPC.gender("obj");
+		case "OBJ":
+			parsedText = roomNPC.gender("obj").toLowerCase();
+		case "POSC":
+			parsedText = roomNPC.gender("pos");
+		case "POS":
+			parsedText = roomNPC.gender("pos").toLowerCase();
+		case "HasBreasts":
+			if (roomNPC.breasts)
+				parsedText = value;
+		case "HasVagina":
+			if (roomNPC.vagina)
+				parsedText = value;
+		case "HasPenis":
+			if (roomNPC.penis)
+				parsedText = value;
+		case "HasBalls":
+			if (roomNPC.balls)
+				parsedText = value;
+		case "HasPandV":
+			if (roomNPC.penis && roomNPC.vagina)
+				parsedText = value;
+		
+		default:
+			parsedText = "{Unknown variable: " + text + "}";
 		}
 		
-		return pass3;
+		return parsedText;
 	}
 	
 	static function updateHUD() {
@@ -3537,15 +3533,6 @@ class Main {
 		txtTime.htmlText = "Time";
 		txtTime.selectable = false;
 		txtTime.visible = false;
-		
-		var txtBugReport:TextField = new TextField();
-		txtBugReport.name = "Bugs";
-		txtBugReport.x = 0;
-		txtBugReport.y = 620;
-		txtBugReport.width = 800;
-		txtBugReport.height = 40;
-		txtBugReport.htmlText = "<body><font size = '12'><p align = 'center'><u><a target='_blank' href='http://www.dancingfoxstudios.com/phpBB3/viewforum.php?f=4'>Bug Report</a></u></p></font></body>";
-		txtBugReport.selectable = true;
 
 		txtName.setTextFormat(charNameFormat);
 		txtHealth.setTextFormat(labelFormat);
@@ -3562,7 +3549,6 @@ class Main {
 		flashSC.addChild(txtMoney);
 		flashSC.addChild(txtArousal);
 		flashSC.addChild(txtBuildVersion);
-		flashSC.addChild(txtBugReport);
 		flashSC.addChild(txtDebugTag);
 		flashSC.addChild(txtBowels);
 		flashSC.addChild(txtTime);
