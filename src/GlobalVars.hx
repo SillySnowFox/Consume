@@ -23,7 +23,7 @@ class GlobalVars extends Sprite {
 	
 	//Changes the number that displays in the corner of the play field
 	public var buildVersion:String = "0.41";
-	
+
 	//Global vars holding temp data
 	public var backTo:String;
 	public var conversationStep:Int;

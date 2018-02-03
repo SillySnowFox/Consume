@@ -3658,6 +3658,20 @@ class Main {
 		return parsedText;
 	}
 	
+	static function convertSpaces(textToConvert:String):String {
+		var spacedLine:String = "";
+		
+		for (i in 0...textToConvert.length) {
+			if (textToConvert.charAt(i) == "_") {
+				spacedLine += " ";
+			} else {
+				spacedLine += textToConvert.charAt(i);
+			}
+		}
+		
+		return spacedLine;
+	}
+	
 	static function updateHUD() {
 		var txtName:Object = Lib.current.getChildByName("Character Name");
 		var txtHealth:Object = Lib.current.getChildByName("Health");

@@ -10,12 +10,6 @@ Changes
 
  * Buttons cleaned up. Should help prevent future oddness with buttons. (Thanks to s-r-g-i)
  * Build Number changed to 15.
- * 
-
-Bugfixes
-
- *
-
 
 v0.40
 
