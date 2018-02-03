@@ -40,6 +40,12 @@ class MyPlayerObject extends MyCharacter {
 	public var endNeededToUp:Int;
 	public var intNeededToUp:Int;
 	
+	public var dodgeNeededToUp:Int;
+	public var runNeededToUp:Int;
+	public var meleeNeededToUp:Int;
+	public var sneakNeededToUp:Int;
+	public var spotNeededToUp:Int;
+	
 	private var starvationCheck:Bool; //True if we haven't checked yet this action, false if we have
 	private var massToPooRatio:Float = 0.33;	// $design: Arbitrary amount of poo from each unit of mass
 	private static var digestMessages:Array<String> = 
@@ -585,6 +591,12 @@ class MyPlayerObject extends MyCharacter {
 		agiNeededToUp = agi * 5;
 		endNeededToUp = end * 5;
 		intNeededToUp = int * 5;
+		
+		dodgeNeededToUp = agi * 5;
+		runNeededToUp = agi * 5;
+		meleeNeededToUp = agi * 5;
+		sneakNeededToUp = agi * 5;
+		spotNeededToUp = int * 5;
 		
 		this.name = name;
 		

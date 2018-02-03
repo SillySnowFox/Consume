@@ -2,7 +2,7 @@ To Do:
 	Finish random NPC conversations
 	Finish adding Erik to the Gym (QTE system)
 	Add Gold memeber systems and machines
-	Convert textParse function to scan each character, allowing spaces to be left inside logic variables
+	Convert textParse function to scan each character, allowing spaces to be left inside logic variables -- Done
 	Add fat mass to player size calculations
-	Add perk to allow players to fit through doors irreguardless of size
-	
+	Add perk to allow players to fit through doors irreguardless of size -- added, needs testing
+	Combat System

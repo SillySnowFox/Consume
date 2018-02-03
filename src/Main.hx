@@ -58,6 +58,8 @@ class Main {
 	static var newRoom:Bool = true;
 	static var doorFuckCount:Int;
 	static var conversationStep:Int;
+	static var grabbedNPC:Bool; //The Player has a hold of the NPC
+	static var grabbedPC:Bool; //The NPC has a hold of the Player
 	
 	static var playerDied:String;
 	
@@ -120,27 +122,62 @@ class Main {
 				switch (tempMsg) {
 				case "##STOMACH":
 					//Player's belly is too big to get through the door
-					message += "Your massive stomach bumps against the doorway, far too large to fit through. Looks like you're not going that way until you get a little smaller.<br>";
-					timeGoesBy = 2;
+					if (playerCharacter.hasPerk("comps")) {
+						message += "Your massive stomach bumps against the doorway, at first it looks like you're too big to fit but you grunt and push and manage to shove your huge belly through.<br>";
+						globals.lastRoom = globals.currentRoomID;
+						currentRoom = new MyRoom(globals.rooms[options[0]]);
+						globals.currentRoomID = options[0];
+						timeGoesBy = options[1] + 5;
+					} else {
+						message += "Your massive stomach bumps against the doorway, far too large to fit through. Looks like you're not going that way until you get a little smaller.<br>";
+						timeGoesBy = 2;
+					}
 				case "##BREASTS":
 					//Player's boobs are too big to get through
-					message += "Your massive breasts bump against the doorway, far to huge to fit through. Looks like you're not going that way until you get a little smaller.<br>";
-					timeGoesBy = 2;
-					playerCharacter.arousal += 5;
+					if (playerCharacter.hasPerk("comps")) {
+						message += "Your massive breasts bump against the doorway, at first it looks like you're too big to fit through but you grunt and push and manage to shove your huge tits through the door.<br>";
+						globals.lastRoom = globals.currentRoomID;
+						currentRoom = new MyRoom(globals.rooms[options[0]]);
+						globals.currentRoomID = options[0];
+						timeGoesBy = options[1] + 5;
+						playerCharacter.arousal += 5;
+					} else {
+						message += "Your massive breasts bump against the doorway, far to huge to fit through. Looks like you're not going that way until you get a little smaller.<br>";
+						timeGoesBy = 2;
+						playerCharacter.arousal += 5;
+					}
 				case "##BALLS":
 					//Player's balls are too big to get through
-					message += "Your massive balls bump against the doorway, far too huge to fit through. Looks like you're not going that way until you get a little smaller.<br>";
-					timeGoesBy = 2;
-					playerCharacter.arousal += 5;
+					if (playerCharacter.hasPerk("comps")) {
+						message += "Your massive balls bump agianst the doorway, at first it looks like you're too big to fit through, but you gurnt and push and manage to shove your huge balls through the door.<br>";
+						globals.lastRoom = globals.currentRoomID;
+						currentRoom = new MyRoom(globals.rooms[options[0]]);
+						globals.currentRoomID = options[0];
+						timeGoesBy = options[1] + 5;
+						playerCharacter.arousal += 5;
+					} else {
+						message += "Your massive balls bump against the doorway, far too huge to fit through. Looks like you're not going that way until you get a little smaller.<br>";
+						timeGoesBy = 2;
+						playerCharacter.arousal += 5;
+					}
 				case "##COCK":
 					//Player's penis is too big to get through
-					message += "Your massive cock jams in the doorway. Though it feels wonderful you are simply too massive to get through.<br>";
-					timeGoesBy = 3;
-					playerCharacter.arousal += 10;
-					doorFuckCount -= 1;
-					if (doorFuckCount <= -1) {
-						message += playerCharacter.cum("door");
-						doorFuckCount = playerCharacter.end;
+					if (playerCharacter.hasPerk("comps")) {
+						message += "Your massive cock jams in the doorway, you have a momentary thought of staying right there and getting off using the doorway, but you push a little harder and manage to shove yourself through the door.<br>";
+						globals.lastRoom = globals.currentRoomID;
+						currentRoom = new MyRoom(globals.rooms[options[0]]);
+						globals.currentRoomID = options[0];
+						timeGoesBy = options[1] + 5;
+						playerCharacter.arousal += 10;
+					} else {
+						message += "Your massive cock jams in the doorway. Though it feels wonderful you are simply too massive to get through.<br>";
+						timeGoesBy = 3;
+						playerCharacter.arousal += 10;
+						doorFuckCount -= 1;
+						if (doorFuckCount <= -1) {
+							message += playerCharacter.cum("door");
+							doorFuckCount = playerCharacter.end;
+						}
 					}
 				default:
 					message += tempMsg;
@@ -213,9 +250,8 @@ class Main {
 				switch (flagValue) {
 				case "active":
 					message += "The area whispers with hidden enemies.<br>";
-					btns[11 - i].setButton("Hunt");
-					//btns[11 - i].setClickFunc(doCombat);
-					btns[11 - i].disableButton();
+					btns[11 - i].setButton("Hunt", null, 0);
+					btns[11 - i].setClickFunc(doCombat);
 				case "passive":
 					if (playerCharacter.lastClubDay != playerCharacter.day && globals.lastRoom == 7) {
 						message += "The bouncer nods to you, &quot;No cover today.&quot;<br>";
@@ -370,7 +406,330 @@ class Main {
 		
 	}
 	
-	
+	static function doCombat( e:MouseEvent ) {
+		//Combat system
+		var takeAction:Int = e.currentTarget.btnID;
+		var btnOptions:Object = Lib.current.getChildByName("Options Button");
+		var btnDesc:Object = Lib.current.getChildByName("Desc Button");
+		var txtTime:Object = Lib.current.getChildByName("Time");
+		var message:String = "";
+		var title:String = "";
+		
+		var damage:Int = 0;
+		
+		clearAllEvents();
+		
+		/* Combat actions
+		 * 0 - Entered from Movement system
+		 * 1 - Action choice screen
+		 * 2 - Attack
+		 * 3 - Grab
+		 * 4 - Run
+		 * 5 - Crush
+		 * 6 - Eat (Only when grabbed)
+		 * 7 - Release (Let a grabbed character go)
+		 * 8 - Struggle (Try and escape a grab)
+		 * 9 - Wait
+		 * 10 - Finishing Move
+		 * 11 - Consume
+		 * 12 - Combat End
+		 */
+		
+		switch (takeAction) {
+		case 0:
+			//Just entered from movement system
+			btnDesc.visible = false;
+			btnOptions.visible = false;
+			txtTime.visible = false;
+			newRoom = false;
+			grabbedNPC = false;
+			grabbedPC = false;
+			
+			roomNPC = new MyNPC();
+			roomNPC.randomNPC(species, playerCharacter);
+			
+			title = "Park - Hunting Prey";
+			
+			//Should probably add some element of randomness to the fight generation
+			//Right now this code will make a battle pop up every time the player clicks 'hunt' in the park
+			if (rollDie(roomNPC.agi + roomNPC.sneak) >= rollDie(playerCharacter.int + playerCharacter.spot)) {
+				//NPC gets the drop on the player
+				message += "A [NPCNAME] appears. [SUBJC] suprises you and attacks!<br>";
+				message += npcAttack();
+				
+				btns[0].setButton("Next", null, 1);
+				btns[0].setClickFunc(doCombat);
+			} else {
+				//The player spots the NPC first
+				message += "You come across a [NPCNAME]. [SUBJC] readies a weapon and takes an aggressive stance. It's a fight!<br>";
+				
+				message += advanceSkill(1, "spot");
+				message += advanceSkill(1, "int");
+				
+				btns[0].setButton("Next", null, 1);
+				btns[0].setClickFunc(doCombat);
+				btns[2].setButton("Run", "Attempt to flee", 4);
+				btns[2].setClickFunc(doCombat);
+			}
+			
+		case 1:
+			//Action choice screen
+			title = "Park - Under Attack";
+			
+			message += "You are under attack by a [NPCNAME]. [SUBJC] appears [WOUNDED].</p><p>";
+			
+			if (globals.debugMode) //debug mode on
+				message += "Debug info:<br>[NPCNAME] health: " + roomNPC.healthCurr + "/" + roomNPC.healthMax + "<br>";
+			
+			if (!grabbedNPC && !grabbedPC) { //No one is grabbing anyone
+				btns[0].setButton("Attack", "Attack with your equipped weapon", 2);
+				btns[0].setClickFunc(doCombat);
+				btns[1].setButton("Grab", "Attempt to grab and hold your foe", 3);
+				btns[1].setClickFunc(doCombat);
+				btns[2].setButton("Run", "Attempt to flee", 4);
+				btns[2].setClickFunc(doCombat);
+			}
+			if (grabbedNPC) { //The Player has a hold of the NPC
+				btns[0].setButton("Crush", "Use your strength to damage your foe", 5);
+				btns[0].setClickFunc(doCombat);
+				btns[1].setButton("Consume", "Stuff your foe in your belly", 6);
+				btns[1].setClickFunc(doCombat);
+				btns[2].setButton("Release", "Let your foe go", 7);
+				btns[2].setClickFunc(doCombat);
+			}
+			if (grabbedPC) { //The NPC has a hold of the Player
+				btns[0].setButton("Struggle", "Try and escape", 8);
+				btns[0].setClickFunc(doCombat);
+				btns[1].setButton("Wait", "Wait and see where this is going", 9);
+				btns[1].setClickFunc(doCombat);
+			}
+		case 2:
+			//Attack
+			title = "Park - Attack!";
+			
+			//Attack the NPC, first try and hit it
+			if (rollDie(roomNPC.agi + roomNPC.dodge) > rollDie(playerCharacter.agi + playerCharacter.melee + playerCharacter.equipWepObj.attack)) {
+				//NPC dodges
+				message += "You swing your " + playerCharacter.equipWepObj.name.toLowerCase() + " at the [NPCNAME] but [SUBJ] evades your attack.<br>";
+			} else {
+				//PC hits
+				
+				//damage
+				damage = rollDie(playerCharacter.str + playerCharacter.equipWepObj.attack);
+				if (damage <= 0)
+					damage = 1; //Minimum damage
+				
+				advanceSkill(1, "agi");
+				advanceSkill(1, "melee");
+				advanceSkill(1, "str");
+				
+				message += "You swing your " + playerCharacter.equipWepObj.name.toLowerCase() + " at the [NPCNAME] for " + damage + " damage.<br>";
+				
+				roomNPC.healthCurr = roomNPC.healthCurr - damage;
+				
+				if (roomNPC.healthCurr <= 0) {
+					//NPC is dead
+					message += "Your foe falls to [OBJ] knees, [OBJ] breath fading fast.<br>";
+					
+					btns[0].setButton("Kill", "Finish Them!", 10);
+					btns[0].setClickFunc(doCombat);
+					btns[1].setButton("Consume", "All that fighting worked up an appetite", 11);
+					btns[1].setClickFunc(doCombat);
+					btns[2].setButton("Leave", "Walk away", 12);
+					btns[2].setClickFunc(doCombat);
+					
+					outputText(message, title);
+					
+					return;
+				}
+			}
+			
+			message += npcAttack();
+			
+			btns[0].setButton("Next", null, 1);
+			btns[0].setClickFunc(doCombat);
+		case 3:
+			//Grab
+			title = "Park - Grab";
+			
+			//Attempt to grab the NPC
+			message += "You lunge forward, trying to get your hands around the [NPCNAME]. ";
+			
+			if (rollDie(roomNPC.agi + roomNPC.dodge) >= rollDie(playerCharacter.agi + playerCharacter.melee)) {
+				//NPC dodges
+				message += "But [SUBJ] slips out of your grasp.<br>";
+				
+				message += npcAttack();
+			} else {
+				//PC grabs the NPC
+				message += "You successfully wrap your arms around [OBJ].<br>";
+				
+				advanceSkill(1, "agi");
+				advanceSkill(1, "melee");
+				
+				grabbedNPC = true;
+			}
+			
+			btns[0].setButton("Next", null, 1);
+			btns[0].setClickFunc(doCombat);
+		case 4:
+			//Run
+			title = "Park - Running";
+			
+			//Player attempts to escape the combat
+			message += "You turn and attempt to escape, ";
+			
+			if (rollDie(roomNPC.agi + roomNPC.run) >= rollDie(playerCharacter.agi + playerCharacter.run)) {
+				//Player fails to escape
+				message += "but the [NPCNAME] stays with you.<br>";
+				
+				message += npcAttack();
+				
+				btns[0].setButton("Next", null, 1);
+				btns[0].setClickFunc(doCombat);
+			} else {
+				//Player escapes
+				message += "and quickly leave the [NPCNAME] behind.<br>";
+				
+				btns[0].setButton("Next", null, 12);
+				btns[0].setClickFunc(doCombat);
+			}
+		case 5:
+			//Crush
+			title = "Park - Grabbing";
+			
+			damage = rollDie(playerCharacter.str);
+			
+			if (damage < playerCharacter.str)
+				damage = playerCharacter.str; //Minimum damage
+			
+			advanceSkill(1, "str");
+			
+			message += "You squeeze the [NPCNAME] tightly for " + damage + " damage.<br>";
+			
+			roomNPC.healthCurr = roomNPC.healthCurr - damage;
+			
+			if (roomNPC.healthCurr <= 0) {
+				//NPC is dead
+				message += "Your foe falls to [OBJ] knees, [OBJ] breath fading fast.<br>";
+				
+				btns[0].setButton("Kill", "Finish Them!", 10);
+				btns[0].setClickFunc(doCombat);
+				btns[1].setButton("Consume", "All that fighting worked up an appetite", 11);
+				btns[1].setClickFunc(doCombat);
+				btns[2].setButton("Leave", "Walk away", 12);
+				btns[2].setClickFunc(doCombat);
+				
+				outputText(message, title);
+				
+				return;
+			}
+			
+			//NPC tries to escape
+			if (rollDie(roomNPC.str) <= rollDie(playerCharacter.str)) {
+				//NPC fails to escape
+				message += "Your foe struggles in your grasp, but fails to escape from you.<br>";
+				
+				advanceSkill(1, "str");
+			} else {
+				//NPC escapes
+				message += "Your foe struggles in your grasp and bursts free of you.<br>";
+				
+				grabbedNPC = false;
+			}
+			
+			btns[0].setButton("Next", null, 1);
+			btns[0].setClickFunc(doCombat);
+		case 6:
+			//Eat Grabbed Foe
+			title = "Park - Consume Foe";
+			
+			if (rollDie(roomNPC.str) <= rollDie(playerCharacter.str + playerCharacter.gluttony)) {
+				//NPC gets eaten
+				
+				message += "(Placeholder) You lift your struggling prey to your mouth and quickly slide [OBJ] down your throat.<br>";
+				
+				playerCharacter.gluttony++;
+				playerCharacter.stomachContents.push(roomNPC);
+				playerCharacter.stomachCurrent += roomNPC.mass;
+				playerCharacter.numEaten++;
+				advanceSkill(1, "str");
+				
+				btns[0].setButton("Next", null, 12);
+				btns[0].setClickFunc(doCombat);
+			} else {
+				//PC fails to swallow their foe
+				
+				message += "You attempt to swallow your foe, but [SUBJ] struggles out of your grasp.<br>";
+				
+				grabbedNPC = false;
+				
+				btns[0].setButton("Next", null, 1);
+				btns[0].setClickFunc(doCombat);
+			}
+		case 7:
+			//Release
+			title = "Park - Release Your Foe";
+			
+			message += "You let your foe go, [OBJ] stands and readies [SUBJ] weapons.<br>";
+			
+			grabbedNPC = false;
+			
+			btns[0].setButton("Next", null, 1);
+			btns[0].setClickFunc(doCombat);
+		case 8:
+			//Struggle
+			
+			//Player attempts to escape being grabbed. This function isn't needed until after npcAttack is finished
+		case 9:
+			//Wait
+			title = "Park - Wait";
+			
+			//Player waits, letting the NPC do what they want for a round
+			message += "You wait, watching the [NPCNAME].<br>";
+			
+			message += npcAttack();
+			
+			btns[0].setButton("Next", null, 1);
+			btns[0].setClickFunc(doCombat);
+		case 10:
+			//Finish Him!
+			
+			title = "Park - Fatality!";
+			
+			//Finishing moves are based on the weapon. For now, something simple.
+			
+			message += "You snap the [NPCNAME]'s neck, finishing [OBJ] off.<br>";
+			
+			btns[0].setButton("Next", null, 12);
+			btns[0].setClickFunc(doCombat);
+		case 11:
+			//Consume your defeated foe
+			title = "Park - Consume Foe";
+			
+			message += "(Placeholder) Your foe struggles weakly as you lift [OBJ] to your mouth and swallow them in a few quick gulps.<br>";
+			
+			playerCharacter.stomachContents.push(roomNPC);
+			playerCharacter.stomachCurrent += roomNPC.mass;
+			playerCharacter.numEaten++;
+			playerCharacter.gluttony++;
+			
+			btns[0].setButton("Next", null, 12);
+			btns[0].setClickFunc(doCombat);
+		case 12:
+			//Return to the movement system
+			
+			message += "You sigh, relaxing from the combat.<br>";
+			
+			btns[0].setButton("Next", null, 0);
+			btns[0].setClickFunc(movePlayer);
+		default:
+			title = "Error";
+			message = "Warning, unknown takeAction value in doCombat: " + takeAction;
+		}
+		
+		outputText(message, title);
+	}
 	
 	static function doGym( e:MouseEvent ) {
 		var clicked:String = e.currentTarget.btnID;
@@ -780,6 +1139,7 @@ class Main {
 			playerCharacter.stomachContents.push(roomNPC);
 			playerCharacter.stomachCurrent += roomNPC.mass;
 			playerCharacter.numEaten++;
+			playerCharacter.gluttony++;
 			
 			btns[11].setButton("Next", null, 10);
 			btns[11].setClickFunc(movePlayer);
@@ -1697,10 +2057,10 @@ class Main {
 			message = "Randomly generated NPC is [NPCGENDER].</p><br>";
 			message += "<p>What follows is a test of the logic parsing system.</p><br>";
 			message += "<p>This sentance should appear for everyone. ";
-			message += "[HasBreasts:This_sentance_should_appear_for_NPCs_with_<POS>_breasts.] ";
-			message += "[HasVagina:This_sentance_should_appear_for_NPCs_with_a_vagina.] ";
-			message += "[HasPenis:This_sentance_should_appear_for_NPCs_with_a_penis.] ";
-			message += "[HasBalls:This_sentance_should_appear_for_NPCs_with_balls.] ";
+			message += "[HasBreasts:This sentance should appear for NPCs with {POS} breasts. ]";
+			message += "[HasVagina:This sentance should appear for NPCs with a vagina. ]";
+			message += "[HasPenis:This sentance should appear for NPCs with a penis. ]";
+			message += "[HasBalls:This sentance should appear for NPCs with balls. ]";
 			
 			btns[0].setButton("Test Again", null, 7);
 			btns[0].setClickFunc(debugMenu);
@@ -1756,6 +2116,10 @@ class Main {
 								saveDataObject.data.player1.digestDamage = saveDataObject.data.player1.digestDamage / 10;
 								saveDataObject.data.save1[0] = 14;
 							}
+							if (saveDataObject.data.save1[0] == 14) { //Version 14 had no weapons
+								saveDataObject.data.player1.equipWepObj = globals.weapons[0]; //Unarmed
+								saveDataObject.data.save1[0] = 15;
+							}
 							save1Name = saveDataObject.data.player1.name + " -- Updated";
 							save1Tip = "Load " + saveDataObject.data.player1.name;
 						}
@@ -1780,6 +2144,10 @@ class Main {
 								saveDataObject.data.player2.digestDamage = saveDataObject.data.player1.digestDamage / 10;
 								saveDataObject.data.save2[0] = 14;
 							}
+							if (saveDataObject.data.save2[0] == 14) { //Version 14 had no weapons
+								saveDataObject.data.player2.equipWepObj = globals.weapons[0]; //Unarmed
+								saveDataObject.data.save2[0] = 15;
+							}
 							save2Name = saveDataObject.data.player2.name + " -- Updated";
 							save2Tip = "Load " + saveDataObject.data.player2.name;
 						}
@@ -1803,6 +2171,10 @@ class Main {
 							if (saveDataObject.data.save3[0] == 13) { //Version 13 had digestion rates too high
 								saveDataObject.data.player3.digestDamage = saveDataObject.data.player1.digestDamage / 10;
 								saveDataObject.data.save3[0] = 14;
+							}
+							if (saveDataObject.data.save3[0] == 14) { //Version 14 had no weapons
+								saveDataObject.data.player3.equipWepObj = globals.weapons[0]; //Unarmed
+								saveDataObject.data.save3[0] = 15;
 							}
 							save3Name = saveDataObject.data.player3.name + " -- Updated";
 							save3Tip = "Load " + saveDataObject.data.player3.name;
@@ -2765,16 +3137,16 @@ class Main {
 		credits.push("Gym female oral sex scenes contributed by forum member BeardyKomodo.");
 		credits.push("Bug fixes and code improvements by GitHub member s-r-g-i.");
 		
-		//oneLineBackers.push("pelle"); //Dropped to $1 Feb
+		oneLineBackers.push("pelle"); //Dropped to $1 Feb
 		oneLineBackers.push("Writer"); //Paid Feb #10
 		
 		
-		//backerCredits.push("Foxlets"); //Dropped below $5 in October
-		//backerCredits.push("Bradley Taylor"); //Paid Feb $5
-		//backerCredits.push("OutsideOctaves"); //Paid Feb $5
+		backerCredits.push("Foxlets"); //Dropped below $5 in October
+		backerCredits.push("Bradley Taylor"); //Paid Feb $5
+		backerCredits.push("OutsideOctaves"); //Paid Feb $5
 		backerCredits.push("Michael Brookins"); //Paid Feb $5
 		backerCredits.push("Erik Camp"); //Paid Feb $5
-		//backerCredits.push("Pell Torr"); //Paid Feb $5
+		backerCredits.push("Pell Torr"); //Paid Feb $5
 		
 		
 		for (i in 0...credits.length) {
@@ -2896,6 +3268,10 @@ class Main {
 	 *                        *
 	\**************************/
 	
+	static function npcAttack( ):String {
+		return "The [NPCNAME] flails unfinishedly at you";
+	}
+	
 	static function truncateDecimalPlaces(InVal:Float):String {
 		//Thanks for this by the way, I couldn't figure out how to get it to work in HaXe since the ActionScript function doesn't work -- Kyra
 		
@@ -2942,6 +3318,16 @@ class Main {
 			playerCharacter.intNeededToUp -= advanceBy;
 		case "end":
 			playerCharacter.endNeededToUp -= advanceBy;
+		case "dodge":
+			playerCharacter.dodgeNeededToUp -= advanceBy;
+		case "run":
+			playerCharacter.runNeededToUp -= advanceBy;
+		case "melee":
+			playerCharacter.meleeNeededToUp -= advanceBy;
+		case "sneak":
+			playerCharacter.sneakNeededToUp -= advanceBy;
+		case "spot":
+			playerCharacter.spotNeededToUp -= advanceBy;
 		}
 		
 		if (playerCharacter.strNeededToUp <= 0) {
@@ -2978,6 +3364,45 @@ class Main {
 			message += "You feel smarter.</p><p>";
 		}
 		
+		if (playerCharacter.dodgeNeededToUp <= 0) {
+			playerCharacter.dodge++;
+			playerCharacter.pointsSpent++;
+			skillOver = Math.abs(playerCharacter.dodgeNeededToUp);
+			playerCharacter.dodgeNeededToUp = Math.round((playerCharacter.dodge * 5) - skillOver);
+			message += "You feel like you are better able to evade attacks.</p><p>";
+		}
+		
+		if (playerCharacter.runNeededToUp <= 0) {
+			playerCharacter.run++;
+			playerCharacter.pointsSpent++;
+			skillOver = Math.abs(playerCharacter.runNeededToUp);
+			playerCharacter.runNeededToUp = Math.round((playerCharacter.run * 5) - skillOver);
+			message += "You feel faster.</p><p>";
+		}
+		
+		if (playerCharacter.meleeNeededToUp <= 0) {
+			playerCharacter.melee++;
+			playerCharacter.pointsSpent++;
+			skillOver = Math.abs(playerCharacter.meleeNeededToUp);
+			playerCharacter.meleeNeededToUp = Math.round((playerCharacter.melee * 5) - skillOver);
+			message += "Your skill with weapons has improved.</p><p>";
+		}
+		
+		if (playerCharacter.sneakNeededToUp <= 0) {
+			playerCharacter.sneak++;
+			playerCharacter.pointsSpent++;
+			skillOver = Math.abs(playerCharacter.sneakNeededToUp);
+			playerCharacter.sneakNeededToUp = Math.round((playerCharacter.sneak * 5) - skillOver);
+			message += "You feel like you're able to move quieter.</p><p>";
+		}
+		
+		if (playerCharacter.spotNeededToUp <= 0) {
+			playerCharacter.spot++;
+			playerCharacter.pointsSpent++;
+			skillOver = Math.abs(playerCharacter.spotNeededToUp);
+			playerCharacter.spotNeededToUp = Math.round((playerCharacter.spot * 5) - skillOver);
+			message += "You feel more observant.</p><p>";
+		}
 		return message;
 	}
 	
@@ -3152,7 +3577,7 @@ class Main {
 		
 		for (n in 0...valueArray.length) {
 			if (valueArray[n] != null)
-				valueArray[n] = textParseRedux(valueArray[n]);
+				valueArray[n] = textParse(valueArray[n]);
 		}
 		
 		var m:Int = 0;
@@ -3194,6 +3619,8 @@ class Main {
 			parsedText = roomNPC.name;
 		case "NPCGENDER":
 			parsedText = roomNPC.gender("gender");
+		case "NPCGENDERL":
+			parsedText = roomNPC.gender("gender").toLowerCase();
 		case "SUBJC":
 			parsedText = roomNPC.gender("sub");
 		case "SUBJ":
@@ -3206,6 +3633,8 @@ class Main {
 			parsedText = roomNPC.gender("pos");
 		case "POS":
 			parsedText = roomNPC.gender("pos").toLowerCase();
+		case "WOUNDED":
+			parsedText = roomNPC.wounded();
 		case "HasBreasts":
 			if (roomNPC.breasts)
 				parsedText = value;
@@ -3609,6 +4038,7 @@ class Main {
 		AMFConnection.registerClassAlias("consume.speciesObject", MySpecies);
 		AMFConnection.registerClassAlias("consume.NPCObject", MyNPC);
 		AMFConnection.registerClassAlias("consume.keyObject", MyItem_Key);
+		AMFConnection.registerClassAlias("consume.weaponObject", MyItem_Weapon);
 		
 		//Species, both playable and non
 		species = new Array();
@@ -3636,6 +4066,7 @@ class Main {
 		globals.perks = new Array();
 		
 		//			Name		Display Name		Description															Effect				Buyable, if false the perk can only be granted by an event. Not bought.
+		perks.push(["comps",    "Compressable",		"You can cram your body through any opening, no matter how small.", "DOOR:YES",			true]);
 		
 		perks.push(["ineat",	"Inedible",			"You cannot be eaten.",												"EATEN:NO",			true]);
 		perks.push(["nskinny",	"Naturally Skinny",	"Burn fat at an increased rate.",									"FAT:-10",				true]);
@@ -3792,9 +4223,9 @@ class Main {
 		
 		
 		//Items
-		globals.keys = new Array();
 		
 		//Keys				Name						keyID	desc
+		globals.keys = new Array();
 		globals.keys[0] = ["Gym Membership Keycard",	0,		"A credit-card sized square of plastic with the gym's logo printed on it and a black background"];
 		globals.keys[1] = ["Gym Gold Membership",		1,		"A credit-card sized square of plastic with the gym's logo printed on it and a gold background"];
 		globals.keys[2] = ["Gym Staff Key",				2,		"A key you got from Shay, it opens the staff room door at the gym"];
@@ -3808,6 +4239,9 @@ class Main {
 		globals.food[0].new_food("Cheeseburger", 5, 2, "A thick greesy cheeseburger");
 		
 		//Weapons
+		globals.weapons = new Array();
+		globals.weapons[0] = new MyItem_Weapon();
+		globals.weapons[0].newWeapon("Unarmed", 0, 0, "Your bare hands.", 0, true);
 		
 		//Armor
 		

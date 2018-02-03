@@ -12,6 +12,15 @@ class MyNPC extends MyCharacter {
 	
 	public var image:Bitmap;
 	
+	public function wounded():String {
+		var damageDesc:String = "";
+		
+		if (this.healthCurr == this.healthMax) 
+			damageDesc = "completely unharmed";
+		
+		return damageDesc;
+	}
+	
 	public function newNPC(newChar:Array<Dynamic>) {
 		this.name = newChar[0];
 		this.species = newChar[1];
@@ -321,7 +330,7 @@ class MyNPC extends MyCharacter {
 			//Eat
 			talk[2] = ["You ask the [NPCNAME] if [SUBJ]'d like to be lunch. [SUBJC] blinks a little, not really understanding your meaning until you grin hungerly and it clicks. [SUBJC] look around nervously then follow you to the bathroom. You lock the door behind the two of you, and look over the [NPCNAME] who smiles shyly.</p><br><p>You tell the [NPCNAME] to undress and [SUBJ] slowly removes [POS] clothes, blushing when " +
 			 "you see [HasPenis:{POS} hard cock straining {POS} underwear][HasPandV: and ][HasVagina:{POS} slit wet with arousal]. [SUBJC] setps out of [POS] underwear" +
-			 "[HasPenis:, {POS} cock pointing right at you, hard with the thought of what you're about to do to {OBJ}] " +
+			 "[HasPenis:, {POS} cock pointing right at you, hard with the thought of what you're about to do to {OBJ} ]" +
 			 "[HasVagina: and the unmistakable scent of female arousal fills the small room]. " + //There will be issues here if the NPC is a Doll or Neuter
 			 "You step in close, your mouth going over [POS] face as [SUBJ] starts playing with [POS] [HasPenis:boner][HasPandV: and ][HasVagina:clit]. " +
 			 "[SUBJC] slides down your throat, furiously masturbating the whole time. As your tongue passes [POS] " +

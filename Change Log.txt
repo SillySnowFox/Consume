@@ -1,15 +1,15 @@
-Visit the forums and say Hi! http://dancingfoxstudios.com/phpBB3/
 Support the game on Pateron! https://www.patreon.com/SillySnowFox?ty=h
 
 v0.41
 
 New
 
- *
+ * Combat System Skeleton
 
 Changes
 
  * Buttons cleaned up. Should help prevent future oddness with buttons. (Thanks to s-r-g-i)
+ * Build Number changed to 15.
  * 
 
 Bugfixes

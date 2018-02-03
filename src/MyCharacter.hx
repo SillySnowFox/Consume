@@ -91,6 +91,13 @@ class MyCharacter {
 	public var end:Int;
 	public var int:Int;
 	
+	//Skills
+	public var dodge:Int = 0;
+	public var run:Int = 0;
+	public var melee:Int = 0;
+	public var sneak:Int = 0;
+	public var spot:Int = 0;
+	
 	public var arousal:Int;
 	
 	private var perks:Array<MyPerk>;

@@ -6,6 +6,7 @@ class MyItem_Weapon extends MyItem {
 	public var attack:Int;
 	public var twoHanded:Bool;
 	public var specials:Array<Dynamic> = new Array();
+	public var finisher:String;
 	
 	/*Special array structure;
 	 * specials[x][0] = ability name
@@ -64,10 +65,8 @@ class MyItem_Weapon extends MyItem {
 		
 		return message;
 	}
-	 
-	public function new(name:String, mass:Int, value:Int, desc:String, newAttack:Int, newTwoHanded:Bool, newSpecials:Array<Dynamic>) {
-		super();
-		
+	
+	public function newWeapon(name:String, mass:Int, value:Int, desc:String, newAttack:Int, newTwoHanded:Bool, ?newSpecials:Array<Dynamic>, ?finish:String) {
 		this.name = name;
 		this.mass = mass;
 		this.value = value;
@@ -75,6 +74,10 @@ class MyItem_Weapon extends MyItem {
 		this.attack = newAttack;
 		this.twoHanded = newTwoHanded;
 		this.specials = newSpecials;
+		this.finisher = finish;
 	}
 	
+	public function new(){
+		super();
+	}
 }
