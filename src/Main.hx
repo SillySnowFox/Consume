@@ -58,6 +58,8 @@ class Main {
 	static var newRoom:Bool = true;
 	static var doorFuckCount:Int;
 	static var conversationStep:Int;
+	static var grabbedNPC:Bool; //The Player has a hold of the NPC
+	static var grabbedPC:Bool; //The NPC has a hold of the Player
 	
 	static var playerDied:String;
 	
@@ -120,27 +122,62 @@ class Main {
 				switch (tempMsg) {
 				case "##STOMACH":
 					//Player's belly is too big to get through the door
-					message += "Your massive stomach bumps against the doorway, far too large to fit through. Looks like you're not going that way until you get a little smaller.<br>";
-					timeGoesBy = 2;
+					if (playerCharacter.hasPerk("comps")) {
+						message += "Your massive stomach bumps against the doorway, at first it looks like you're too big to fit but you grunt and push and manage to shove your huge belly through.<br>";
+						globals.lastRoom = globals.currentRoomID;
+						currentRoom = new MyRoom(globals.rooms[options[0]]);
+						globals.currentRoomID = options[0];
+						timeGoesBy = options[1] + 5;
+					} else {
+						message += "Your massive stomach bumps against the doorway, far too large to fit through. Looks like you're not going that way until you get a little smaller.<br>";
+						timeGoesBy = 2;
+					}
 				case "##BREASTS":
 					//Player's boobs are too big to get through
-					message += "Your massive breasts bump against the doorway, far to huge to fit through. Looks like you're not going that way until you get a little smaller.<br>";
-					timeGoesBy = 2;
-					playerCharacter.arousal += 5;
+					if (playerCharacter.hasPerk("comps")) {
+						message += "Your massive breasts bump against the doorway, at first it looks like you're too big to fit through but you grunt and push and manage to shove your huge tits through the door.<br>";
+						globals.lastRoom = globals.currentRoomID;
+						currentRoom = new MyRoom(globals.rooms[options[0]]);
+						globals.currentRoomID = options[0];
+						timeGoesBy = options[1] + 5;
+						playerCharacter.arousal += 5;
+					} else {
+						message += "Your massive breasts bump against the doorway, far to huge to fit through. Looks like you're not going that way until you get a little smaller.<br>";
+						timeGoesBy = 2;
+						playerCharacter.arousal += 5;
+					}
 				case "##BALLS":
 					//Player's balls are too big to get through
-					message += "Your massive balls bump against the doorway, far too huge to fit through. Looks like you're not going that way until you get a little smaller.<br>";
-					timeGoesBy = 2;
-					playerCharacter.arousal += 5;
+					if (playerCharacter.hasPerk("comps")) {
+						message += "Your massive balls bump agianst the doorway, at first it looks like you're too big to fit through, but you gurnt and push and manage to shove your huge balls through the door.<br>";
+						globals.lastRoom = globals.currentRoomID;
+						currentRoom = new MyRoom(globals.rooms[options[0]]);
+						globals.currentRoomID = options[0];
+						timeGoesBy = options[1] + 5;
+						playerCharacter.arousal += 5;
+					} else {
+						message += "Your massive balls bump against the doorway, far too huge to fit through. Looks like you're not going that way until you get a little smaller.<br>";
+						timeGoesBy = 2;
+						playerCharacter.arousal += 5;
+					}
 				case "##COCK":
 					//Player's penis is too big to get through
-					message += "Your massive cock jams in the doorway. Though it feels wonderful you are simply too massive to get through.<br>";
-					timeGoesBy = 3;
-					playerCharacter.arousal += 10;
-					doorFuckCount -= 1;
-					if (doorFuckCount <= -1) {
-						message += playerCharacter.cum("door");
-						doorFuckCount = playerCharacter.end;
+					if (playerCharacter.hasPerk("comps")) {
+						message += "Your massive cock jams in the doorway, you have a momentary thought of staying right there and getting off using the doorway, but you push a little harder and manage to shove yourself through the door.<br>";
+						globals.lastRoom = globals.currentRoomID;
+						currentRoom = new MyRoom(globals.rooms[options[0]]);
+						globals.currentRoomID = options[0];
+						timeGoesBy = options[1] + 5;
+						playerCharacter.arousal += 10;
+					} else {
+						message += "Your massive cock jams in the doorway. Though it feels wonderful you are simply too massive to get through.<br>";
+						timeGoesBy = 3;
+						playerCharacter.arousal += 10;
+						doorFuckCount -= 1;
+						if (doorFuckCount <= -1) {
+							message += playerCharacter.cum("door");
+							doorFuckCount = playerCharacter.end;
+						}
 					}
 				default:
 					message += tempMsg;
@@ -213,9 +250,8 @@ class Main {
 				switch (flagValue) {
 				case "active":
 					message += "The area whispers with hidden enemies.<br>";
-					btns[11 - i].setButton("Hunt");
-					//btns[11 - i].addEventListener(MouseEvent.CLICK, doCombat);
-					btns[11 - i].disableButton();
+					btns[11 - i].setButton("Hunt", null, 0);
+					btns[11 - i].setClickFunc(doCombat);
 				case "passive":
 					if (playerCharacter.lastClubDay != playerCharacter.day && globals.lastRoom == 7) {
 						message += "The bouncer nods to you, &quot;No cover today.&quot;<br>";
@@ -224,7 +260,7 @@ class Main {
 					}
 					message += "Prey wander the area, wating to be consumed.<br>";
 					btns[11 - i].setButton("Hunt", null, 0);
-					btns[11 - i].addEventListener(MouseEvent.CLICK, doHunt);
+					btns[11 - i].setClickFunc(doHunt);
 				}
 			case 2:
 				//Shop
@@ -243,12 +279,12 @@ class Main {
 						roomNPC.newNPC(nonPlayerCharacters[4]);
 					
 					btns[9].setButton("Buy", "Buy some tasty Ice Cream.", "ic:0");
-					//btns[9].addEventListener(MouseEvent.CLICK, doShop);
+					//btns[9].setClickFunc(doShop);
 					btns[9].disableButton();
 					if (roomNPC != null) {
 						message += roomNPC.name + " is standing behind it.<br>";
 						btns[11].setButton("Talk", "Talk to " + roomNPC.name, 0);
-						btns[11].addEventListener(MouseEvent.CLICK, doTalk);
+						btns[11].setClickFunc(doTalk);
 					}
 				case "general":
 					//general store
@@ -256,51 +292,51 @@ class Main {
 					
 					btns[9].setButton("Buy", "Take a look at the " + roomNPC.species.name + "'s stock", "gen:0");
 					btns[9].disableButton();
-					//btns[9].addEventListener(MouseEvent.CLICK, doShop);
+					//btns[9].setClickFunc(doShop);
 				case "rat":
 					//The rat's illegal shop
 					message += roomNPC.name + " has something to sell.<br>";
 					
 					btns[9].setButton("Buy", "Take a look at the rat's offerings.", "rat:0");
-					//btns[9].addEventListener(MouseEvent.CLICK, doShop);
+					//btns[9].setClickFunc(doShop);
 					btns[9].disableButton();
 				}
 			case 3:
 				//Talk
 				message += roomNPC.name + " is here.<br>";
 				btns[11 - i].setButton("Talk", "Talk to " + roomNPC.name, 0);
-				btns[11 - i].addEventListener(MouseEvent.CLICK, doTalk);
+				btns[11 - i].setClickFunc(doTalk);
 			case 4:
 				//Work
 				message += "Plenty of work awaits you here.<br>";
 				
 				btns[9].setButton("Work 2", "Work for two hours", 2);
-				btns[9].addEventListener(MouseEvent.CLICK, doWork);
+				btns[9].setClickFunc(doWork);
 				btns[10].setButton("Work 4", "Work for four hours", 4);
-				btns[10].addEventListener(MouseEvent.CLICK, doWork);
+				btns[10].setClickFunc(doWork);
 				btns[11].setButton("Work 8", "Work for eight hours", 8);
-				btns[11].addEventListener(MouseEvent.CLICK, doWork);
+				btns[11].setClickFunc(doWork);
 			case 5:
 				//Toilet
 				message += "There is a toilet here you can use.<br>";
 				btns[11 - i].setButton("Toilet", null, 0);
-				btns[11 - i].addEventListener(MouseEvent.CLICK, doPoop);
+				btns[11 - i].setClickFunc(doPoop);
 			case 6:
 				//Sleep
 				message += "Your bed looks inviting.<br>";
 				btns[11 - i].setButton("Sleep");
-				//btns[11 - i].addEventListener(MouseEvent.CLICK, doSleep);
+				//btns[11 - i].setClickFunc(doSleep);
 				btns[11 - i].disableButton();
 			case 7:
 				//Phone
 				message += "There is a phone on the wall here.<br>";
 				btns[11 - i].setButton("Phone", null, 0);
-				btns[11 - i].addEventListener(MouseEvent.CLICK, doPhone);
+				btns[11 - i].setClickFunc(doPhone);
 			case 8:
 				//Workout
 				message += "Workout equipment lines the walls.<br>";
 				btns[11 - i].setButton("Workout", null, "choose");
-				btns[11 - i].addEventListener(MouseEvent.CLICK, doGym);
+				btns[11 - i].setClickFunc(doGym);
 			case 9:
 				//Gold room
 			case 10:
@@ -337,20 +373,19 @@ class Main {
 				if (exit[i].exitClosed || exit[i].travelTo == -1) {
 					btns[i].disableButton();
 				} else {
-					btns[i].addEventListener(MouseEvent.CLICK, movePlayer);
+					btns[i].setClickFunc(movePlayer);
 				}
 				if (exit[i].hidden) {
 					if (playerCharacter.quest[exit[i].hiddenQuestID].stage == 0) {
 						btns[i].setButton(exitDirection[i], null, exitDirShort[i]);
 						btns[i].disableButton();
-						btns[i].addEventListener(MouseEvent.CLICK, showHidden);
-						btns[i].removeEventListener(MouseEvent.CLICK, movePlayer);
+						btns[i].setClickFunc(showHidden);
 					}
 				}
 				if (exit[i].keyID != -1) {
 					if (playerCharacter.hasKey(exit[i].keyID) == -1) {
 						btns[i].disableButton();
-						btns[i].removeEventListener(MouseEvent.CLICK, movePlayer);
+						//btns[i].clearClickFunc(); Redundant
 					}
 				}
 			} else {
@@ -364,14 +399,337 @@ class Main {
 		//Wait, btn 4
 		if (currentRoom.allowWait) {
 			btns[4].setButton("Wait", null, "WAIT:15");
-			btns[4].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[4].setClickFunc(movePlayer);
 		}
 		
 		
 		
 	}
 	
-	
+	static function doCombat( e:MouseEvent ) {
+		//Combat system
+		var takeAction:Int = e.currentTarget.btnID;
+		var btnOptions:Object = Lib.current.getChildByName("Options Button");
+		var btnDesc:Object = Lib.current.getChildByName("Desc Button");
+		var txtTime:Object = Lib.current.getChildByName("Time");
+		var message:String = "";
+		var title:String = "";
+		
+		var damage:Int = 0;
+		
+		clearAllEvents();
+		
+		/* Combat actions
+		 * 0 - Entered from Movement system
+		 * 1 - Action choice screen
+		 * 2 - Attack
+		 * 3 - Grab
+		 * 4 - Run
+		 * 5 - Crush
+		 * 6 - Eat (Only when grabbed)
+		 * 7 - Release (Let a grabbed character go)
+		 * 8 - Struggle (Try and escape a grab)
+		 * 9 - Wait
+		 * 10 - Finishing Move
+		 * 11 - Consume
+		 * 12 - Combat End
+		 */
+		
+		switch (takeAction) {
+		case 0:
+			//Just entered from movement system
+			btnDesc.visible = false;
+			btnOptions.visible = false;
+			txtTime.visible = false;
+			newRoom = false;
+			grabbedNPC = false;
+			grabbedPC = false;
+			
+			roomNPC = new MyNPC();
+			roomNPC.randomNPC(species, playerCharacter);
+			
+			title = "Park - Hunting Prey";
+			
+			//Should probably add some element of randomness to the fight generation
+			//Right now this code will make a battle pop up every time the player clicks 'hunt' in the park
+			if (rollDie(roomNPC.agi + roomNPC.sneak) >= rollDie(playerCharacter.int + playerCharacter.spot)) {
+				//NPC gets the drop on the player
+				message += "A [NPCNAME] appears. [SUBJC] suprises you and attacks!<br>";
+				message += npcAttack();
+				
+				btns[0].setButton("Next", null, 1);
+				btns[0].setClickFunc(doCombat);
+			} else {
+				//The player spots the NPC first
+				message += "You come across a [NPCNAME]. [SUBJC] readies a weapon and takes an aggressive stance. It's a fight!<br>";
+				
+				message += advanceSkill(1, "spot");
+				message += advanceSkill(1, "int");
+				
+				btns[0].setButton("Next", null, 1);
+				btns[0].setClickFunc(doCombat);
+				btns[2].setButton("Run", "Attempt to flee", 4);
+				btns[2].setClickFunc(doCombat);
+			}
+			
+		case 1:
+			//Action choice screen
+			title = "Park - Under Attack";
+			
+			message += "You are under attack by a [NPCNAME]. [SUBJC] appears [WOUNDED].</p><p>";
+			
+			if (globals.debugMode) //debug mode on
+				message += "Debug info:<br>[NPCNAME] health: " + roomNPC.healthCurr + "/" + roomNPC.healthMax + "<br>";
+			
+			if (!grabbedNPC && !grabbedPC) { //No one is grabbing anyone
+				btns[0].setButton("Attack", "Attack with your equipped weapon", 2);
+				btns[0].setClickFunc(doCombat);
+				btns[1].setButton("Grab", "Attempt to grab and hold your foe", 3);
+				btns[1].setClickFunc(doCombat);
+				btns[2].setButton("Run", "Attempt to flee", 4);
+				btns[2].setClickFunc(doCombat);
+			}
+			if (grabbedNPC) { //The Player has a hold of the NPC
+				btns[0].setButton("Crush", "Use your strength to damage your foe", 5);
+				btns[0].setClickFunc(doCombat);
+				btns[1].setButton("Consume", "Stuff your foe in your belly", 6);
+				btns[1].setClickFunc(doCombat);
+				btns[2].setButton("Release", "Let your foe go", 7);
+				btns[2].setClickFunc(doCombat);
+			}
+			if (grabbedPC) { //The NPC has a hold of the Player
+				btns[0].setButton("Struggle", "Try and escape", 8);
+				btns[0].setClickFunc(doCombat);
+				btns[1].setButton("Wait", "Wait and see where this is going", 9);
+				btns[1].setClickFunc(doCombat);
+			}
+		case 2:
+			//Attack
+			title = "Park - Attack!";
+			
+			//Attack the NPC, first try and hit it
+			if (rollDie(roomNPC.agi + roomNPC.dodge) > rollDie(playerCharacter.agi + playerCharacter.melee + playerCharacter.equipWepObj.attack)) {
+				//NPC dodges
+				message += "You swing your " + playerCharacter.equipWepObj.name.toLowerCase() + " at the [NPCNAME] but [SUBJ] evades your attack.<br>";
+			} else {
+				//PC hits
+				
+				//damage
+				damage = rollDie(playerCharacter.str + playerCharacter.equipWepObj.attack);
+				if (damage <= 0)
+					damage = 1; //Minimum damage
+				
+				advanceSkill(1, "agi");
+				advanceSkill(1, "melee");
+				advanceSkill(1, "str");
+				
+				message += "You swing your " + playerCharacter.equipWepObj.name.toLowerCase() + " at the [NPCNAME] for " + damage + " damage.<br>";
+				
+				roomNPC.healthCurr = roomNPC.healthCurr - damage;
+				
+				if (roomNPC.healthCurr <= 0) {
+					//NPC is dead
+					message += "Your foe falls to [OBJ] knees, [OBJ] breath fading fast.<br>";
+					
+					btns[0].setButton("Kill", "Finish Them!", 10);
+					btns[0].setClickFunc(doCombat);
+					btns[1].setButton("Consume", "All that fighting worked up an appetite", 11);
+					btns[1].setClickFunc(doCombat);
+					btns[2].setButton("Leave", "Walk away", 12);
+					btns[2].setClickFunc(doCombat);
+					
+					outputText(message, title);
+					
+					return;
+				}
+			}
+			
+			message += npcAttack();
+			
+			btns[0].setButton("Next", null, 1);
+			btns[0].setClickFunc(doCombat);
+		case 3:
+			//Grab
+			title = "Park - Grab";
+			
+			//Attempt to grab the NPC
+			message += "You lunge forward, trying to get your hands around the [NPCNAME]. ";
+			
+			if (rollDie(roomNPC.agi + roomNPC.dodge) >= rollDie(playerCharacter.agi + playerCharacter.melee)) {
+				//NPC dodges
+				message += "But [SUBJ] slips out of your grasp.<br>";
+				
+				message += npcAttack();
+			} else {
+				//PC grabs the NPC
+				message += "You successfully wrap your arms around [OBJ].<br>";
+				
+				advanceSkill(1, "agi");
+				advanceSkill(1, "melee");
+				
+				grabbedNPC = true;
+			}
+			
+			btns[0].setButton("Next", null, 1);
+			btns[0].setClickFunc(doCombat);
+		case 4:
+			//Run
+			title = "Park - Running";
+			
+			//Player attempts to escape the combat
+			message += "You turn and attempt to escape, ";
+			
+			if (rollDie(roomNPC.agi + roomNPC.run) >= rollDie(playerCharacter.agi + playerCharacter.run)) {
+				//Player fails to escape
+				message += "but the [NPCNAME] stays with you.<br>";
+				
+				message += npcAttack();
+				
+				btns[0].setButton("Next", null, 1);
+				btns[0].setClickFunc(doCombat);
+			} else {
+				//Player escapes
+				message += "and quickly leave the [NPCNAME] behind.<br>";
+				
+				btns[0].setButton("Next", null, 12);
+				btns[0].setClickFunc(doCombat);
+			}
+		case 5:
+			//Crush
+			title = "Park - Grabbing";
+			
+			damage = rollDie(playerCharacter.str);
+			
+			if (damage < playerCharacter.str)
+				damage = playerCharacter.str; //Minimum damage
+			
+			advanceSkill(1, "str");
+			
+			message += "You squeeze the [NPCNAME] tightly for " + damage + " damage.<br>";
+			
+			roomNPC.healthCurr = roomNPC.healthCurr - damage;
+			
+			if (roomNPC.healthCurr <= 0) {
+				//NPC is dead
+				message += "Your foe falls to [OBJ] knees, [OBJ] breath fading fast.<br>";
+				
+				btns[0].setButton("Kill", "Finish Them!", 10);
+				btns[0].setClickFunc(doCombat);
+				btns[1].setButton("Consume", "All that fighting worked up an appetite", 11);
+				btns[1].setClickFunc(doCombat);
+				btns[2].setButton("Leave", "Walk away", 12);
+				btns[2].setClickFunc(doCombat);
+				
+				outputText(message, title);
+				
+				return;
+			}
+			
+			//NPC tries to escape
+			if (rollDie(roomNPC.str) <= rollDie(playerCharacter.str)) {
+				//NPC fails to escape
+				message += "Your foe struggles in your grasp, but fails to escape from you.<br>";
+				
+				advanceSkill(1, "str");
+			} else {
+				//NPC escapes
+				message += "Your foe struggles in your grasp and bursts free of you.<br>";
+				
+				grabbedNPC = false;
+			}
+			
+			btns[0].setButton("Next", null, 1);
+			btns[0].setClickFunc(doCombat);
+		case 6:
+			//Eat Grabbed Foe
+			title = "Park - Consume Foe";
+			
+			if (rollDie(roomNPC.str) <= rollDie(playerCharacter.str + playerCharacter.gluttony)) {
+				//NPC gets eaten
+				
+				message += "(Placeholder) You lift your struggling prey to your mouth and quickly slide [OBJ] down your throat.<br>";
+				
+				playerCharacter.gluttony++;
+				playerCharacter.stomachContents.push(roomNPC);
+				playerCharacter.stomachCurrent += roomNPC.mass;
+				playerCharacter.numEaten++;
+				advanceSkill(1, "str");
+				
+				btns[0].setButton("Next", null, 12);
+				btns[0].setClickFunc(doCombat);
+			} else {
+				//PC fails to swallow their foe
+				
+				message += "You attempt to swallow your foe, but [SUBJ] struggles out of your grasp.<br>";
+				
+				grabbedNPC = false;
+				
+				btns[0].setButton("Next", null, 1);
+				btns[0].setClickFunc(doCombat);
+			}
+		case 7:
+			//Release
+			title = "Park - Release Your Foe";
+			
+			message += "You let your foe go, [OBJ] stands and readies [SUBJ] weapons.<br>";
+			
+			grabbedNPC = false;
+			
+			btns[0].setButton("Next", null, 1);
+			btns[0].setClickFunc(doCombat);
+		case 8:
+			//Struggle
+			
+			//Player attempts to escape being grabbed. This function isn't needed until after npcAttack is finished
+		case 9:
+			//Wait
+			title = "Park - Wait";
+			
+			//Player waits, letting the NPC do what they want for a round
+			message += "You wait, watching the [NPCNAME].<br>";
+			
+			message += npcAttack();
+			
+			btns[0].setButton("Next", null, 1);
+			btns[0].setClickFunc(doCombat);
+		case 10:
+			//Finish Him!
+			
+			title = "Park - Fatality!";
+			
+			//Finishing moves are based on the weapon. For now, something simple.
+			
+			message += "You snap the [NPCNAME]'s neck, finishing [OBJ] off.<br>";
+			
+			btns[0].setButton("Next", null, 12);
+			btns[0].setClickFunc(doCombat);
+		case 11:
+			//Consume your defeated foe
+			title = "Park - Consume Foe";
+			
+			message += "(Placeholder) Your foe struggles weakly as you lift [OBJ] to your mouth and swallow them in a few quick gulps.<br>";
+			
+			playerCharacter.stomachContents.push(roomNPC);
+			playerCharacter.stomachCurrent += roomNPC.mass;
+			playerCharacter.numEaten++;
+			playerCharacter.gluttony++;
+			
+			btns[0].setButton("Next", null, 12);
+			btns[0].setClickFunc(doCombat);
+		case 12:
+			//Return to the movement system
+			
+			message += "You sigh, relaxing from the combat.<br>";
+			
+			btns[0].setButton("Next", null, 0);
+			btns[0].setClickFunc(movePlayer);
+		default:
+			title = "Error";
+			message = "Warning, unknown takeAction value in doCombat: " + takeAction;
+		}
+		
+		outputText(message, title);
+	}
 	
 	static function doGym( e:MouseEvent ) {
 		var clicked:String = e.currentTarget.btnID;
@@ -447,14 +805,14 @@ class Main {
 			message += "There are signs giving you several different options on ways to use the equipment in this room, from what you can tell there are three paths you can take, one for Strength, one for Agility and one for Endurance. Which do you wish to use first?</p><br><p>";
 			
 			btns[0].setButton("Strength", "Follow the signs marked for strength traning. Should take about an hour to finish.", "workout:str");
-			btns[0].addEventListener(MouseEvent.CLICK, doGym);
+			btns[0].setClickFunc(doGym);
 			btns[1].setButton("Agility", "Follow the signs marked for agility traning. Should take about an hour to finish.", "workout:agi");
-			btns[1].addEventListener(MouseEvent.CLICK, doGym);
+			btns[1].setClickFunc(doGym);
 			btns[2].setButton("Endurance", "Follow the signs marked for endurance traning. Should take about an hour and a half to finish.", "workout:end");
-			btns[2].addEventListener(MouseEvent.CLICK, doGym);
+			btns[2].setClickFunc(doGym);
 			
 			btns[11].setButton("Leave", "Head to the showers and get cleaned up", "leave");
-			btns[11].addEventListener(MouseEvent.CLICK, doGym);
+			btns[11].setClickFunc(doGym);
 		case "leave":
 			//Player is done with the machines
 			message += "You leave the workout area and move to the showers to wash your workout sweat off you.</p><br>";
@@ -464,26 +822,26 @@ class Main {
 			newRoom = true;
 			
 			btns[11].setButton("Leave", null, 25);
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 		case "workout":
 			//Doing the workouts
 			
 			if (playerCharacter.fat == 0 && !globals.debugMode) {
 				outputText("You find yourself too tired to make use of any machines right now.", "Working Out");
 				btns[11].setButton("Leave", "Head to the showers and get cleaned up", "leave");
-				btns[11].addEventListener(MouseEvent.CLICK, doGym);
+				btns[11].setClickFunc(doGym);
 				return;
 			}
 			
 			btns[0].setButton("Strength", "Follow the signs marked for strength traning. Should take about an hour to finish.", "workout:str");
-			btns[0].addEventListener(MouseEvent.CLICK, doGym);
+			btns[0].setClickFunc(doGym);
 			btns[1].setButton("Agility", "Follow the signs marked for agility traning. Should take about an hour to finish.", "workout:agi");
-			btns[1].addEventListener(MouseEvent.CLICK, doGym);
+			btns[1].setClickFunc(doGym);
 			btns[2].setButton("Endurance", "Follow the signs marked for endurance traning. Should take about an hour and a half to finish.", "workout:end");
-			btns[2].addEventListener(MouseEvent.CLICK, doGym);
+			btns[2].setClickFunc(doGym);
 			
 			btns[11].setButton("Leave", "Head to the showers and get cleaned up", "leave");
-			btns[11].addEventListener(MouseEvent.CLICK, doGym);
+			btns[11].setClickFunc(doGym);
 			
 			switch (choice) {
 			case "str":
@@ -555,8 +913,11 @@ class Main {
 			
 			if (roomNPC.name != "NULL") {
 				btns[9].setButton("Talk", "Talk to the " + roomNPC.species.name.toLowerCase(), 0);
-				btns[9].disableButton();
-				//btns[9].addEventListener(MouseEvent.CLICK, doTalk);
+				if (globals.debugMode) {
+					btns[9].setClickFunc(doTalk);
+				} else {
+					btns[9].disableButton();
+				}
 			}
 			
 			//Time pass, this might need to get tweaked for the gym
@@ -638,7 +999,7 @@ class Main {
 		outputText(message, "Food Coma");
 		updateHUD();
 		btns[11].setButton("Next", null, 0);
-		btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+		btns[11].setClickFunc(movePlayer);
 	}
 	
 	static function doDeath( ?e:MouseEvent ) {
@@ -664,7 +1025,7 @@ class Main {
 			playerDied = "eaten";
 			
 			btns[0].setButton("Next", null, "eaten");
-			btns[0].addEventListener(MouseEvent.CLICK, doDeath);
+			btns[0].setClickFunc(doDeath);
 		default:
 			switch (clicked) {
 			case "eaten":
@@ -679,7 +1040,7 @@ class Main {
 			//Deal with death
 			
 			btns[11].setButton("Main Menu");
-			btns[11].addEventListener(MouseEvent.CLICK, resetGame);
+			btns[11].setClickFunc(resetGame);
 		}
 		
 		outputText(message, title);
@@ -719,16 +1080,16 @@ class Main {
 			message += " as you run your eyes over " + roomNPC.gender("obj").toLowerCase() + ".";
 			
 			btns[0].setButton("Consume", "Take " + roomNPC.gender("obj").toLowerCase() + " to the backroom and fill your belly.", 1);
-			btns[0].addEventListener(MouseEvent.CLICK, doHunt);
+			btns[0].setClickFunc(doHunt);
 			
 			if (playerCharacter.arousal >= 50 && globals.allowSex) {
 				btns[2].setButton("Fuck", "Take " + roomNPC.gender("obj").toLowerCase() + " to the backroom and sate yourself", 3);
-				btns[2].addEventListener(MouseEvent.CLICK, doHunt);
+				btns[2].setClickFunc(doHunt);
 			}
 			btns[9].setButton("Look Again", "Take another look around the room", 0);
-			btns[9].addEventListener(MouseEvent.CLICK, doHunt);
+			btns[9].setClickFunc(doHunt);
 			btns[11].setButton("Leave", "Stop looking for prey", 0);
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 		case 1:
 			//Consume options
 			txtPublic.visible = false;
@@ -741,34 +1102,34 @@ class Main {
 			newRoom = true;
 			
 			btns[0].setButton("Eat", "Your belly rumbles as you eye your prey.", 2);
-			btns[0].addEventListener(MouseEvent.CLICK, doHunt);
+			btns[0].setClickFunc(doHunt);
 			if (playerCharacter.arousal >= 50 && globals.allowSex) {
 				btns[2].setButton("Fuck", "You need to sate yourself, perhaps then you'll fill your belly.", 3);
-				btns[2].addEventListener(MouseEvent.CLICK, doHunt);
+				btns[2].setClickFunc(doHunt);
 			}
 			if (playerCharacter.hasPerk("cv") && playerCharacter.penis) {
 				btns[3].setButton("CockVore", "Use your cock to consume your prey", 4);
 				btns[3].disableButton();
-				//btns[3].addEventListener(MouseEvent.CLICK, doHunt);
+				//btns[3].setClickFunc(doHunt);
 			}
 			if (playerCharacter.hasPerk("bv") && playerCharacter.breasts) {
 				btns[4].setButton("BreastVore", "Use your breasts to consume your prey", 5);
 				btns[4].disableButton();
-				//btns[4].addEventListener(MouseEvent.CLICK, doHunt);
+				//btns[4].setClickFunc(doHunt);
 			}
 			if (playerCharacter.hasPerk("av")) {
 				btns[5].setButton("AnalVore", "Use your ass to consume your prey", 6);
 				btns[5].disableButton();
-				//btns[5].addEventListener(MouseEvent.CLICK, doHunt);
+				//btns[5].setClickFunc(doHunt);
 			}
 			if (playerCharacter.hasPerk("ub") && playerCharacter.vagina) {
 				btns[6].setButton("Unbirth", "Slide your prey into your vagina", 7);
 				btns[6].disableButton();
-				//btns[6].addEventListener(MouseEvent.CLICK, doHunt);
+				//btns[6].setClickFunc(doHunt);
 			}
 			
 			btns[11].setButton("Leave", "You changed your mind, perhaps you'll seek other prey.", 10);
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 		case 2:
 			//Do the eating
 			title = "Consume - Consumption Room";
@@ -778,9 +1139,10 @@ class Main {
 			playerCharacter.stomachContents.push(roomNPC);
 			playerCharacter.stomachCurrent += roomNPC.mass;
 			playerCharacter.numEaten++;
+			playerCharacter.gluttony++;
 			
 			btns[11].setButton("Next", null, 10);
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 		case 3:
 			//Sex
 			title = "Consume - Consumption Room";
@@ -789,7 +1151,7 @@ class Main {
 			message += "{Placeholder} Sex, " + playerCharacter.cum("NPC");
 			
 			btns[0].setButton("Eat", "You've emptied yourself, now fill yourself back up.", 2);
-			btns[0].addEventListener(MouseEvent.CLICK, doHunt);
+			btns[0].setClickFunc(doHunt);
 		case 4:
 			//Cockvore
 		case 5:
@@ -821,6 +1183,9 @@ class Main {
 		var butt:Bool = false;
 		var buttAmount:Int = -1;
 		var talkCommandArray:Array<Dynamic> = new Array();
+		var move:Bool = false;
+		var moveTo:Int = 0;
+		var consume:Bool = false;
 		
 		var message:String = "";
 		var returnMessage:String = "";
@@ -865,6 +1230,11 @@ class Main {
 			case "bowels":
 				butt = true;
 				buttAmount = Std.parseInt(talkCommandArray[i].split(" ")[1]);
+			case "eat": //Consume the roomNPC
+				consume = true;
+			case "move": //Move the player to a new room
+				move = true;
+				moveTo = Std.parseInt(talkCommandArray[i].split(" ")[1]);
 			}
 			
 			if (quest) {
@@ -900,6 +1270,16 @@ class Main {
 			playerCharacter.stomachCurrent += feedAmount;
 		if (butt)
 			playerCharacter.bowelsCurrent += buttAmount;
+		if (move) {
+			globals.lastRoom = globals.currentRoomID;
+			currentRoom = new MyRoom(globals.rooms[moveTo]);
+			globals.currentRoomID = moveTo;
+		}
+		if (consume) {
+			playerCharacter.stomachCurrent += roomNPC.mass;
+			playerCharacter.stomachContents.push(roomNPC);
+			playerCharacter.numEaten++;
+		}
 		
 		message = roomNPC.talk[clicked][0];
 		
@@ -911,12 +1291,12 @@ class Main {
 			switch (roomNPC.talk[clicked][2][i][2]) {
 			case -1:
 				//Exit option
-				btns[i].addEventListener(MouseEvent.CLICK, movePlayer);
+				btns[i].setClickFunc(movePlayer);
 			case -7:
 				//Drop into QTE, for now just turn that button off
 				btns[i].disableButton();
 			default:
-				btns[i].addEventListener(MouseEvent.CLICK, doTalk);
+				btns[i].setClickFunc(doTalk);
 			}
 		}
 		
@@ -1006,10 +1386,10 @@ class Main {
 				
 				btns[0].setButton("Items", null, 1);
 				btns[0].disableButton();
-				//btns[0].addEventListener(MouseEvent.CLICK, doPoop);
+				//btns[0].setClickFunc(doPoop);
 				
 				btns[11].setButton("Finish");
-				btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+				btns[11].setClickFunc(movePlayer);
 			case 1:
 				//Item screen
 				
@@ -1024,7 +1404,7 @@ class Main {
 			newRoom = false;
 			
 			btns[11].setButton("Next");
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 		}
 		
 		outputText(message, title);
@@ -1056,7 +1436,7 @@ class Main {
 						callList += "<li>" + phoneNames[i][1] + "</li>";
 						btns[i].setButton(phoneNames[i][0], phoneNames[i][2], "call:" + i);
 						if (i == 0) {
-							btns[i].addEventListener(MouseEvent.CLICK, doPhone);
+							btns[i].setClickFunc(doPhone);
 						} else {
 							btns[i].disableButton();
 						}
@@ -1082,7 +1462,7 @@ class Main {
 						playerCharacter.deliveryDriversEaten++; // becuase I know players will keep calling.
 						
 						btns[11].setButton("Hang up");
-						btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+						btns[11].setClickFunc(movePlayer);
 						return;
 					}
 					if (playerCharacter.deliveryDriversEaten == 50) {
@@ -1092,7 +1472,7 @@ class Main {
 						playerCharacter.deliveryDriversEaten++; // add one more so the pizza place will remember they've told the player off already
 						
 						btns[11].setButton("Hang up");
-						btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+						btns[11].setClickFunc(movePlayer);
 						return;
 					}
 					if (playerCharacter.deliveryDriversEaten >= 200) {
@@ -1100,7 +1480,7 @@ class Main {
 						message = "Look, they're not going to bring you anymore pizza.";
 						
 						btns[11].setButton("Okay");
-						btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+						btns[11].setClickFunc(movePlayer);
 						return;
 					}
 					if (playerCharacter.deliveryDriversEaten >= 100) {
@@ -1110,25 +1490,25 @@ class Main {
 						playerCharacter.deliveryDriversEaten++;
 						
 						btns[11].setButton("Hang up");
-						btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+						btns[11].setClickFunc(movePlayer);
 						return;
 					}
 					
 					message = "You call up the pizza place, the person on the other end asks what you'd like;</p><br><li>Small: $5</li><li>Medium: $10</li><li>Large: $15</li><li>XLarge: $20</li><li>Fatass Special: $40</li>";
 					
 					btns[0].setButton("Small", null, "order|0");
-					btns[0].addEventListener(MouseEvent.CLICK, doPizza);
+					btns[0].setClickFunc(doPizza);
 					btns[1].setButton("Medium", null, "order|1");
-					btns[1].addEventListener(MouseEvent.CLICK, doPizza);
+					btns[1].setClickFunc(doPizza);
 					btns[2].setButton("Large", null, "order|2");
-					btns[2].addEventListener(MouseEvent.CLICK, doPizza);
+					btns[2].setClickFunc(doPizza);
 					btns[3].setButton("XLarge", null, "order|3");
-					btns[3].addEventListener(MouseEvent.CLICK, doPizza);
+					btns[3].setClickFunc(doPizza);
 					btns[4].setButton("Fatass", null, "order|4");
-					btns[4].addEventListener(MouseEvent.CLICK, doPizza);
+					btns[4].setClickFunc(doPizza);
 					
 					btns[11].setButton("Nothing");
-					btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+					btns[11].setClickFunc(movePlayer);
 				case 1: //Hookers
 					
 				default:
@@ -1190,18 +1570,18 @@ class Main {
 			message = "About 30 minutes later there's a knock at your door. When you open it, you find a [NPCNAME] wearing the dark gray uniform of the pizza place. [SUBJC] checks the receipt, &quot;That'll be $" + pizzaCostDeliv + "&quot;";
 			
 			btns[0].setButton("No Tip", "Pay, but don't tip.", "notip|" + pizzaMass + "|" + pizzaCostDeliv);
-			btns[0].addEventListener(MouseEvent.CLICK, doPizza);
+			btns[0].setClickFunc(doPizza);
 			btns[1].setButton("Tip", "Pay and include a tip.", "tip|" + pizzaMass + "|" + pizzaCostDeliv);
-			btns[1].addEventListener(MouseEvent.CLICK, doPizza);
+			btns[1].setClickFunc(doPizza);
 			btns[2].setButton("Eat", "Gotta love the modern world, fresh food delivered to your door. And they even bring pizza!", "eat|" + pizzaMass + "|" + pizzaCostDeliv);
-			btns[2].addEventListener(MouseEvent.CLICK, doPizza);
+			btns[2].setClickFunc(doPizza);
 			
 			btns[3].setButton("Fuck", "Invite the driver in for a slice and a fuck.", "fuck|" + pizzaMass + "|" + pizzaCostDeliv);
 			btns[3].disableButton();
-			//btns[3].addEventListener(MouseEvent.CLICK, doPizza);
+			//btns[3].setClickFunc(doPizza);
 			btns[4].setButton("Fuck and eat", "Invite the driver in and feed them the pizza. Then enjoy your pizza.", "fuckeat|" + pizzaMass + "|" + pizzaCostDeliv);
 			btns[4].disableButton();
-			//btns[4].addEventListener(MouseEvent.CLICK, doPizza);
+			//btns[4].setClickFunc(doPizza);
 		case "notip":
 			//Pay but don't tip the driver
 			pizzaMass = pizzaSize; //For readability
@@ -1218,7 +1598,7 @@ class Main {
 				updateHUD();
 				
 				btns[11].setButton("Next");
-				btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+				btns[11].setClickFunc(movePlayer);
 			}
 		case "tip":
 			//Pay and tip the driver
@@ -1233,9 +1613,9 @@ class Main {
 				message = "You check your wallet to pay for the pizza, but you find you don't have enough money! Now what?";
 				
 				btns[0].setButton("Eat", "No money, but so hungry. Only one solution...", "eat|" + pizzaMass + "|" + pizzaCostDeliv);
-				btns[0].addEventListener(MouseEvent.CLICK, doPizza);
+				btns[0].setClickFunc(doPizza);
 				btns[2].setButton("Can't Pay", "Sorry, I can't pay.", "nopay|" + pizzaMass + "|0");
-				btns[2].addEventListener(MouseEvent.CLICK, doPizza);
+				btns[2].setClickFunc(doPizza);
 			} else {
 				// player has money, time to buy the pizza!
 				message = "You hand the [NPCNAME] $" + pizzaCostDeliv + ". [SUBJC] glances at the money and tucks it away, giving you a smile and saying &quot;Enjoy your pizza.&quot; Before turning and walking away down the hall.";
@@ -1248,7 +1628,7 @@ class Main {
 				updateHUD();
 				
 				btns[11].setButton("Next");
-				btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+				btns[11].setClickFunc(movePlayer);
 			}
 		case "eat":
 			//Eat the pizza and the driver
@@ -1274,7 +1654,7 @@ class Main {
 			playerCharacter.numEaten++;
 			
 			btns[11].setButton("Next");
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 		case "fuck":
 			//Screw the driver, eat the pizza
 			pizzaMass = pizzaSize; //For readability
@@ -1311,7 +1691,7 @@ class Main {
 			
 			
 			btns[11].setButton("Next");
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 			
 		case "fuckeat":
 			//screw the driver, eat the pizza and the driver
@@ -1350,20 +1730,20 @@ class Main {
 			message += "You have eaten " + playerCharacter.numEaten + " prey.";
 			
 			btns[0].setButton("Inventory", "View your inventory", 1);
-			//btns[0].addEventListener(MouseEvent.CLICK, doDescription);
+			//btns[0].setClickFunc(doDescription);
 			btns[0].disableButton();
 			
 			btns[1].setButton("Keys", "View your keys", 2);
-			btns[1].addEventListener(MouseEvent.CLICK, doDescription);
+			btns[1].setClickFunc(doDescription);
 			
 			btns[2].setButton("Prey", "See what you've consumed", 3);
-			btns[2].addEventListener(MouseEvent.CLICK, doDescription);
+			btns[2].setClickFunc(doDescription);
 			
 			btns[3].setButton("Quests", "View your active quests", 4);
-			btns[3].addEventListener(MouseEvent.CLICK, doDescription);
+			btns[3].setClickFunc(doDescription);
 			
 			btns[11].setButton("Back", "Back to the game");
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 			
 		case 1:
 			//Player invintory
@@ -1383,7 +1763,7 @@ class Main {
 			message += "</p><br><p>";
 			
 			btns[11].setButton("Back", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, doDescription);
+			btns[11].setClickFunc(doDescription);
 		case 3:
 			//Prey
 			title = "Consumed Prey";
@@ -1434,7 +1814,7 @@ class Main {
 			}
 			
 			btns[11].setButton("Back", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, doDescription);
+			btns[11].setClickFunc(doDescription);
 		case 4:
 			//Quests
 			title = "Quests";
@@ -1455,7 +1835,7 @@ class Main {
 			}
 			
 			btns[11].setButton("Back", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, doDescription);
+			btns[11].setClickFunc(doDescription);
 		}
 		
 		outputText(message, title);
@@ -1512,7 +1892,7 @@ class Main {
 		newRoom = true;
 		
 		btns[0].setButton("Next", null, 19);
-		btns[0].addEventListener(MouseEvent.CLICK, movePlayer);
+		btns[0].setClickFunc(movePlayer);
 	}
 	
 	static function resetGame( e:MouseEvent ) {
@@ -1525,9 +1905,9 @@ class Main {
 			outputText("Return to the main menu? Anything not saved will be lost.", "Reset Game");
 			
 			btns[0].setButton("Yes", null, 1);
-			btns[0].addEventListener(MouseEvent.CLICK, resetGame);
+			btns[0].setClickFunc(resetGame);
 			btns[2].setButton("No");
-			btns[2].addEventListener(MouseEvent.CLICK, optionsScreen);
+			btns[2].setClickFunc(optionsScreen);
 		case 1:
 			Lib.current.removeChildren();
 			globals = new GlobalVars();
@@ -1580,16 +1960,16 @@ class Main {
 			message += ".</p><br><p>";
 			
 			btns[0].setButton("Toggle Lactation", null, 1);
-			btns[0].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[0].setClickFunc(debugMenu);
 			btns[1].setButton("Set Quest stage", null, 2);
-			btns[1].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[1].setClickFunc(debugMenu);
 			btns[2].setButton("Jump To", "Teleport around the map", 5);
-			btns[2].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[2].setClickFunc(debugMenu);
 			btns[3].setButton("Logic Test", null, 7);
-			btns[3].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[3].setClickFunc(debugMenu);
 			
 			btns[11].setButton("Back");
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 			
 		case 1:
 			message = "Lactation is now ";
@@ -1604,34 +1984,34 @@ class Main {
 			message += ".";
 			
 			btns[11].setButton("Next", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[11].setClickFunc(debugMenu);
 		case 2:
 			message = "Quest?";
 			
 			for (i in 0...playerCharacter.quest.length) {
 				btns[i].setButton(playerCharacter.quest[i].name, null, "3|" + i);
-				btns[i].addEventListener(MouseEvent.CLICK, debugMenu);
+				btns[i].setClickFunc(debugMenu);
 			}
 			
 			btns[11].setButton("Cancel", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[11].setClickFunc(debugMenu);
 		case 3:
 			message = "Set stage to?";
 			
 			for (i in 0...playerCharacter.quest[questID].stageDesc.length) {
 				btns[i].setButton("#" + i, null, "4|" + questID + "|" + i);
-				btns[i].addEventListener(MouseEvent.CLICK, debugMenu);
+				btns[i].setClickFunc(debugMenu);
 			}
 			
 			btns[11].setButton("Cancel", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[11].setClickFunc(debugMenu);
 		case 4:
 			playerCharacter.quest[questID].stage = stage;
 			
 			message = "Quest '" + playerCharacter.quest[questID].dispName + "' set to stage '" + stage + "': " + playerCharacter.quest[questID].stageDesc[stage];
 			
 			btns[11].setButton("Back", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[11].setClickFunc(debugMenu);
 		case 5:
 			//Teleport
 			message = "Enter Room ID to teleport to:<br><br>(Tip: Your bedroom has an ID of 0)";
@@ -1653,10 +2033,10 @@ class Main {
 			Lib.current.addChild(txtJump);
 			
 			btns[0].setButton("Jump", null, 6);
-			btns[0].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[0].setClickFunc(debugMenu);
 			
 			btns[2].setButton("Back", null, 0);
-			btns[2].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[2].setClickFunc(debugMenu);
 		case 6:
 			var txtJump:Object = Lib.current.getChildByName("jumpTo");
 			var jumpTo:Int = Std.parseInt(txtJump.text);
@@ -1668,7 +2048,7 @@ class Main {
 			newRoom = true;
 			
 			btns[0].setButton("Next", null, jumpTo);
-			btns[0].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[0].setClickFunc(movePlayer);
 		case 7:
 			//text parsing system logic testing
 			roomNPC = new MyNPC();
@@ -1677,15 +2057,15 @@ class Main {
 			message = "Randomly generated NPC is [NPCGENDER].</p><br>";
 			message += "<p>What follows is a test of the logic parsing system.</p><br>";
 			message += "<p>This sentance should appear for everyone. ";
-			message += "[HasBreasts:This_sentance_should_appear_for_NPCs_with_breasts.] ";
-			message += "[HasVagina:This_sentance_should_appear_for_NPCs_with_a_vagina.] ";
-			message += "[HasPenis:This_sentance_should_appear_for_NPCs_with_a_penis.] ";
-			message += "[HasBalls:This_sentance_should_appear_for_NPCs_with_balls.] ";
+			message += "[HasBreasts:This sentance should appear for NPCs with {POS} breasts. ]";
+			message += "[HasVagina:This sentance should appear for NPCs with a vagina. ]";
+			message += "[HasPenis:This sentance should appear for NPCs with a penis. ]";
+			message += "[HasBalls:This sentance should appear for NPCs with balls. ]";
 			
 			btns[0].setButton("Test Again", null, 7);
-			btns[0].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[0].setClickFunc(debugMenu);
 			btns[11].setButton("Main", null, 0);
-			btns[11].addEventListener(MouseEvent.CLICK, debugMenu);
+			btns[11].setClickFunc(debugMenu);
 		}
 		
 		outputText(message, "Debug Menu");
@@ -1736,6 +2116,10 @@ class Main {
 								saveDataObject.data.player1.digestDamage = saveDataObject.data.player1.digestDamage / 10;
 								saveDataObject.data.save1[0] = 14;
 							}
+							if (saveDataObject.data.save1[0] == 14) { //Version 14 had no weapons
+								saveDataObject.data.player1.equipWepObj = globals.weapons[0]; //Unarmed
+								saveDataObject.data.save1[0] = 15;
+							}
 							save1Name = saveDataObject.data.player1.name + " -- Updated";
 							save1Tip = "Load " + saveDataObject.data.player1.name;
 						}
@@ -1759,6 +2143,10 @@ class Main {
 							if (saveDataObject.data.save2[0] == 13) { //Version 13 had digestion rates too high
 								saveDataObject.data.player2.digestDamage = saveDataObject.data.player1.digestDamage / 10;
 								saveDataObject.data.save2[0] = 14;
+							}
+							if (saveDataObject.data.save2[0] == 14) { //Version 14 had no weapons
+								saveDataObject.data.player2.equipWepObj = globals.weapons[0]; //Unarmed
+								saveDataObject.data.save2[0] = 15;
 							}
 							save2Name = saveDataObject.data.player2.name + " -- Updated";
 							save2Tip = "Load " + saveDataObject.data.player2.name;
@@ -1784,6 +2172,10 @@ class Main {
 								saveDataObject.data.player3.digestDamage = saveDataObject.data.player1.digestDamage / 10;
 								saveDataObject.data.save3[0] = 14;
 							}
+							if (saveDataObject.data.save3[0] == 14) { //Version 14 had no weapons
+								saveDataObject.data.player3.equipWepObj = globals.weapons[0]; //Unarmed
+								saveDataObject.data.save3[0] = 15;
+							}
 							save3Name = saveDataObject.data.player3.name + " -- Updated";
 							save3Tip = "Load " + saveDataObject.data.player3.name;
 						}
@@ -1805,20 +2197,20 @@ class Main {
 			
 			btns[0].setButton("Slot 1", save1Tip, 1);
 			if (slot1Filled)
-				btns[0].addEventListener(MouseEvent.CLICK, loadGame);
+				btns[0].setClickFunc(loadGame);
 			btns[1].setButton("Slot 2", save2Tip, 2);
 			if (slot2Filled)
-				btns[1].addEventListener(MouseEvent.CLICK, loadGame);
+				btns[1].setClickFunc(loadGame);
 			btns[2].setButton("Slot 3", save3Tip, 3);
 			if (slot3Filled)
-				btns[2].addEventListener(MouseEvent.CLICK, loadGame);
+				btns[2].setClickFunc(loadGame);
 			
 			btns[11].setButton("Back");
 			switch (globals.backTo) {
 			case "Welcome":
-				btns[11].addEventListener(MouseEvent.CLICK, welcomeScreen);
+				btns[11].setClickFunc(welcomeScreen);
 			case "move":
-				btns[11].addEventListener(MouseEvent.CLICK, optionsScreen);
+				btns[11].setClickFunc(optionsScreen);
 			}
 		} else {
 			var loadedPlayer:Object = null;
@@ -1870,7 +2262,7 @@ class Main {
 			outputText("Game loaded from slot " + clicked, "Load Game");
 			
 			btns[11].setButton("Next", null, globals.currentRoomID + ":" + 0);
-			btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[11].setClickFunc(movePlayer);
 		}
 	}
 	
@@ -1962,14 +2354,14 @@ class Main {
 			
 			outputText(message, "Save Game");
 			btns[0].setButton("Slot 1", save1Tip, 1);
-			btns[0].addEventListener(MouseEvent.CLICK, saveGame);
+			btns[0].setClickFunc(saveGame);
 			btns[1].setButton("Slot 2", save2Tip, 2);
-			btns[1].addEventListener(MouseEvent.CLICK, saveGame);
+			btns[1].setClickFunc(saveGame);
 			btns[2].setButton("Slot 3", save3Tip, 3);
-			btns[2].addEventListener(MouseEvent.CLICK, saveGame);
+			btns[2].setClickFunc(saveGame);
 			
 			btns[11].setButton("Back");
-			btns[11].addEventListener(MouseEvent.CLICK, optionsScreen);
+			btns[11].setClickFunc(optionsScreen);
 		} else {
 			var globalSaveArray:Array<Dynamic> = new Array();
 			var playerSaveArray:Array<Dynamic> = new Array();
@@ -2014,7 +2406,7 @@ class Main {
 			}
 			
 			btns[11].setButton("Next");
-			btns[11].addEventListener(MouseEvent.CLICK, optionsScreen);
+			btns[11].setClickFunc(optionsScreen);
 		}
 	}
 	
@@ -2119,15 +2511,15 @@ class Main {
 					if (i + offset == species.length)
 						break;
 					btns[i].setButton(species[i + offset].name, null, "Species " + (i + offset));
-					btns[i].addEventListener(MouseEvent.CLICK, newGame);
+					btns[i].setClickFunc(newGame);
 				}
 				if (species.length - offset > 9) {
 					btns[11].setButton("More", null, -1);
-					btns[11].addEventListener(MouseEvent.CLICK, newGame);
+					btns[11].setClickFunc(newGame);
 				}
 				if (offset != 0) {
 					btns[9].setButton("Prev", null, -2);
-					btns[9].addEventListener(MouseEvent.CLICK, newGame);
+					btns[9].setClickFunc(newGame);
 				}
 				
 				step = 0;
@@ -2187,21 +2579,21 @@ class Main {
 				}
 				
 				btns[0].setButton("Breasts", null, -3);
-				btns[0].addEventListener(MouseEvent.CLICK, newGame);
+				btns[0].setClickFunc(newGame);
 				btns[1].setButton("Vagina", null, -4);
-				btns[1].addEventListener(MouseEvent.CLICK, newGame);
+				btns[1].setClickFunc(newGame);
 				btns[2].setButton("Penis", null, -5);
-				btns[2].addEventListener(MouseEvent.CLICK, newGame);
+				btns[2].setClickFunc(newGame);
 				if (penis) {
 					btns[3].setButton("Balls", null, -6);
-					btns[3].addEventListener(MouseEvent.CLICK, newGame);
+					btns[3].setClickFunc(newGame);
 				}
 				
 				btns[9].setButton("Back", null, 0);
-				btns[9].addEventListener(MouseEvent.CLICK, newGame);
+				btns[9].setClickFunc(newGame);
 				
 				btns[11].setButton("Next", null, 2);
-				btns[11].addEventListener(MouseEvent.CLICK, newGame);
+				btns[11].setClickFunc(newGame);
 				
 				outputText(message, "New Game");
 				step = 1;
@@ -2217,39 +2609,39 @@ class Main {
 				
 				if (pointsAvail != 0) {
 					btns[0].setButton("Strength+", null, -7);
-					btns[0].addEventListener(MouseEvent.CLICK, newGame);
+					btns[0].setClickFunc(newGame);
 					btns[3].setButton("Agility+", null, -9);
-					btns[3].addEventListener(MouseEvent.CLICK, newGame);
+					btns[3].setClickFunc(newGame);
 					btns[6].setButton("Endurance+", null, -11);
-					btns[6].addEventListener(MouseEvent.CLICK, newGame);
+					btns[6].setClickFunc(newGame);
 					btns[9].setButton("Intelligence+", null, -13);
-					btns[9].addEventListener(MouseEvent.CLICK, newGame);
+					btns[9].setClickFunc(newGame);
 				}
 				
 				if (str != 1) {
 					btns[1].setButton("Strength-", null, -8);
-					btns[1].addEventListener(MouseEvent.CLICK, newGame);
+					btns[1].setClickFunc(newGame);
 				}
 				if (agi != 1) {
 					btns[4].setButton("Agility-", null, -10);
-					btns[4].addEventListener(MouseEvent.CLICK, newGame);
+					btns[4].setClickFunc(newGame);
 				}
 				if (end != 1) {
 					btns[7].setButton("Endurance-", null, -12);
-					btns[7].addEventListener(MouseEvent.CLICK, newGame);
+					btns[7].setClickFunc(newGame);
 				}
 				if (int != 1) {
 					btns[10].setButton("Intelligence-", null, -14);
-					btns[10].addEventListener(MouseEvent.CLICK, newGame);
+					btns[10].setClickFunc(newGame);
 				}
 				
 				
 				btns[8].setButton("Back", null, 1);
-				btns[8].addEventListener(MouseEvent.CLICK, newGame);
+				btns[8].setClickFunc(newGame);
 				
 				if (pointsAvail == 0) {
 					btns[11].setButton("Next", null, 3);
-					btns[11].addEventListener(MouseEvent.CLICK, newGame);
+					btns[11].setClickFunc(newGame);
 				}
 				
 				outputText(message, "New Game");
@@ -2289,20 +2681,20 @@ class Main {
 					}
 					message += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + visiblePerks[i + offset].desc + "<br><br>";
 					btns[btnNum].setButton(visiblePerks[i + offset].dispName, null, ("perk " + (i + offset)));
-					btns[btnNum].addEventListener(MouseEvent.CLICK, newGame);
+					btns[btnNum].setClickFunc(newGame);
 					btnNum += 1;
 				}
 				if (visiblePerks.length - offset > 9) {
 					btns[11].setButton("More", null, -1);
-					btns[11].addEventListener(MouseEvent.CLICK, newGame);
+					btns[11].setClickFunc(newGame);
 				}
 				if (offset != 0) {
 					btns[9].setButton("Prev", null, -2);
-					btns[9].addEventListener(MouseEvent.CLICK, newGame);
+					btns[9].setClickFunc(newGame);
 				}
 				
 				btns[10].setButton("Back", null, 2);
-				btns[10].addEventListener(MouseEvent.CLICK, newGame);
+				btns[10].setClickFunc(newGame);
 				
 				if (perksToPick == 0) {
 					btns[10].setButton("Next", null, 4);
@@ -2339,7 +2731,7 @@ class Main {
 				message += "Name?";
 				
 				btns[11].setButton("Next", null, 5);
-				btns[11].addEventListener(MouseEvent.CLICK, newGame);
+				btns[11].setClickFunc(newGame);
 				
 				outputText(message, "New Game");
 			case 5:
@@ -2366,10 +2758,10 @@ class Main {
 				outputText(message, "New Game");
 				
 				btns[0].setButton("Yes", null, 6);
-				btns[0].addEventListener(MouseEvent.CLICK, newGame);
+				btns[0].setClickFunc(newGame);
 				
 				btns[2].setButton("No", null, 4);
-				btns[2].addEventListener(MouseEvent.CLICK, newGame);
+				btns[2].setClickFunc(newGame);
 			case 6:
 				//Create new player object
 				finalPerks = new Array();
@@ -2398,7 +2790,7 @@ class Main {
 				outputText(message, "BEEP! BEEP! BEEP! BEEP!");
 				
 				btns[11].setButton("Next", null, 0);
-				btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+				btns[11].setClickFunc(movePlayer);
 				
 				//Look into variable destructors, take out all the ones used in character creation don't need them past this point.
 			}
@@ -2437,9 +2829,9 @@ class Main {
 				outputText(message, "New Game");
 				
 				btns[0].setButton("Yes", null, 1);
-				btns[0].addEventListener(MouseEvent.CLICK, newGame);
+				btns[0].setClickFunc(newGame);
 				btns[2].setButton("No", null, 0);
-				btns[2].addEventListener(MouseEvent.CLICK, newGame);
+				btns[2].setClickFunc(newGame);
 			case "perk":
 				var perkID:Int = Std.parseInt(clicked.split(" ")[1]);
 				
@@ -2465,7 +2857,7 @@ class Main {
 			
 		case "Welcome":
 			btns[10].setButton("Back", "Back to the welcome screen");
-			btns[10].addEventListener(MouseEvent.CLICK, welcomeScreen);
+			btns[10].setClickFunc(welcomeScreen);
 		}
 	}
 	
@@ -2499,31 +2891,31 @@ class Main {
 		switch (clicked) {
 		case 0:
 			btns[0].setButton("Scat", "Allow/disallow scat. Controls if your character poops or not.", 1);
-			btns[0].addEventListener(MouseEvent.CLICK, optionsScreen);
+			btns[0].setClickFunc(optionsScreen);
 			btns[1].setButton("Arousal", "Allow/disallow sex. Controls if your character becomes aroused.", 3);
-			btns[1].addEventListener(MouseEvent.CLICK, optionsScreen);
+			btns[1].setClickFunc(optionsScreen);
 			btns[2].setButton("Debug", "Toggle debug mode.", 2);
-			btns[2].addEventListener(MouseEvent.CLICK, optionsScreen);
+			btns[2].setClickFunc(optionsScreen);
 			btns[3].setButton("Font Size+");
-			btns[3].addEventListener(MouseEvent.CLICK, increaseFontSize);
+			btns[3].setClickFunc(increaseFontSize);
 			btns[4].setButton("Font Size-");
-			btns[4].addEventListener(MouseEvent.CLICK, decreaseFontSize);
+			btns[4].setClickFunc(decreaseFontSize);
 			
 			if (globals.backTo != "Welcome") {
 				btns[6].setButton("Main Menu", "Start a new game. Current game will be lost.", 0);
-				btns[6].addEventListener(MouseEvent.CLICK, resetGame);
+				btns[6].setClickFunc(resetGame);
 			}
 			
 			btns[11].setButton("Back");
 			
 			switch (globals.backTo) {
 				case "Welcome":
-					btns[11].addEventListener(MouseEvent.CLICK, welcomeScreen);
+					btns[11].setClickFunc(welcomeScreen);
 				case "move":
 					btns[9].setButton("Save", null, 0);
-					btns[9].addEventListener(MouseEvent.CLICK, saveGame);
+					btns[9].setClickFunc(saveGame);
 					
-					btns[11].addEventListener(MouseEvent.CLICK, movePlayer);
+					btns[11].setClickFunc(movePlayer);
 				default:
 					new AlertBox("Bad options screen backTo: " + globals.backTo);
 			}
@@ -2656,50 +3048,42 @@ class Main {
 		switch (clickedBtn) {
 		case "nw":
 			btns[0].setButton(currentRoom.exitNW.name, currentRoom.exitNW.desc, currentRoom.exitNW.travelTo + ":" + currentRoom.exitNW.travelTime);
-			btns[0].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[0].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[0].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitNW.hiddenQuestID].stage = 1;
 		case "n":
 			btns[1].setButton(currentRoom.exitN.name, currentRoom.exitN.desc, currentRoom.exitN.travelTo + ":" + currentRoom.exitN.travelTime);
-			btns[1].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[1].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[1].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitN.hiddenQuestID].stage = 1;
 		case "ne":
 			btns[2].setButton(currentRoom.exitNE.name, currentRoom.exitNE.desc, currentRoom.exitNE.travelTo + ":" + currentRoom.exitNE.travelTime);
-			btns[2].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[2].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[2].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitNE.hiddenQuestID].stage = 1;
 		case "w":
 			btns[3].setButton(currentRoom.exitW.name, currentRoom.exitW.desc, currentRoom.exitW.travelTo + ":" + currentRoom.exitW.travelTime);
-			btns[3].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[3].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[3].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitW.hiddenQuestID].stage = 1;
 		case "e":
 			btns[5].setButton(currentRoom.exitE.name, currentRoom.exitE.desc, currentRoom.exitE.travelTo + ":" + currentRoom.exitE.travelTime);
-			btns[5].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[5].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[5].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitE.hiddenQuestID].stage = 1;
 		case "sw":
 			btns[6].setButton(currentRoom.exitSW.name, currentRoom.exitSW.desc, currentRoom.exitSW.travelTo + ":" + currentRoom.exitSW.travelTime);
-			btns[6].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[6].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[6].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitSW.hiddenQuestID].stage = 1;
 		case "s":
 			btns[7].setButton(currentRoom.exitS.name, currentRoom.exitS.desc, currentRoom.exitS.travelTo + ":" + currentRoom.exitS.travelTime);
-			btns[7].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[7].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[7].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitS.hiddenQuestID].stage = 1;
 		case "se":
 			btns[8].setButton(currentRoom.exitSE.name, currentRoom.exitSE.desc, currentRoom.exitSE.travelTo + ":" + currentRoom.exitSE.travelTime);
-			btns[8].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[8].addEventListener(MouseEvent.CLICK, movePlayer);
+			btns[8].setClickFunc(movePlayer);
 			
 			playerCharacter.quest[currentRoom.exitSE.hiddenQuestID].stage = 1;
 		}
@@ -2732,7 +3116,7 @@ class Main {
 		outputText(message, "Frequently Asked Questions");
 		
 		btns[8].setButton("Back");
-		btns[8].addEventListener(MouseEvent.CLICK, welcomeScreen);
+		btns[8].setClickFunc(welcomeScreen);
 	}	
 	
 	static function displayCredits( e:MouseEvent ) {
@@ -2753,16 +3137,16 @@ class Main {
 		credits.push("Gym female oral sex scenes contributed by forum member BeardyKomodo.");
 		credits.push("Bug fixes and code improvements by GitHub member s-r-g-i.");
 		
-		//oneLineBackers.push("pelle"); //Dropped to $1 Feb
+		oneLineBackers.push("pelle"); //Dropped to $1 Feb
 		oneLineBackers.push("Writer"); //Paid Feb #10
 		
 		
-		//backerCredits.push("Foxlets"); //Dropped below $5 in October
-		//backerCredits.push("Bradley Taylor"); //Paid Feb $5
-		//backerCredits.push("OutsideOctaves"); //Paid Feb $5
+		backerCredits.push("Foxlets"); //Dropped below $5 in October
+		backerCredits.push("Bradley Taylor"); //Paid Feb $5
+		backerCredits.push("OutsideOctaves"); //Paid Feb $5
 		backerCredits.push("Michael Brookins"); //Paid Feb $5
 		backerCredits.push("Erik Camp"); //Paid Feb $5
-		//backerCredits.push("Pell Torr"); //Paid Feb $5
+		backerCredits.push("Pell Torr"); //Paid Feb $5
 		
 		
 		for (i in 0...credits.length) {
@@ -2784,7 +3168,7 @@ class Main {
 		outputText("Game code and story by Kyra Sunseeker.</b></p><br>" + message, "Credits");
 		
 		btns[8].setButton("Back");
-		btns[8].addEventListener(MouseEvent.CLICK, welcomeScreen);
+		btns[8].setClickFunc(welcomeScreen);
 	}
 
 	static function welcomeScreen(?event:MouseEvent) {
@@ -2839,17 +3223,17 @@ class Main {
 		clearAllEvents();
 		
 		btns[0].setButton("New Game", "Start a new game", 0);
-		btns[0].addEventListener(MouseEvent.CLICK, newGame);
+		btns[0].setClickFunc(newGame);
 		btns[1].setButton("Load", "Load a saved game", 0);
-		btns[1].addEventListener(MouseEvent.CLICK, loadGame);
+		btns[1].setClickFunc(loadGame);
 		btns[2].setButton("Options");
-		btns[2].addEventListener(MouseEvent.CLICK, optionsScreen);
+		btns[2].setClickFunc(optionsScreen);
 		
 		btns[6].setButton("F.A.Q.");
-		btns[6].addEventListener(MouseEvent.CLICK, displayFAQ);
+		btns[6].setClickFunc(displayFAQ);
 		
 		btns[8].setButton("Credits");
-		btns[8].addEventListener(MouseEvent.CLICK, displayCredits);
+		btns[8].setClickFunc(displayCredits);
 		
 		globals.backTo = "Welcome";
 	}
@@ -2883,6 +3267,10 @@ class Main {
 	 * Non-cickable functions *
 	 *                        *
 	\**************************/
+	
+	static function npcAttack( ):String {
+		return "The [NPCNAME] flails unfinishedly at you";
+	}
 	
 	static function truncateDecimalPlaces(InVal:Float):String {
 		//Thanks for this by the way, I couldn't figure out how to get it to work in HaXe since the ActionScript function doesn't work -- Kyra
@@ -2930,6 +3318,16 @@ class Main {
 			playerCharacter.intNeededToUp -= advanceBy;
 		case "end":
 			playerCharacter.endNeededToUp -= advanceBy;
+		case "dodge":
+			playerCharacter.dodgeNeededToUp -= advanceBy;
+		case "run":
+			playerCharacter.runNeededToUp -= advanceBy;
+		case "melee":
+			playerCharacter.meleeNeededToUp -= advanceBy;
+		case "sneak":
+			playerCharacter.sneakNeededToUp -= advanceBy;
+		case "spot":
+			playerCharacter.spotNeededToUp -= advanceBy;
 		}
 		
 		if (playerCharacter.strNeededToUp <= 0) {
@@ -2966,6 +3364,45 @@ class Main {
 			message += "You feel smarter.</p><p>";
 		}
 		
+		if (playerCharacter.dodgeNeededToUp <= 0) {
+			playerCharacter.dodge++;
+			playerCharacter.pointsSpent++;
+			skillOver = Math.abs(playerCharacter.dodgeNeededToUp);
+			playerCharacter.dodgeNeededToUp = Math.round((playerCharacter.dodge * 5) - skillOver);
+			message += "You feel like you are better able to evade attacks.</p><p>";
+		}
+		
+		if (playerCharacter.runNeededToUp <= 0) {
+			playerCharacter.run++;
+			playerCharacter.pointsSpent++;
+			skillOver = Math.abs(playerCharacter.runNeededToUp);
+			playerCharacter.runNeededToUp = Math.round((playerCharacter.run * 5) - skillOver);
+			message += "You feel faster.</p><p>";
+		}
+		
+		if (playerCharacter.meleeNeededToUp <= 0) {
+			playerCharacter.melee++;
+			playerCharacter.pointsSpent++;
+			skillOver = Math.abs(playerCharacter.meleeNeededToUp);
+			playerCharacter.meleeNeededToUp = Math.round((playerCharacter.melee * 5) - skillOver);
+			message += "Your skill with weapons has improved.</p><p>";
+		}
+		
+		if (playerCharacter.sneakNeededToUp <= 0) {
+			playerCharacter.sneak++;
+			playerCharacter.pointsSpent++;
+			skillOver = Math.abs(playerCharacter.sneakNeededToUp);
+			playerCharacter.sneakNeededToUp = Math.round((playerCharacter.sneak * 5) - skillOver);
+			message += "You feel like you're able to move quieter.</p><p>";
+		}
+		
+		if (playerCharacter.spotNeededToUp <= 0) {
+			playerCharacter.spot++;
+			playerCharacter.pointsSpent++;
+			skillOver = Math.abs(playerCharacter.spotNeededToUp);
+			playerCharacter.spotNeededToUp = Math.round((playerCharacter.spot * 5) - skillOver);
+			message += "You feel more observant.</p><p>";
+		}
 		return message;
 	}
 	
@@ -3076,95 +3513,147 @@ class Main {
 	}
 	
 	static function textParse(text:String):String {
-		var arrayToParse:Array<String> = new Array();
-		var subArray:Array<String> = new Array();
-		var logicArray:Array<String> = new Array();
-		var extraToHold:String = "";
-		var stringToTest:String = "";
+		var variableText:String = "";
+		var valueText:String = "";
+		var variableArray:Array<String> = new Array();
+		var valueArray:Array<String> = new Array();
+		var parseArray:Array<String> = new Array();
 		var parsedText:String = "";
-		var parsedCharCount:Int = 0;
+		var outputText:String = "";
 		
-		arrayToParse = text.split(" ");
+		var recordingVar:Bool = false;
+		var recordingValue:Bool = false;
 		
-		for (i in 0...arrayToParse.length) {
-			subArray = arrayToParse[i].split("]");
-			
-			if (subArray.length > 1) {
-				extraToHold = subArray[1] + " ";
-			} else {
-				extraToHold = " ";
+		var i:Int = 0;
+		
+		while (i < text.length) {
+			if (text.substr(i, 1) == "]" && recordingValue) {
+				valueArray.push(valueText);
+				recordingValue = false;
+				i++;
 			}
-			if (subArray[0].substr(0, 1) == "[") {
-				stringToTest = subArray[0].substr(1);
-				
-				logicArray = stringToTest.split(":");
-				
-				if (logicArray.length > 1)
-					stringToTest = logicArray[0];
-				
-				switch (stringToTest) {
-				case "PCNAME":
-					parsedText += playerCharacter.name;
-				case "PCSPECIESC":
-					parsedText += playerCharacter.species.name;
-				case "PCSPECIESL":
-					parsedText += playerCharacter.species.name.toLowerCase();
-				case "PCARMS":
-					parsedText += playerCharacter.arms;
-				case "PCLEGS":
-					parsedText += playerCharacter.legs;
-				case "PCSKIN":
-					parsedText += playerCharacter.skin;
-				case "PCMOUTH":
-					parsedText += playerCharacter.mouth;
-				case "PCHANDS":
-					parsedText += playerCharacter.hands;
-				case "PCFEETS":
-					parsedText += playerCharacter.feet;
-				case "NPCNAME":
-					parsedText += roomNPC.name;
-				case "NPCGENDER":
-					parsedText += roomNPC.gender("gender");
-				case "SUBJC":
-					parsedText += roomNPC.gender("sub");
-				case "SUBJ":
-					parsedText += roomNPC.gender("sub").toLowerCase();
-				case "OBJC":
-					parsedText += roomNPC.gender("obj");
-				case "OBJ":
-					parsedText += roomNPC.gender("obj").toLowerCase();
-				case "POSC":
-					parsedText += roomNPC.gender("pos");
-				case "POS":
-					parsedText += roomNPC.gender("pos").toLowerCase();
-				
-				//Logic
-				case "HasBreasts":
-					if (roomNPC.breasts) 
-						parsedText += convertSpaces(logicArray[1]);
-				case "HasVagina":
-					if (roomNPC.vagina)
-						parsedText += convertSpaces(logicArray[1]);
-				case "HasPenis":
-					if (roomNPC.penis)
-						parsedText += convertSpaces(logicArray[1]);
-				case "HasBalls":
-					if (roomNPC.balls)
-						parsedText += convertSpaces(logicArray[1]);
-				
-				default:
-					parsedText += "{Unknown variable: " + stringToTest + "}";
+			if (text.substr(i, 1) == "]" && !recordingValue) {
+				variableArray.push(variableText);
+				valueArray.push(null);
+				recordingVar = false;
+				i++;
+			}
+			if (text.substr(i, 1) == "[") {
+				parseArray.push(parsedText);
+				parsedText = "";
+				recordingVar = true;
+				variableText = "";
+				i++;
+			}
+			if (text.substr(i, 1) == ":" && recordingVar) {
+				recordingVar = false;
+				variableArray.push(variableText);
+				recordingValue = true;
+				valueText = "";
+				i++;
+			}
+			if (recordingVar) {
+				variableText += text.substr(i, 1);
+				i++;
+			}
+			if (recordingValue) {
+				if (text.substr(i, 1) == "{" || text.substr(i, 1) == "}") {
+					if (text.substr(i, 1) == "{")
+						valueText += "[";
+					if (text.substr(i, 1) == "}")
+						valueText += "]";
+				} else {
+					valueText += text.substr(i, 1);
 				}
-				
-				if (parsedText.length > parsedCharCount)
-					parsedText += extraToHold;
-				parsedCharCount = parsedText.length;
-			} else {
-				parsedText += arrayToParse[i] + " ";
-				parsedCharCount = parsedText.length;
+				i++;
+			}
+			if (!recordingValue && !recordingVar) {
+				parsedText += text.substr(i, 1);
+				i++;
 			}
 		}
 		
+		parseArray.push(parsedText);
+		
+		for (n in 0...valueArray.length) {
+			if (valueArray[n] != null)
+				valueArray[n] = textParse(valueArray[n]);
+		}
+		
+		var m:Int = 0;
+		
+		for (n in 0...parseArray.length) {
+			outputText += parseArray[n];
+			if (variableArray.length > m) {
+				outputText += checkVar(variableArray[m], valueArray[m]);
+				m++;
+			}
+		}
+		
+		return outputText;
+	}
+	
+	static function checkVar(text:String, ?value:String):String {
+		var parsedText:String = "";
+		
+		switch (text) {
+		case "PCNAME":
+			parsedText = playerCharacter.name;
+		case "PCSPECIESC":
+			parsedText = playerCharacter.species.name;
+		case "PCSPECIESL":
+			parsedText = playerCharacter.species.name.toLowerCase();
+		case "PCARMS":
+			parsedText = playerCharacter.arms;
+		case "PCLEGS":
+			parsedText = playerCharacter.legs;
+		case "PCSKIN":
+			parsedText = playerCharacter.skin;
+		case "PCMOUTH":
+			parsedText = playerCharacter.mouth;
+		case "PCHANDS":
+			parsedText = playerCharacter.hands;
+		case "PCFEETS":
+			parsedText = playerCharacter.feet;
+		case "NPCNAME":
+			parsedText = roomNPC.name;
+		case "NPCGENDER":
+			parsedText = roomNPC.gender("gender");
+		case "NPCGENDERL":
+			parsedText = roomNPC.gender("gender").toLowerCase();
+		case "SUBJC":
+			parsedText = roomNPC.gender("sub");
+		case "SUBJ":
+			parsedText = roomNPC.gender("sub").toLowerCase();
+		case "OBJC":
+			parsedText = roomNPC.gender("obj");
+		case "OBJ":
+			parsedText = roomNPC.gender("obj").toLowerCase();
+		case "POSC":
+			parsedText = roomNPC.gender("pos");
+		case "POS":
+			parsedText = roomNPC.gender("pos").toLowerCase();
+		case "WOUNDED":
+			parsedText = roomNPC.wounded();
+		case "HasBreasts":
+			if (roomNPC.breasts)
+				parsedText = value;
+		case "HasVagina":
+			if (roomNPC.vagina)
+				parsedText = value;
+		case "HasPenis":
+			if (roomNPC.penis)
+				parsedText = value;
+		case "HasBalls":
+			if (roomNPC.balls)
+				parsedText = value;
+		case "HasPandV":
+			if (roomNPC.penis && roomNPC.vagina)
+				parsedText = value;
+		
+		default:
+			parsedText = "{Unknown variable: " + text + "}";
+		}
 		
 		return parsedText;
 	}
@@ -3487,15 +3976,6 @@ class Main {
 		txtTime.htmlText = "Time";
 		txtTime.selectable = false;
 		txtTime.visible = false;
-		
-		var txtBugReport:TextField = new TextField();
-		txtBugReport.name = "Bugs";
-		txtBugReport.x = 0;
-		txtBugReport.y = 620;
-		txtBugReport.width = 800;
-		txtBugReport.height = 40;
-		txtBugReport.htmlText = "<body><font size = '12'><p align = 'center'><u><a target='_blank' href='http://www.dancingfoxstudios.com/phpBB3/viewforum.php?f=4'>Bug Report</a></u></p></font></body>";
-		txtBugReport.selectable = true;
 
 		txtName.setTextFormat(charNameFormat);
 		txtHealth.setTextFormat(labelFormat);
@@ -3512,7 +3992,6 @@ class Main {
 		flashSC.addChild(txtMoney);
 		flashSC.addChild(txtArousal);
 		flashSC.addChild(txtBuildVersion);
-		flashSC.addChild(txtBugReport);
 		flashSC.addChild(txtDebugTag);
 		flashSC.addChild(txtBowels);
 		flashSC.addChild(txtTime);
@@ -3573,6 +4052,7 @@ class Main {
 		AMFConnection.registerClassAlias("consume.speciesObject", MySpecies);
 		AMFConnection.registerClassAlias("consume.NPCObject", MyNPC);
 		AMFConnection.registerClassAlias("consume.keyObject", MyItem_Key);
+		AMFConnection.registerClassAlias("consume.weaponObject", MyItem_Weapon);
 		
 		//Species, both playable and non
 		species = new Array();
@@ -3600,6 +4080,7 @@ class Main {
 		globals.perks = new Array();
 		
 		//			Name		Display Name		Description															Effect				Buyable, if false the perk can only be granted by an event. Not bought.
+		perks.push(["comps",    "Compressable",		"You can cram your body through any opening, no matter how small.", "DOOR:YES",			true]);
 		
 		perks.push(["ineat",	"Inedible",			"You cannot be eaten.",												"EATEN:NO",			true]);
 		perks.push(["nskinny",	"Naturally Skinny",	"Burn fat at an increased rate.",									"FAT:-10",				true]);
@@ -3756,9 +4237,9 @@ class Main {
 		
 		
 		//Items
-		globals.keys = new Array();
 		
 		//Keys				Name						keyID	desc
+		globals.keys = new Array();
 		globals.keys[0] = ["Gym Membership Keycard",	0,		"A credit-card sized square of plastic with the gym's logo printed on it and a black background"];
 		globals.keys[1] = ["Gym Gold Membership",		1,		"A credit-card sized square of plastic with the gym's logo printed on it and a gold background"];
 		globals.keys[2] = ["Gym Staff Key",				2,		"A key you got from Shay, it opens the staff room door at the gym"];
@@ -3772,6 +4253,9 @@ class Main {
 		globals.food[0].new_food("Cheeseburger", 5, 2, "A thick greesy cheeseburger");
 		
 		//Weapons
+		globals.weapons = new Array();
+		globals.weapons[0] = new MyItem_Weapon();
+		globals.weapons[0].newWeapon("Unarmed", 0, 0, "Your bare hands.", 0, true);
 		
 		//Armor
 		
@@ -3938,65 +4422,8 @@ class Main {
 	static function clearAllEvents() {
 		for (i in 0...btns.length) {
 			btns[i].setButton(" ");
-			
-			btns[i].removeEventListener(MouseEvent.CLICK, welcomeScreen);
-			btns[i].removeEventListener(MouseEvent.CLICK, displayCredits);
-			btns[i].removeEventListener(MouseEvent.CLICK, displayFAQ);
-			btns[i].removeEventListener(MouseEvent.CLICK, optionsScreen);
-			btns[i].removeEventListener(MouseEvent.CLICK, increaseFontSize);
-			btns[i].removeEventListener(MouseEvent.CLICK, decreaseFontSize);
-			btns[i].removeEventListener(MouseEvent.CLICK, newGame);
-			btns[i].removeEventListener(MouseEvent.CLICK, movePlayer);
-			btns[i].removeEventListener(MouseEvent.CLICK, saveGame);
-			btns[i].removeEventListener(MouseEvent.CLICK, loadGame);
-			btns[i].removeEventListener(MouseEvent.CLICK, showHidden);
-			btns[i].removeEventListener(MouseEvent.CLICK, debugMenu);
-			btns[i].removeEventListener(MouseEvent.CLICK, resetGame);
-			
-			btns[i].removeEventListener(MouseEvent.CLICK, doTalk);
-			btns[i].removeEventListener(MouseEvent.CLICK, doSleep);
-			btns[i].removeEventListener(MouseEvent.CLICK, doPoop);
-			btns[i].removeEventListener(MouseEvent.CLICK, doPhone);
-			btns[i].removeEventListener(MouseEvent.CLICK, doHunt);
-			btns[i].removeEventListener(MouseEvent.CLICK, doDescription);
-			btns[i].removeEventListener(MouseEvent.CLICK, doFoodComa);
-			btns[i].removeEventListener(MouseEvent.CLICK, doShop);
-			btns[i].removeEventListener(MouseEvent.CLICK, doWork);
-			btns[i].removeEventListener(MouseEvent.CLICK, doDeath);
-			btns[i].removeEventListener(MouseEvent.CLICK, doPizza);
-			btns[i].removeEventListener(MouseEvent.CLICK, doGym);
-			
+			btns[i].clearClickFunc();
 		}
-			
-			/*
-			btns[i].removeEventListener(MouseEvent.CLICK, buyDrink);
-			btns[i].removeEventListener(MouseEvent.CLICK, doSell);
-			btns[i].removeEventListener(MouseEvent.CLICK, giveItem);
-			btns[i].removeEventListener(MouseEvent.CLICK, combatHeal);
-			btns[i].removeEventListener(MouseEvent.CLICK, doCombat);
-			btns[i].removeEventListener(MouseEvent.CLICK, meetDeath);
-			btns[i].removeEventListener(MouseEvent.CLICK, playerStats);
-			btns[i].removeEventListener(MouseEvent.CLICK, statUpgrade);
-
-			btns[i].removeEventListener(MouseEvent.CLICK, doMasturbate);
-
-			btns[i].removeEventListener(MouseEvent.CLICK, eatNPC);
-			btns[i].removeEventListener(MouseEvent.CLICK, freeMoney);
-			
-			btns[i].removeEventListener(MouseEvent.CLICK, playerInv);
-			btns[i].removeEventListener(MouseEvent.CLICK, itemFunction);
-			
-			btns[i].removeEventListener(MouseEvent.CLICK, gymTalk);
-			btns[i].removeEventListener(MouseEvent.CLICK, quickTime);
-			btns[i].removeEventListener(MouseEvent.CLICK, goldGymRoom);
-			
-			btns[i].removeEventListener(MouseEvent.CLICK, useVend);
-			btns[i].removeEventListener(MouseEvent.CLICK, resetGymTrain);
-			btns[i].removeEventListener(MouseEvent.CLICK, useMachine);
-			btns[i].removeEventListener(MouseEvent.CLICK, orderHooker);
-			btns[i].removeEventListener(MouseEvent.CLICK, shopOffice);
-			*/
-		
 	}
 	
 	static function main() {

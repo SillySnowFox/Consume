@@ -16,6 +16,7 @@ class MyButton extends Sprite {
 
 	private var inRect:Sprite = new Sprite();
 	private var btnLabel:TextField = new TextField();
+	private var curClickFunc:Function = null;	
 	
 	public function new(x:Int, y:Int, ?size:String) {
 		super();
@@ -57,6 +58,7 @@ class MyButton extends Sprite {
 	}
 
 	private function changeName(newName:String) {
+		//This function changes the button's name, don't call this directly, use setButton
 		var labelFormat:TextFormat = new TextFormat();
 		var globals:Object = Lib.current.getChildByName("GlobalVars");
 		var color:String = "#000000";
@@ -95,11 +97,15 @@ class MyButton extends Sprite {
 	}
 	
 	public function disableButton() {
+		//This function greys out the button text to show it's disabled.
 		this.open = false;
 		changeName(this.btnName);
+		clearClickFunc();
 	}
 	
 	public function setButton(setName:String, ?setTip:String, setID:Dynamic = null) {
+		//This function configures the button, setting the name, any tooltip and the button's ID
+		//With setClickFunc working, I might add that to this as well so we only have one button call to make rather then two
 		if (setTip != null && setTip != " ") {
 			this.hasToolTip = true;
 			this.toolTip = setTip;
@@ -114,6 +120,23 @@ class MyButton extends Sprite {
 		changeName(setName);
 		this.btnID = setID;
 	}
+	
+	public function setClickFunc(newFunc:Function):Void {
+		if (curClickFunc != null) {
+			removeEventListener(MouseEvent.CLICK, curClickFunc);
+		}
+		
+		if (newFunc != null) {
+			addEventListener(MouseEvent.CLICK, newFunc);
+		}
+		
+		curClickFunc = newFunc;
+	}
+	
+	public function clearClickFunc():Void {
+		setClickFunc(null);
+	}
+	
 	
 	private function removeToolTip ( ?e:MouseEvent ) {
 		var toolTip:Object = this.getChildByName("Tool Tip");

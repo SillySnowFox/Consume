@@ -12,6 +12,15 @@ class MyNPC extends MyCharacter {
 	
 	public var image:Bitmap;
 	
+	public function wounded():String {
+		var damageDesc:String = "";
+		
+		if (this.healthCurr == this.healthMax) 
+			damageDesc = "completely unharmed";
+		
+		return damageDesc;
+	}
+	
 	public function newNPC(newChar:Array<Dynamic>) {
 		this.name = newChar[0];
 		this.species = newChar[1];
@@ -309,14 +318,43 @@ class MyNPC extends MyCharacter {
 		//Basic NPC dialog.
 		talk = new Array();
 		if (globals.currentRoomID == 21) { //Checking for the gym, this will let NPCs have other conversation options in other rooms.
+			var sexOptions:Array<Dynamic> = new Array();
+			
 			if (playerObject.quest[2].stage >= 3) {
 				talk[0] = ["The [NPCNAME] smiles as you move over to [OBJ]. &quot;Hi, sorry, were you going to use this machine?&quot;", ["talk"], [["Flirt", "Sure why not?", 1], ["Hungry", "See if the [NPCNAME] is willing to go to lunch with you.", 2], ["Leave", null, -1]]];
 			} else {
 				talk[0] = ["The [NPCNAME] smiles as you move over to [OBJ]. &quot;Hi, sorry, were you going to use this machine?&quot;", ["talk"], [["Flirt", "Sure why not?", 1], ["Hungry", "See if the [NPCNAME] is willing to go to lunch with you.", 2], ["Gold Member?", "Ask if the [NPCNAME] is a gold member.", 3], ["Leave", null, -1]]];
 			}
+			//Flirt
 			talk[1] = ["You spend some time flirting with the [NPCNAME] until [SUBJ] shyly asks if you would be interested in visiting the showers for a little, washing.", ["talk"], [["Sex", "Have sex with the [NPCNAME]", 4], ["Sex & Eat", "Fuck, then eat the [NPCNAME]", 5], ["No", null, -1]]];
-			//talk[2] = ["You ask the [NPCNAME] if [SUBJ]'d like to be lunch. [SUBJC] blinks a little, not really understanding your meaning until you grin hungerly and it clicks. [SUBJC] look around nervously then follow you to the bathroom. You lock the door behind the two of you, and look over the [NPCNAME] who smiles shyly.</p><br><p>You tell the [NPCNAME] to undress and [SUBJ] slowly removes [POS] clothes, blushing when"
+			//Eat
+			talk[2] = ["You ask the [NPCNAME] if [SUBJ]'d like to be lunch. [SUBJC] blinks a little, not really understanding your meaning until you grin hungerly and it clicks. [SUBJC] look around nervously then follow you to the bathroom. You lock the door behind the two of you, and look over the [NPCNAME] who smiles shyly.</p><br><p>You tell the [NPCNAME] to undress and [SUBJ] slowly removes [POS] clothes, blushing when " +
+			 "you see [HasPenis:{POS} hard cock straining {POS} underwear][HasPandV: and ][HasVagina:{POS} slit wet with arousal]. [SUBJC] setps out of [POS] underwear" +
+			 "[HasPenis:, {POS} cock pointing right at you, hard with the thought of what you're about to do to {OBJ} ]" +
+			 "[HasVagina: and the unmistakable scent of female arousal fills the small room]. " + //There will be issues here if the NPC is a Doll or Neuter
+			 "You step in close, your mouth going over [POS] face as [SUBJ] starts playing with [POS] [HasPenis:boner][HasPandV: and ][HasVagina:clit]. " +
+			 "[SUBJC] slides down your throat, furiously masturbating the whole time. As your tongue passes [POS] " +
+			 "[HasPenis:cock][HasPandV: and ][HasVagina:slit] [SUBJ] cums hard, the taste of [POS] cum adding to [POS] own flavor, a loud moan coming from your stomach as it stretches with the [NPCNAME].</p><br><p>" +
+			 "You sit for a moment as your stomach settles, the struggling of your meal slowing as [SUBJ] continues to masturbate inside your stomach. You pat your belly as the motions stop just after another muffled moan comes out.</p><br><p>Some people are strange...", ["eat|move 25"], [["Leave", null, -1]]];
+			talk[3] = ["You ask the [NPCNAME] if [SUBJ] is a gold gym member. [SUBJC] smiles and says, &quot;No, I'd like to though, but it seems like they never have any available.&quot;", ["talk"], [["Flirt", "Sure why not?", 1], ["Hungry", "See if the [NPCNAME] is willing to go to lunch with you.", 2], ["Leave", null, -1]]];
+			//Sex Talk option
+			talk[4] = ["You lean forward to whisper your proposal in the [NPCNAME]'s ear, a blush running across [POS] cheeks as [SUBJ] gives a slight nod and follows you to the gym's restroom. It's a little cramped in there with the two of you, but it's not much of a hassle to get into position.", ["talk"]];
 			
+			sexOptions[0] = ["Eat", "You're more hungry then horny afterall...", 2];
+			
+			if (playerObject.penis) { //Player has a cock, use it to ram the NPC
+				sexOptions.push(["Butsex", "Shove your cock up the [NPCNAME]'s ass", 6]);
+			}
+			if (playerObject.vagina) { //Player has a vagina, get the NPC to lick the player
+				sexOptions.push(["Licked", "Have the [NPCNAME] clean out your cunt", 7]);
+			}
+			
+			//Fuck and eat
+			//talk[5] = ["
+			//Butsex
+			//talk[6] = ["
+			//V Licked
+			//talk[7] = ["
 		}
 	}
 	

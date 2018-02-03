@@ -33,6 +33,23 @@
   <!-- Class files to compile (other referenced classes will automatically be included) -->
   <compileTargets>
     <compile path="src\Main.hx" />
+    <compile path="src\GlobalVars.hx" />
+    <compile path="src\AlertBox.hx" />
+    <compile path="src\MyButton.hx" />
+    <compile path="src\MyCharacter.hx" />
+    <compile path="src\MyExit.hx" />
+    <compile path="src\MyItem.hx" />
+    <compile path="src\MyItem_Armor.hx" />
+    <compile path="src\MyItem_Food.hx" />
+    <compile path="src\MyItem_Key.hx" />
+    <compile path="src\MyItem_Weapon.hx" />
+    <compile path="src\MyNPC.hx" />
+    <compile path="src\MyPerk.hx" />
+    <compile path="src\MyPlayerObject.hx" />
+    <compile path="src\MyQuest.hx" />
+    <compile path="src\MyRoom.hx" />
+    <compile path="src\MySpecies.hx" />
+    <compile path="src\PlayerCharacter.hx" />
   </compileTargets>
   <!-- Assets to embed into the output SWF -->
   <library>
