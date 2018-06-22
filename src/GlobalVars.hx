@@ -12,18 +12,21 @@ class GlobalVars extends Sprite {
 	//The following values are saved
 	public var debugMode:Bool = false;
 	public var allowSex:Bool = true;
-	public var textSize:Int = 16;
+	public var textSize:Int = 17;
 	public var allowScat:Bool = true;
 	public var allowedGenders:Array<Int> = new Array();
 	public var currentRoomID:Int;
+	public var difficulty:Float = 1;
 	
 	//This value tells the game if the save data is going to be missing values so we don't look for them. Saves with a buldNumer lower then 11 are not compatable with this game engine at all.
-	public var buildNumber:Int = 15;
-	public var minBuildNumber:Int = 12; //If the saved build number is below this number, don't allow players to load that file. Otherwise the game will attempt to update the file
+	public var buildNumber:Int = 20;
+	public var minBuildNumber:Int = 20; //If the saved build number is below this number, don't allow players to load that file. Otherwise the game will attempt to update the file
+	
+	public var perkCostMultiplier:Int = 13;
 	
 	//Changes the number that displays in the corner of the play field
-	public var buildVersion:String = "0.41";
-
+	public var buildVersion:String = "0.50";
+	
 	//Global vars holding temp data
 	public var backTo:String;
 	public var conversationStep:Int;
@@ -41,17 +44,13 @@ class GlobalVars extends Sprite {
 	public var food:Array<MyItem_Food>;
 	public var weapons:Array<MyItem_Weapon>;
 	public var armor:Array<MyItem_Armor>;
+	public var rings:Array<MyItem_Ring>;
 	
 	public var shopLists:Array<Dynamic>;
 	
 	public var gymFee:Int = 20; //Cost to use the gym, futureproofing
-	
-	//Leftovers from old code. Planning to remove in 0.40, check for code that's using them
-	//The current NPC the player is interacting with, use roomNPC instead
-	public var npcObject:Object;
-	
-	//The player object, use the global player object reference instead.
-	public var playerCharacter:MyPlayerObject;
+	public var maxHeight:Int = 120; //Max player height, in inches: 10'
+	public var minHeight:Int = 24; //Min player height, in inches: 2'
 	
 	public function new() {
 		super();
@@ -67,7 +66,7 @@ class GlobalVars extends Sprite {
 		welcomeMessage.push("Wrex"); //Mass Effect
 		welcomeMessage.push("Using multiple fonts in ActionScript is a pain in the ass.");
 		welcomeMessage.push("Tip your driver.");
-		welcomeMessage.push("Now with our own forum! Come say hi!");
+		welcomeMessage.push("Our forum is gone :C");
 		welcomeMessage.push("Sufficiently advanced my ass."); //Dresden Files
 		welcomeMessage.push("It's like riding a zombie T-Rex through downtown Chicago on Halloween night while polka music plays in the background.");
 		welcomeMessage.push("Rule 9: Always carry a knife."); //NCIS
@@ -87,12 +86,18 @@ class GlobalVars extends Sprite {
 		//This says; "There will be a secret here soon"
 		welcomeMessage.push("01010100 01101000 01100101 01110010 01100101 00100000 01110111 01101001 01101100 01101100 00100000 01100010 01100101 00100000 01100001 00100000 01110011 01100101 01100011 01110010 01100101 01110100 00100000 01101000 01100101 01110010 01100101 00100000 01110011 01101111 01101111 01101110"); //There will be a secret here soon
 		welcomeMessage.push("Kyra's favroite flavor is strawberry.");
-		welcomeMessage.push("Now with updates!");
+		welcomeMessage.push("Now with <font size = '" + (textSize - 4) + "'>more</font> updates!");
 		//This says; "Are you still translating these?"
 		welcomeMessage.push("01000001 01110010 01100101 00100000 01111001 01101111 01110101 00100000 01110011 01110100 01101001 01101100 01101100 00100000 01110100 01110010 01100001 01101110 01110011 01101100 01100001 01110100 01101001 01101110 01100111 00100000 01110100 01101000 01100101 01110011 01100101 00111111");
 		welcomeMessage.push("Walk down the right back alley... and you could find anything."); //Sin City
 		welcomeMessage.push("Even the smallest person can change the course of the future."); //The Lord of the Rings: The Fellowship of the Ring
 		welcomeMessage.push("The accumulated filth of all their sex and murder will foam up about their waists and all the whores and politicians will look up and shout 'Save us!'... And I'll look down and whisper 'no.'"); //Watchmen
+		welcomeMessage.push("Kyra casts Resurrection! It failed 554 times before succeeding. Kyra fainted."); //Yes, that's how many days it was between 0.40 and 0.41
+		welcomeMessage.push("Prase the Sun!"); //Dark Souls
+		welcomeMessage.push("Amazing chest ahead.");
+		welcomeMessage.push("Let us engage in jolly cooperation!");
+		welcomeMessage.push("\\[T]/");
+		welcomeMessage.push("Don't give up, skeleton!");
 		
 	}
 	

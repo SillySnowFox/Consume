@@ -34,6 +34,7 @@ class AlertBox extends Sprite {
 			var btn:MyButton = new MyButton(450, 235);
 			btn.setButton("OK");
 			Lib.current.addChild(btn);
+			btn.z = 5;
 			btn.addEventListener(MouseEvent.CLICK, closeBox);
 		}
 		

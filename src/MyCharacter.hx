@@ -1,3 +1,5 @@
+import flash.*;
+import flash.utils.Object;
 
 class MyCharacter {
 	// All characters will start from this class. Players, random NPCs and named NPCs
@@ -85,22 +87,97 @@ class MyCharacter {
 	
 	//Stats
 	public var healthCurr:Int;
-	public var healthMax:Int;
-	public var str:Int;
-	public var agi:Int;
-	public var end:Int;
-	public var int:Int;
+	private var healthMax:Int;
+	private var str:Int;
+	private var agi:Int;
+	private var end:Int;
+	private var int:Int;
 	
 	//Skills
-	public var dodge:Int = 0;
-	public var run:Int = 0;
-	public var melee:Int = 0;
-	public var sneak:Int = 0;
-	public var spot:Int = 0;
+	private var dodge:Int = 0;
+	private var run:Int = 0;
+	private var melee:Int = 0;
+	private var sneak:Int = 0;
+	private var spot:Int = 0;
 	
-	public var arousal:Int;
+	//Temps, added to by gear
+	private var tempHealth:Int = 0;
+	private var tempStr:Int = 0;
+	private var tempAgi:Int = 0;
+	private var tempEnd:Int = 0;
+	private var tempInt:Int = 0;
+	
+	private var tempDodge:Int = 0;
+	private var tempRun:Int = 0;
+	private var tempMelee:Int = 0;
+	private var tempSneak:Int = 0;
+	private var tempSpot:Int = 0;
+	
+	public var arousal:Float;
 	
 	private var perks:Array<MyPerk>;
+	
+	public function totalWeight():Float {
+		var addedWeight:Float = this.weight;
+		//Add up the weight of the player
+		
+		if (this.stomachContents.length != 0) {
+			//Add in stomach contents
+			for (i in 0...this.stomachContents.length) {
+				addedWeight += this.stomachContents[i].mass;
+			}
+		}
+		
+		addedWeight += this.stomachCurrent;
+		
+		addedWeight += this.bowelsCurrent;
+		
+		addedWeight += this.str * 0.8; //Add weight for muscles
+		
+		addedWeight += this.fat;
+		
+		return addedWeight;
+	}
+	
+	public function health():Int {
+		return this.healthMax + this.tempHealth;
+	}
+	
+	public function strength():Int {
+		return this.str + this.tempStr;
+	}
+	
+	public function agility():Int {
+		return this.agi + this.tempAgi;
+	}
+	
+	public function endurance():Int {
+		return this.end + this.tempEnd;
+	}
+	
+	public function intelligence():Int {
+		return this.int + this.tempInt;
+	}
+	
+	public function skillDodge():Int {
+		return this.dodge + this.tempDodge;
+	}
+	
+	public function skillRun():Int {
+		return this.run + this.tempRun;
+	}
+	
+	public function skillMelee():Int {
+		return this.melee + this.tempMelee;
+	}
+	
+	public function skillSneak():Int {
+		return this.sneak + this.tempSneak;
+	}
+	
+	public function skillSpot():Int {
+		return this.spot + this.tempSpot;
+	}
 	
 	public function gender(pronoun:String):String {
 		var genderString:String = "";
@@ -125,17 +202,19 @@ class MyCharacter {
 		if (!this.breasts && !this.vagina && !this.penis && !this.balls)
 			genderString = "Neuter";
 		
-		for (i in 0...this.perks.length) {
-			perkEffectList = this.perks[i].effect.split(" ");
-			for (x in 0...perkEffectList.length) {
-				perkAction = perkEffectList[x].split(":");
-				perkTarget = perkAction[0];
-				if (perkAction.length > 1) {
-					perkValue = Std.string(perkAction[1]);
+		if (this.perks != null) {
+			for (i in 0...this.perks.length) {
+				perkEffectList = this.perks[i].effect.split(" ");
+				for (x in 0...perkEffectList.length) {
+					perkAction = perkEffectList[x].split(":");
+					perkTarget = perkAction[0];
+					if (perkAction.length > 1) {
+						perkValue = Std.string(perkAction[1]);
+					}
+					
+					if (perkTarget == "GENDER")
+						genderString = perkValue;
 				}
-				
-				if (perkTarget == "GENDER")
-					genderString = perkValue;
 			}
 		}
 		
@@ -380,20 +459,22 @@ class MyCharacter {
 					perkValue = Std.parseInt(perkAction[1]);
 				}
 				
-				if (perkTarget == "BREASTSIZE")
-					modBreastSize += perkValue;
+				if (perkTarget == "BREASTSIZE") {
+					for (i in 0...this.perks[i].count) {
+						modBreastSize += perkValue;
+					}
+				}
 			}
 		}
 		
 		breastMass = this.breastCurrent + this.breastSize;
+		//Add fat to the character's breast size
+		breastMass += this.fat / 10;
 		
 		//breastWidth. breastCurrent same as stomach except the value is for both breasts. So we need to get the size of one boob.
 		breastWidth = Math.round(2 * Math.pow((3 * (breastMass / 2)) / (4 * Math.PI), 1 / 3));
 		
-		if (breastWidth < modBreastSize)
-			return modBreastSize;
-		
-		return breastWidth;
+		return breastWidth + modBreastSize;
 	}
 	
 	public function stomachSize():Int {
@@ -414,8 +495,11 @@ class MyCharacter {
 					perkValue = Std.parseInt(perkAction[1]);
 				}
 				
-				if (perkTarget == "BELLYSIZE")
-					bigBellyVal += perkValue;
+				if (perkTarget == "BELLYSIZE") {
+					for (i in 0...this.perks[i].count) {
+						bigBellyVal += perkValue;
+					}
+				}
 			}
 		}
 		
@@ -424,6 +508,8 @@ class MyCharacter {
 		} else {
 			stomachMass = bigBellyVal;
 		}
+		//Add fat to the calculation
+		stomachMass += this.fat / 10; //10% of the player's fat is added to the mass of their belly
 		
 		//stomachWidth. stomachCurrent is the player's current stomach mass in cubic inches. so have to translate that into a diamater
 		//formula D=2(((3V)/(4pi))^(1/3))
@@ -452,8 +538,11 @@ class MyCharacter {
 					perkValue = Std.parseInt(perkAction[1]);
 				}
 				
-				if (perkTarget == "BALLSIZE")
-					bigBallVal += perkValue;
+				if (perkTarget == "BALLSIZE") {
+					for (i in 0...this.perks[i].count) {
+						bigBallVal += perkValue;
+					}
+				}
 			}
 		}
 		
@@ -461,10 +550,8 @@ class MyCharacter {
 		
 		ballWidth = Math.round(2 * Math.pow((3 * (ballMass / 2)) / (4 * Math.PI), 1 / 3));
 		
-		if (ballWidth < bigBallVal)
-			return Math.round(bigBallVal);
 		
-		return ballWidth;
+		return Math.round(bigBallVal + ballWidth);
 	}
 	
 	public function penisLength():Int {
@@ -485,8 +572,11 @@ class MyCharacter {
 					perkValue = Std.parseInt(perkAction[1]);
 				}
 				
-				if (perkTarget == "PENISLENGTH")
-					bigCockVal += perkValue;
+				if (perkTarget == "PENISLENGTH") {
+					for (i in 0...this.perks[i].count) {
+						bigCockVal += perkValue;
+					}
+				}
 			}
 		}
 		
@@ -520,8 +610,11 @@ class MyCharacter {
 					perkValue = Std.parseInt(perkAction[1]);
 				}
 				
-				if (perkTarget == "PENISWIDTH")
-					bigCockVal += perkValue;
+				if (perkTarget == "PENISWIDTH") {
+					for (i in 0...this.perks[i].count) {
+						bigCockVal += perkValue;
+					}
+				}
 			}
 		}
 		
@@ -537,35 +630,46 @@ class MyCharacter {
 		return cockWidth;
 	}
 	
-	public function addPerk(addThis:MyPerk):Bool {
-		var lastChar:String = "";
-		var perkRank:Int = -1;
+	public function addPerk(addThis:String, globals:GlobalVars, count:Int = 1):Bool {
+		//New version of this function, Perks now have multiple levels that can be added
+		//So when the player wants a perk we need to see if they alreay have the perk using hasPerk
+		//if they do then we add one to the value of count, if they don't, we just add the perk
+		var perkIndex:Int = -1;
+		var perkToAdd:MyPerk = new MyPerk();
 		
-		// Function to add a perk to a character. Returns true if the perk is successuflly added. False if something goes wrong (such as the character already having that perk or missing a lower ranked perk of the same type)
+		for (i in 0...globals.perks.length) {
+			if (globals.perks[i].name == addThis)
+				perkToAdd = globals.perks[i];
+		}
 		
-		//First thing to do is make sure the character doesn't already have the perk we are trying to add
-		if (this.hasPerk(addThis.name))
-			return false;
+		perkIndex = this.perks.indexOf(perkToAdd);
 		
-		lastChar = addThis.name.charAt(addThis.name.length - 1);
-		
-		//Next we check if they have the lower-ranked versions (assuming it has multiple ranks)
-		if (!Math.isNaN(Std.parseFloat(lastChar))) {
-			perkRank = Std.parseInt(lastChar);
-			
-			if (perkRank != 1) {
-				//New perk is not a rank 1 perk. So we have to check if the character already has the lower level perk.
-				//Just going to check for the next lowest, rather then the whole chain for simplicity's sake
-				
-				if (!this.hasPerk(addThis.name.substr(0, addThis.name.length - 1) + (perkRank - 1)))
-					return false;
+		if (perkIndex == -1) {
+			for (i in 0...this.perks.length) {
+				if (this.perks[i].name == perkToAdd.name)
+					perkIndex = i;
 			}
 		}
 		
-		//Everything is good, all prereqs are met. Add the perk to the character.
-		this.perks.push(addThis);
+		if (this.hasPerk(perkToAdd.name)) {
+			//Player already has the perk
+			this.perks[perkIndex].count = this.perks[perkIndex].count + count;
+		} else {
+			this.perks.push(perkToAdd);
+			this.perks[this.perks.length - 1].count = count;
+		}
 		
 		return true;
+	}
+	
+	public function perkCount(perkName:String):Int {
+		var perkIndex:Int = 0;
+		
+		for (perkIndex in 0...this.perks.length) {
+			if (this.perks[perkIndex].name == perkName)
+				return this.perks[perkIndex].count;
+		}
+		return 0;
 	}
 	
 	public function hasPerk(perkName:String):Bool {
@@ -602,6 +706,8 @@ class MyCharacter {
 		var rndWeight:Int = 0;
 		var heightRange:Int = 0;
 		var weightRange:Int = 0;
+		
+		var globals:Object = Lib.current.getChildByName("GlobalVars");
 		
 		this.species = species;
 		
@@ -686,6 +792,12 @@ class MyCharacter {
 		this.end = end;
 		this.int = int;
 		
+		this.dodge = agi;
+		this.melee = agi;
+		this.run = agi;
+		this.sneak = agi;
+		this.spot = int;
+		
 		this.healthMax = 5 + (this.end * 2);
 		this.healthCurr = this.healthMax;
 		
@@ -694,7 +806,7 @@ class MyCharacter {
 		if (perks != null) {
 			this.perks = new Array();
 			for (i in 0...perks.length) {
-				if (!this.addPerk(perks[i]))
+				if (!this.addPerk(perks[i].name, globals))
 					new AlertBox("ERROR: Perk '" + perks[i].dispName + "' not added.");
 			}
 		}

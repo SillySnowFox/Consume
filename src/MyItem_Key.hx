@@ -16,10 +16,8 @@ class MyItem_Key extends MyItem {
 		this.count = 1;
 	}
 	
-	public function giveKey():String {
+	public function giveKey(playerCharacter:MyPlayerObject):String {
 		//Add this key to the player's invintory
-		
-		var playerCharacter:MyPlayerObject = globals.playerCharacter;
 		
 		var playerKeys:Array<MyItem_Key> = playerCharacter.keyRing;
 		

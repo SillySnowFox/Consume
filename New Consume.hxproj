@@ -16,11 +16,12 @@
   <!-- Other classes to be compiled into your SWF -->
   <classpaths>
     <class path="src" />
+    <class path="obj" />
   </classpaths>
   <!-- Build options -->
   <build>
     <option directives="" />
-    <option flashStrict="False" />
+    <option flashStrict="True" />
     <option noInlineOnDebug="False" />
     <option mainClass="Main" />
     <option enabledebug="True" />
@@ -50,6 +51,9 @@
     <compile path="src\MyRoom.hx" />
     <compile path="src\MySpecies.hx" />
     <compile path="src\PlayerCharacter.hx" />
+    <compile path="src\MyFileSaveObject.hx" />
+    <compile path="src\MyItem_Ring.hx" />
+    <compile path="src\MyTimer.hx" />
   </compileTargets>
   <!-- Assets to embed into the output SWF -->
   <library>

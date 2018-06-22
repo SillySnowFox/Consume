@@ -7,8 +7,8 @@ class MyExit {
 	public var name:String; //Exit name, displayed on the button
 	public var desc:String; //Exit description, displayed in the button's tooltip
 	public var hidden:Bool; //Exit is hidden until the player clicks on it
-	public var timeOpen:Int; //player.hour time the exit opens
-	public var timeClose:Int; //player.hour time the exit closes
+	public var timeOpen:Int = -1; //player.hour time the exit opens
+	public var timeClose:Int = -1; //player.hour time the exit closes
 	public var travelTo:Int; //Location the button links to
 	public var travelTime:Int; //How long it take the player to travel to the next room
 	public var doorWidth:Int; //How wide is the door, possible use when players get really massive?

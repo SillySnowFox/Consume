@@ -103,7 +103,7 @@ class MyButton extends Sprite {
 		clearClickFunc();
 	}
 	
-	public function setButton(setName:String, ?setTip:String, setID:Dynamic = null) {
+	public function setButton(setName:String, setTip:String = null, setID:Dynamic = null, setFunc:Function = null) {
 		//This function configures the button, setting the name, any tooltip and the button's ID
 		//With setClickFunc working, I might add that to this as well so we only have one button call to make rather then two
 		if (setTip != null && setTip != " ") {
@@ -119,6 +119,9 @@ class MyButton extends Sprite {
 		
 		changeName(setName);
 		this.btnID = setID;
+		
+		if (setFunc != null)
+			this.setClickFunc(setFunc);
 	}
 	
 	public function setClickFunc(newFunc:Function):Void {

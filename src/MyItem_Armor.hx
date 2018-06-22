@@ -4,7 +4,6 @@ import flash.utils.*;
 class MyItem_Armor extends MyItem {
 
 	public var defend:Int;
-	public var specials:Array<Dynamic> = new Array();
 	
 	/*Special array structure;
 	 * specials[x][0] = ability name
@@ -14,24 +13,22 @@ class MyItem_Armor extends MyItem {
 	 * specials[x][4] = ability amount
 	 */
 	
-	public function equip() {
-		var playerCharacter:Object = Lib.current.getChildByName("PlayerCharacter");
-		
-		var plrInv:Array<MyItem> = playerCharacter.invObject;
-		var armorUnequip:MyItem = new MyItem();
+	public function equip(playerCharacter:MyPlayerObject) {
+		var armorUnequip:MyItem_Armor = new MyItem_Armor();
 		var itemIndex:Int = -1;
-		var ignore:String = "";
 		var message:String = "";
+		var special:String = "";
+		var specialValue:Int = 0;
 		
-		for (i in 0...plrInv.length) {
-			if (plrInv[i].name == this.name)
+		for (i in 0...playerCharacter.invObject.length) {
+			if (playerCharacter.invObject[i].name == this.name)
 				itemIndex = i;
 		}
 		
-		if (plrInv[itemIndex].count > 1) {
-			plrInv[itemIndex].count -= 1;
+		if (playerCharacter.invObject[itemIndex].count > 1) {
+			playerCharacter.invObject[itemIndex].count -= 1;
 		} else {
-			plrInv.splice(itemIndex, 1);
+			playerCharacter.invObject.remove(this);
 		}
 		
 		if (playerCharacter.equipArmObj != null) {
@@ -39,29 +36,63 @@ class MyItem_Armor extends MyItem {
 			armorUnequip.count = 1;
 			playerCharacter.equipArmObj = this;
 			
-			armorUnequip.give();
-			
-			message = "<p>You return your " + armorUnequip.name.toLowerCase() + " to your pack and put your " + this.name.toLowerCase() + " on.</p><br>";
+			if (armorUnequip.name != "Skin") {
+				armorUnequip.give(playerCharacter);
+				
+				message = "<p>You return your " + armorUnequip.name.toLowerCase() + " to your pack and put your " + this.name.toLowerCase() + " on.</p><br>";
+			} else {
+				message = "<p>You put your " + this.name.toLowerCase() + " on.</p><br>";
+			}
 		} else {
 			playerCharacter.equipArmObj = this;
 			
 			message = "<p>You put your " + this.name.toLowerCase() + " on.</p><br>";
 		}
 		
-		playerCharacter.invObject = plrInv;
+		if (this.specials.length != 0) {
+			for (i in 0...this.specials.length) {
+				special = this.specials[i].split("|")[0];
+				specialValue = Std.parseInt(this.specials[i].split("|")[1]);
+				playerCharacter.tempSkill(special, specialValue);
+			}
+		}
+		
+		if (armorUnequip.name != "Skin") {
+			for (i in 0...armorUnequip.specials.length) {
+				special = armorUnequip.specials[i].split("|")[0];
+				specialValue = Std.parseInt(armorUnequip.specials[i].split("|")[1]);
+				playerCharacter.tempSkill(special, -specialValue);
+			}
+		}
 		
 		return message;
 	}
 	
-	public function new(name:String, mass:Int, value:Int, desc:String, newDefend:Int, newSpecials:Array<Dynamic>) {
-		super();
+	public function copyItem():MyItem_Armor {
+		var newItem:MyItem_Armor = new MyItem_Armor();
 		
-		this.name = name;
-		this.mass = mass;
-		this.value = value;
-		this.desc = desc;
-		this.defend = newDefend;
-		this.specials = newSpecials;
+		newItem.type = "armor";
+		newItem.name = this.name;
+		newItem.mass = this.mass;
+		newItem.value = this.value;
+		newItem.desc = this.desc;
+		newItem.defend = this.defend;
+		newItem.specials = new Array();
+		
+		return newItem;
 	}
 	
+	public function newArmor(armor:Array<Dynamic>) {
+		this.type = "armor";
+		this.name = armor[0];
+		this.mass = armor[1];
+		this.value = armor[2];
+		this.desc = armor[3];
+		this.defend = armor[4];
+		this.specials = armor[5];
+	}
+	
+	public function new() {
+		super();
+	}
 }
