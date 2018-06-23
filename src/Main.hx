@@ -313,6 +313,8 @@ class Main {
 						message += roomNPC.name + " is standing behind it.<br>";
 						btns[11].setButton("Talk", "Talk to " + roomNPC.name, 0);
 						btns[11].setClickFunc(doTalk);
+					} else {
+						btns[9].setButton("Eat", "No one is watching the cooler, help yourself to some tasty treats?", "free|0", iceCreamShop);
 					}
 				case "general":
 					//general store
@@ -3098,18 +3100,207 @@ class Main {
 	
 	static function iceCreamShop( e:MouseEvent ) {
 		var message:String = "";
+		var title:String = "Ice Cream Shop - ";
 		var action:String = e.currentTarget.btnID.split("|")[0];
-		var value:Int = Std.parseInt(e.currentTarget.btnID.split("|")[1]);
+		var value:String = e.currentTarget.btnID.split("|")[1];
+		var page:String = "0";
+		var price:Int = 0;
+		var flavor:String = "";
+		var eat:String = "";
+		var foodMass:Int = 5;
 		
 		clearAllEvents();
+		updateHUD();
 		
+		if (optionsBtn.visible) {
+			optionsBtn.visible = false;
+			charDesc.visible = false;
+			newRoom = false;
+		}
 		
+		switch (action) {
+		case "list":
+			//List the ice cream choices for the player to buy
+			message += "<p>You step up to the counter, ";
+			
+			if (((playerCharacter.hour >= 8 && playerCharacter.hour < 14) || playerCharacter.quest[5].stage >= 6) && playerCharacter.quest[7].stage < 2) {
+				//Guffin works the 8am-2pm shift, unless he's been eaten or Bessie is tied up in the back
+				roomNPC = new MyNPC();
+				roomNPC.newNPC(nonPlayerCharacters[3]);
+				
+				message += "Guffin smiles and says, &quot;O-oh, uh, what would you like? T-theres a lot to choose from.&quot;";
+			} else if (((playerCharacter.hour >= 14 && playerCharacter.hour < 20) || (playerCharacter.quest[7].stage == 2)) && playerCharacter.quest[5].stage < 6) {
+				//Bessie works the 2pm-8pm shift, unless Guffin has been eaten or she's tied up in the back room
+				roomNPC = new MyNPC();
+				roomNPC.newNPC(nonPlayerCharacters[4]);
+				
+				message += "Bessie scowls at you. &quot;Buy something already.&quot;";
+			}
+			
+			message += "</p><br><p>";
+			
+			switch (value) {
+			case "0":
+				message += "&nbsp;&nbsp;&nbsp;Vanilla, $2<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ah, the classic vanilla flavor.<br>&nbsp;&nbsp;&nbsp;Chocolate, $2<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tastes just like… Chocolate.<br>&nbsp;&nbsp;&nbsp;Strawberry, $2<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;There are real strawberry bits inside!<br>&nbsp;&nbsp;&nbsp;Caramel, $2<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;With veins of pure caramel within, it must be hard to resist.<br>&nbsp;&nbsp;&nbsp;Blue Bubblegum, $4<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The color pink was taken, so bubblegum will just settle on blue.<br>&nbsp;&nbsp;&nbsp;Cookies & Cream, $5<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;It even has bits of cookies mashed in!<br>";
+				message += "&nbsp;&nbsp;&nbsp;Neapolitan Blast, $5<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Couldn’t decide? Have some vanilla, chocolate, AND strawberry!<br>&nbsp;&nbsp;&nbsp;Peanut Butter, $4<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;You could almost swear it’s literally a tub of peanut butter, just frozen.<br>&nbsp;&nbsp;&nbsp;Quadruple Chocolate, $5<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Its chocolate, times 4, with chocolate pieces!";
+				message += "</p><br><p>More...</p>";
+				
+				btns[0].setButton("Vanilla", "Classic Vanilla", "buy|vanilla", iceCreamShop);
+				btns[1].setButton("Chocolate", "Tasty Chocolate", "buy|chocolate", iceCreamShop);
+				btns[2].setButton("Strawberry", "With Real Strawberries!", "buy|strawberry", iceCreamShop);
+				btns[3].setButton("Caramel", "Classic Vanilla with pure caramel mixed in", "buy|caramel", iceCreamShop);
+				btns[4].setButton("Bubblegum", "Blue bubblegum; strange, but tasty", "buy|bubblegum", iceCreamShop);
+				btns[5].setButton("Cookies & Cream", "With bits of real cookie!", "buy|c&c", iceCreamShop);
+				btns[6].setButton("Neapolitan", "All three classic choices", "buy|neap", iceCreamShop);
+				btns[7].setButton("Peanut Butter", "Still looks like a tub of peanut butter", "buy|peanut", iceCreamShop);
+				btns[8].setButton("4x Chocolate", "Chocolate, only more", "buy|4choc", iceCreamShop);
+				
+				btns[11].setButton("More", null, "list|1", iceCreamShop);
+			case "1":
+				message += "<br>&nbsp;&nbsp;&nbsp;Banana Split, $4<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A banana, cut in half, with some ice cream and whipped cream, topped with a cherry!<br>&nbsp;&nbsp;&nbsp;Milkshake, $3<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Milk and ice cream and syrup, shaken up in a tall cup. Comes in multiple flavors!<br>&nbsp;&nbsp;&nbsp;Glutton’s Delight, $15<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The sweetest of the sweets, a bit of every flavor put into one huge tub.";
+				
+				btns[0].setButton("Banana Split", "Banana and ice cream", "buy|split", iceCreamShop);
+				btns[1].setButton("Milkshake", "Milk and ice cream", "shake|list", iceCreamShop);
+				btns[1].disableButton();
+				btns[2].setButton("Glutton", "A little of everything", "buy|glutton", iceCreamShop);
+				
+				btns[9].setButton("Prev", null, "list|0", iceCreamShop);
+			}
+			
+			
+			title += "Buy";
+		case "free":
+			//List the ice cream choices for the player to eat
+			
+		case "buy":
+			//First screen of buy
+			message += "<p>Buy ";
+			
+			switch (value) {
+			case "vanilla":
+				price = 2;
+				message += "vanilla";
+			case "chocolate":
+				price = 2;
+				message += "chocolate";
+			case "strawberry":
+				price = 2;
+				message += "strawberry";
+			case "caramel":
+				price = 2;
+				message += "caramel";
+			case "bubblegum":
+				price = 4;
+				message += "blue bubblegum";
+			case "c&c":
+				price = 5;
+				message += "cookies and cream";
+			case "neap":
+				price = 5;
+				message += "neapolitan";
+			case "peanut":
+				price = 4;
+				message += "peanut butter";
+			case "4choc":
+				price = 5;
+				message += "quadruple chocolate";
+			case "split":
+				price = 4;
+				message += "a banana split";
+				page = "1";
+			case "glutton":
+				price = 15;
+				message += "glutton's delight";
+				page = "1";
+			}
+			
+			message += "? For $" + price + "</p>";
+			
+			btns[0].setButton("Yes", null, "confirm|" + value, iceCreamShop);
+			if (playerCharacter.getMoney() < price) 
+				btns[0].disableButton();
+			btns[2].setButton("No", null, "list|" + page, iceCreamShop);
+		case "confirm":
+			eat = "You take a seat and a spoon and prepare to eat out of your tub of ";
+			
+			switch (value) {
+			case "vanilla":
+				price = 2;
+				flavor = "vanilla";
+				eat += "vanilla ice cream.</p><br><p>With each spoonful, you savor the sweet, vanilla taste. It’s the closest you can get to vanilla perfection.";
+			case "chocolate":
+				price = 2;
+				flavor = "chocolate";
+				eat += "chocolate ice cream.</p><br><p>It feels thick and creamy, as you shovel it into your mouth. It’s really, great, shame they didn’t give you the recipe for it.";
+			case "strawberry":
+				price = 2;
+				flavor = "strawberry";
+				eat += "strawberry ice cream.</p><br><p>The ice cream fills your taste buds with a soft, light taste that is strawberry. As you eat, you come along small chunks, which when you bite into them, are juicy and sweet.";
+			case "caramel":
+				price = 2;
+				flavor = "caramel";
+				eat += "caramel ice cream.</p><br><p>It tends to be a rather rich, nutty flavor; ironic considering it's made by burning sugar and milk together. If you were blindfolded, you could not mistake this taste for anything else.";
+			case "bubblegum":
+				price = 4;
+				flavor = "blue bubblegum";
+				eat += "Blue Bubblegum ice cream.</p><br><p>As one of the sweetest things on the menu, the sweetness is immense. It probably has a huge amount of sugar in it, but the more the better. Your tongue is a bright blue now.";
+			case "c&c":
+				price = 5;
+				flavor = "cookies and cream";
+				eat += "cookies & cream ice cream.</p><br><p>Surprisingly smooth, even with the chunks of cookies within. The creamy texture really makes it live up to its name.";
+			case "neap":
+				price = 5;
+				flavor = "neapolitan";
+				eat += "Neapolitan blast ice cream.</p><br><p>You could almost say that it doesn’t get any better than this. Vanilla, chocolate and strawberry all in one tub. Three different tastes that all melt in your mouth at once, creating a sweet, creamy blend.";
+			case "peanut":
+				price = 4;
+				flavor = "peanut butter";
+				eat += "peanut butter ice cream.</p><br><p>You don’t remember this ice cream from when you worked here, so they must have gotten it in since you left. It’s really strong, with small lumps of the actual peanuts. If it wasn't cold, you would be able to say it were just straight up peanut butter.";
+			case "4choc":
+				price = 5;
+				flavor = "quadruple chocolate";
+				eat += "quadruple chocolate ice cream.</p><br><p>This ice cream is so thick, it feels like someone had sex in your mouth, leaving their cold chocolate love in your mouth. Plus, there's chocolate chips, which are nice too.";
+			case "split":
+				price = 4;
+				foodMass = 7;
+				flavor = "a banana split";
+				page = "1";
+			case "glutton":
+				price = 15;
+				foodMass = 40;
+				flavor = "glutton's delight";
+				page = "1";
+				if (roomNPC != null) {
+					if (roomNPC.name == "Guffin") {
+						eat = "You take a seat and a spoon and prepare to eat out of your enormous tub of Glutton’s Delight ice cream.</p><br><p>This tub has a scoop from every flavor in the shop. The amount of ice cream that fills it is about as big as your head. You can see Guffin look at you with a bit of envy from the counter, wishing he could eat that much for free on one occasion and not get in trouble for it. He watches you eat, getting more envious with every spoonful.";
+					} else {
+						eat = "You take a seat and a spoon and prepare to eat out of your enormous tub of Glutton’s Delight ice cream.</p><br><p>This tub has a scoop from every flavor in the shop. The amount of ice cream that fills it is about as big as your head. You can see Bessie watch you empty the tub from behind the counter, a curious look on her face. You can't decide if it's envy or anger.";
+					}
+				}
+			}
+			
+			if (roomNPC != null) {
+				if (roomNPC.name == "Guffin") {
+					message = "You pass over $" + price + " to Guffin, and he passes over your " + flavor + " ice cream.</p><br><p>" + eat + "</p><br><p>Once you’re done, you feel a little bit fuller.";
+				} else {
+					message = "You pass over $" + price + " to Bessie, and she passes over your " + flavor + " ice cream.</p><br><p>" + eat + "</p><br><p>Once you’re done, you feel a little bit fuller.";
+				}
+			}
+			
+			message += "</p>";
+			
+			playerCharacter.stomachCurrent += foodMass;
+			playerCharacter.addMoney( -price);
+			updateHUD();
+		case "shake":
+			
+		}
 		
-		outputText(message, "Ice Cream Shop");
+		btns[10].setButton("Leave", "Step away from the counter", null, movePlayer);
+		outputText(message, title);
 	}
 	
 	static function doShop( e:MouseEvent ) {
-		// ic - ice cream shop
 		// rat - black market
 		// gen - general store
 		
@@ -3165,6 +3356,10 @@ class Main {
 			}
 			canSell = true;
 			title = "General Store";
+			
+		//Ice cream shop has been moved to it's own function as it's not adding prebuilt items to the player's invintory
+		//Rather it's going to directly feed the player ice cream
+		
 		case "rat":
 			//Black Market
 			
@@ -6310,7 +6505,7 @@ class Main {
 		quests[4] = ["cv",		"Pleasing The Wolf", false,		["", "You tried to slip past the bouncer, it wasn't a good idea."], null];
 		quests[5] = ["milk",	"Milking the Cow",	false,		["", "Tweaked her nipple", "Drunk after tweaking", "Milked her", "Agreed to help with her machine", "Heard instructions on using the chair", "Bessie is in the chair", "Eaten"]];
 		quests[6] = ["job",		"Part Time Job",	false,		["You need one", "Accecpted the job in the general store"], null];
-		
+		quests[7] = ["foxboi",	"Guffin's Fate",	true,		["", "You've been fucking Guffin", "You've eaten Guffin. He was as tasty as you'd hoped."], null];
 		
 		
 		

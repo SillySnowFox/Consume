@@ -7,16 +7,16 @@ New
  * Buying a Gold Membership actually buys it now.
  * Gold Room machines are avalile to use.
  * Staff room machine and vending in place. Shay's quest will be finished soon.
- * 
+ * Ice Cream can be bought and eaten in the shop.
+ * Bessie's quest can be progressed to allow you into the staff room. The rest of her quest is coming soon.
 
 Changes
 
- *
+ * Data Dump/Recovery button should always return the player to their room after using it.
 
 Bugfixes
 
- * Corrected items generated with a null skill increase.
- * 
+ * Corrected items generated with a null skill increase. Hopefully this will fix crashes in combat. I'm still unable to replicate this issue on my end.
 
 
 v0.49.1
