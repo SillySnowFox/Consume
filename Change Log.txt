@@ -137,6 +137,7 @@ Bugfixes
 
  * v0.41.1 hotfix: Corrected an issue where new players were not getting 'weapons' causing the game to crash in combat
 
+
 v0.41
 
 New

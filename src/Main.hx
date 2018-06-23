@@ -203,6 +203,7 @@ class Main {
 						if (doorFuckCount <= -1) {
 							message += playerCharacter.cum("door");
 							doorFuckCount = playerCharacter.endurance();
+
 						}
 					}
 				default:
@@ -1205,7 +1206,6 @@ class Main {
 				playerCharacter.advanceSkill(1, "str");
 				
 				
-				
 				message += "You swing your " + playerCharacter.equipWepObj.name.toLowerCase() + " at the [NPCNAME] for " + damage + " damage.<br>";
 				
 				roomNPC.healthCurr = roomNPC.healthCurr - damage;
@@ -1380,6 +1380,7 @@ class Main {
 				playerCharacter.stomachContents.push(roomNPC);
 				playerCharacter.stomachCurrent += roomNPC.mass;
 				playerCharacter.numEaten++;
+
 				playerCharacter.advanceSkill(1, "str");
 				
 				btns[0].setButton("Next", null, 12);
@@ -3925,6 +3926,7 @@ class Main {
 								saveDataObject.data.player2.equipWepObj = globals.weapons[0]; //Unarmed
 								saveDataObject.data.save2[0] = 15;
 							}
+
 							if (saveDataObject.data.save2[0] == 15) { //Version 15 had no difficulty
 								saveDataObject.data.globals.push(1);
 								saveDataObject.data.save2[0] = 16;
