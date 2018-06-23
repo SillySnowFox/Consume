@@ -1,5 +1,143 @@
 Support the game on Pateron! https://www.patreon.com/SillySnowFox?ty=h
 
+v0.50
+
+New
+
+ * Buying a Gold Membership actually buys it now.
+ * Gold Room machines are avalile to use.
+ * Staff room machine and vending in place. Shay's quest will be finished soon.
+ * Ice Cream can be bought and eaten in the shop.
+ * Bessie's quest can be progressed to allow you into the staff room. The rest of her quest is coming soon.
+
+Changes
+
+ * Data Dump/Recovery button should always return the player to their room after using it.
+
+Bugfixes
+
+ * Corrected items generated with a null skill increase. Hopefully this will fix crashes in combat. I'm still unable to replicate this issue on my end.
+
+
+v0.49.1
+
+New
+
+ * Added QTE event.
+ * Added Crash Recovery/Data Dump button.
+
+Changes
+
+ * Added arousal growing while holding prey in your belly
+
+Bugfixes
+
+ * Corrected arousal detection
+ * Spelling
+ * Fixed talking while in the Gym while Debug Mode is off.
+
+
+v0.48
+
+New
+
+ * Added several new food items to the world.
+ * Began adding arousal/masterbation system.
+
+Bugfixes
+
+ * Corrected item generation, newly discovered items won't overwrite already existing items.
+ * Fixed crash when buying/viewing food items
+
+
+v0.47
+
+New
+
+ * Items can be bought from the general store
+ * Old saves will not work with this version
+ * Items can be sold to the the general store
+
+Changes
+
+ * Alerted how perks are stored, allowing all perks to increase indefinatly. Not all perks will gain a benifit from being purchesed multiple times.
+ * Slowed fat burn rate while working out in the gym.
+ 
+Bugfixes
+
+ * Corrected bonuses from items not being removed when the item is removed
+ * Fixed the game not correctly handling your dumb decision to try and run past the bouncer
+ * Shi will now undo your poor choice to sign up as prey in the club.
+ * You should no longer get paid in very small pieces of pennies.
+ * Improved health detection, no more invincible zombie player
+ * Player's natural healing now includes the bonus health from items.
+
+v0.46
+
+New
+
+ * NPCs encountered in the park now drop weapons and armor.
+ * Weapons and armor can be equipped from your invintory screen.
+ * Old saves will not work with this version.
+
+
+v0.45
+
+New
+
+ * Began added skeletion for items
+
+
+v0.44
+
+New
+
+ * Players are able to ressurrect, if they make a deal...
+ * Players are now equipped with 'armor'
+
+Changes
+
+ * Changed the link on the welcome screen to my twitter page, since the website it used to link to isn't there anymore.
+
+Bugfixes
+
+ * Fixed a crash when talking to NPCs and agreeing to their quests
+ * Fixed having to reload after dying in combat
+ * Corrected difficulty slider, no more Dark Souls combat unless you want it
+
+
+v0.43
+
+New
+
+ * Added a difficulty selector. Check the Options menu.
+ * Added ability to save to a file.
+
+Changes
+
+ * Reduced the rate NPCs make grab attempts
+
+Bugfixes
+
+ * Digested prey are now removed from the player's stomach when Scat is disabled.
+ * Dead players can no longer return to life the easy way. Save early, save often.
+ * Fixed reloading not loading into the same room you last saved in.
+
+v0.42
+
+New
+
+ * NPCs can now attack. Be careful!
+
+Changes
+
+ * Minimum damage boosted to STR value
+
+Bugfixes
+
+ * v0.41.1 hotfix: Corrected an issue where new players were not getting 'weapons' causing the game to crash in combat
+
+
 v0.41
 
 New

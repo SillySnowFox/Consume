@@ -7,9 +7,11 @@ import flash.utils.*;
 import flash.text.*;
 import flash.events.*;
 import flash.display.*;
+import flash.net.FileReference;
 import haxe.remoting.AMFConnection;
 import Type.ValueType;
 import haxe.xml.Check.Attrib;
+import flash.errors.*;
 
 //Logo images
 @:bitmap("../img/logo_f.png") class LogoF extends BitmapData { }
@@ -34,6 +36,7 @@ class Main {
 	static var nonPlayerCharacters:Array<Dynamic>;
 	static var roomNPC:MyNPC;
 	static var txtDebug:TextField;
+	static var btnDebugDump:MyButton;
 	
 	static var offset:Int;
 	static var thisSpecies:MySpecies;
@@ -61,7 +64,18 @@ class Main {
 	static var grabbedNPC:Bool; //The Player has a hold of the NPC
 	static var grabbedPC:Bool; //The NPC has a hold of the Player
 	
+	static var fileSaveObject:FileReference = new FileReference();
+	
+	static var shopList:Array<Dynamic> = new Array();
+	static var shopListMade:Bool = false;
+	
 	static var playerDied:String;
+	static var playerDead:Bool = false;
+	
+	static var QTEstage:Int;
+	static var timerQTE:MyTimer;
+	
+	static var talkInProgress:Bool;
 	
 	static function movePlayer( e:MouseEvent ) {
 		//The main movement function
@@ -83,10 +97,14 @@ class Main {
 		var timeReturnArray:Array<String> = new Array();
 		var timeGoesBy:Int = 0;
 		
+		if (!btnDebugDump.visible)
+			btnDebugDump.visible = true;
+		
 		if (!optionsBtn.visible) {
 			optionsBtn.visible = true;
 			charDesc.visible = true;
 			globals.backTo = "move";
+			talkInProgress = false;
 			if (globals.debugMode) {
 				txtDebug.addEventListener(MouseEvent.CLICK, debugMenu);
 				txtDebug.visible = true;
@@ -100,6 +118,11 @@ class Main {
 			return;
 		}
 		
+		if (playerCharacter.healthCurr <= 0) {
+			//Somehow the player survived a combat with less then 0 HP
+			playerCharacter.healPlayer();
+		}
+		
 		// If the player is overfull, skip to food coma
 		if (playerCharacter.stomachCurrent >= playerCharacter.stomachCap * 1.5) {
 			doFoodComa();
@@ -110,6 +133,9 @@ class Main {
 		if (newRoom) {
 			choice = e.currentTarget.btnID;
 			options = Std.string(choice).split(":");
+			
+			shopListMade = false;
+			shopList = null;
 			
 			if (options[0] == "WAIT") {
 				message += "You wait.<br>";
@@ -176,7 +202,8 @@ class Main {
 						doorFuckCount -= 1;
 						if (doorFuckCount <= -1) {
 							message += playerCharacter.cum("door");
-							doorFuckCount = playerCharacter.end;
+							doorFuckCount = playerCharacter.endurance();
+
 						}
 					}
 				default:
@@ -231,6 +258,10 @@ class Main {
 			 * 5 - Toilet
 			 * 6 - Sleep
 			 * 7 - Phone
+			 * 8 - Workout
+			 * 9 - Gold Room
+			 * 10 - Staff Room
+			 * 11 - Hospital, buying additional perks
 			 * 
 			 */
 			
@@ -278,21 +309,20 @@ class Main {
 					if (playerCharacter.hour >= 14 && playerCharacter.hour < 20)
 						roomNPC.newNPC(nonPlayerCharacters[4]);
 					
-					btns[9].setButton("Buy", "Buy some tasty Ice Cream.", "ic:0");
-					//btns[9].setClickFunc(doShop);
-					btns[9].disableButton();
 					if (roomNPC != null) {
+						btns[9].setButton("Buy", "Buy some tasty Ice Cream.", "list|0", iceCreamShop);
 						message += roomNPC.name + " is standing behind it.<br>";
 						btns[11].setButton("Talk", "Talk to " + roomNPC.name, 0);
 						btns[11].setClickFunc(doTalk);
+					} else {
+						btns[9].setButton("Eat", "No one is watching the cooler, help yourself to some tasty treats?", "free|0", iceCreamShop);
 					}
 				case "general":
 					//general store
 					message += roomNPC.name + " has something to sell.<br>";
 					
-					btns[9].setButton("Buy", "Take a look at the " + roomNPC.species.name + "'s stock", "gen:0");
-					btns[9].disableButton();
-					//btns[9].setClickFunc(doShop);
+					btns[9].setButton("Buy", "Take a look at the " + roomNPC.species.name + "'s stock", "gen|list|0");
+					btns[9].setClickFunc(doShop);
 				case "rat":
 					//The rat's illegal shop
 					message += roomNPC.name + " has something to sell.<br>";
@@ -339,10 +369,45 @@ class Main {
 				btns[11 - i].setClickFunc(doGym);
 			case 9:
 				//Gold room
+				btns[11].setButton("Gold Machine", "Use one of the machines in this room.", "list", doGoldRoom);
+				if (playerCharacter.quest[2].stage == 3) {
+					//First encounter with Shay. This will always be avalible until the player speaks with him
+					message += "<p>Shay is here.</p>";
+					roomNPC = new MyNPC();
+					roomNPC.newNPC(nonPlayerCharacters[2]);
+					btns[10].setButton("Shay", "Talk to the Wolfhound", 0, doTalk);
+				}
+				if (playerCharacter.quest[2].stage >= 4 && playerCharacter.quest[2].stage <= 5) {
+					if (Math.round(Math.random() * 9) == 0) {
+						//Second encounter with Shay. Random chance of happening.
+						message += "<p>Shay is here.</p>";
+						roomNPC = new MyNPC();
+						roomNPC.newNPC(nonPlayerCharacters[2]);
+						btns[10].setButton("Shay", "Talk to the Wolfhound", 2, doTalk);
+					}
+				}
 			case 10:
 				//Staff room
+				if (Math.round(Math.random() * 3) == 0) {
+					message += "<p>Shay is here.</p>";
+					roomNPC = new MyNPC();
+					roomNPC.newNPC(nonPlayerCharacters[2]);
+					btns[9].setButton("Shay", "Talk to the Wolfhound");
+					btns[9].disableButton();
+				}
+				btns[10].setButton("Vending", "Buy something from the drink machine", "list", doVend);
+				btns[11].setButton("Shay's Machine", "Give Shay's new machine a try", "list", doShayMachine);
+			case 11:
+				//Hospital add perk room
+				message += "A small odd machine sits here. There is a place for you to insert your arm.<br>";
+				btns[11 - i].setButton("Machine", "Use the machine", "list|0");
+				btns[11 - i].setClickFunc(doPerk);
+				
 			}
 		}
+		
+		if (playerCharacter.arousal >= 100)
+			message += "You are too aroused to think, you need to deal with this somehow.<br>";
 		
 		if (message != "") {
 			output += "<br>";
@@ -388,6 +453,11 @@ class Main {
 						//btns[i].clearClickFunc(); Redundant
 					}
 				}
+				if (exit[i].timeOpen != exit[i].timeClose) {
+					if (playerCharacter.hour < exit[i].timeOpen || playerCharacter.hour >= exit[i].timeClose) {
+						btns[i].disableButton();
+					}
+				}
 			} else {
 				if (exitDirection[i] != null) {
 					btns[i].setButton(exitDirection[i]);
@@ -397,13 +467,583 @@ class Main {
 		}
 		
 		//Wait, btn 4
-		if (currentRoom.allowWait) {
+		if (currentRoom.allowWait && currentRoom.isPublic && playerCharacter.arousal < 100) {
 			btns[4].setButton("Wait", null, "WAIT:15");
 			btns[4].setClickFunc(movePlayer);
+		} else if (currentRoom.allowWait && !currentRoom.isPublic && playerCharacter.arousal < 60) {
+			btns[4].setButton("Wait", null, "WAIT:15", movePlayer);
+		} else if (!currentRoom.isPublic && playerCharacter.arousal >= 60 && playerCharacter.arousal < 100) {
+			btns[4].setButton("Masturbate");
+			btns[4].setClickFunc(doMasterbate);
+		} else if (currentRoom.isPublic && !currentRoom.allowWait && playerCharacter.arousal < 100) {
+			btns[4].setButton("Wait");
+			btns[4].disableButton();
+		} else if (!currentRoom.isPublic && !currentRoom.allowWait && playerCharacter.arousal < 100) {
+			btns[4].setButton("Wait");
+			btns[4].disableButton();
+		} else if (playerCharacter.arousal >= 100) {
+			for (i in 0...11) {
+				btns[i].clearClickFunc();
+				btns[i].disableButton();
+			}
+			btns[4].setButton("Masturbate");
+			btns[4].setClickFunc(doMasterbate);
+		} else {
+			new AlertBox("Masturbate logic test failed. " + playerCharacter.arousal + ", Public: " + currentRoom.isPublic + ", Allow Wait: " + currentRoom.allowWait);
 		}
 		
 		
+	}
+	
+	static function doVend( e:MouseEvent ) {
+		//Give the player a bottle of BouncyButt (item 4) with a small chance to get a BouncyButt+ (item 5)
+		var tempItem:MyItem_Food = new MyItem_Food();
+		var choice:String = e.currentTarget.btnID;
+		var message:String = "<p>You stand before the vending machine, the graphics depict a horse girl with a very large butt dressed in a tiny pair of exercise shorts. You can't quite be sure, because of how she's turned, but you suspect she isn't wearing a top at all. Explains why the vending machine is tucked away back here and not out on the floor. The name on the machine is &quot;BouncyButt Sports drinks! Put some Bounce in your Butt today!&quot;</p><br>";
 		
+		if (optionsBtn.visible) {
+			optionsBtn.visible = false;
+			charDesc.visible = false;
+			newRoom = false;
+		}
+		
+		clearAllEvents();
+		
+		switch choice {
+		case "list":
+			message += "<p>A bottle costs $1</p><br><p>Buy a bottle?</p>";
+			btns[0].setButton("Buy", null, "buy", doVend);
+		case "buy":
+			if (playerCharacter.getMoney() >= 1) {
+				message += "<p>You feed your dollar into the machine and push the button. The machine rattles and thunks and a bottle drops into the slot. ";
+				
+				if (Math.round(Math.random() * 3) == 0) {
+					message += "You pull it out and discover the machine has given you a bottle of BouncyButt+ rather then the regular stuff it was supposed to.</p>";
+					tempItem = globals.food[5].copyItem();
+				} else {
+					message += "You pull it out and look the bottle over, BouncyButt figures the gym would have a 'health' drink stocked.</p>";
+					tempItem = globals.food[4].copyItem();
+				}
+				
+				playerCharacter.addMoney( -1);
+				
+				message += "<br><p>Buy another?</p>";
+				
+				btns[0].setButton("Buy", null, "buy", doVend);
+			} else {
+				message += "<p>You check your pockets for the money and find yourself coming up short.</p>";
+			}
+			
+			tempItem.give(playerCharacter);
+		}
+		
+		btns[11].setButton("Leave", null, null, movePlayer);
+		outputText(message, "Gym - Staff Room");
+	}
+	
+	static function doShayMachine( e:MouseEvent ) {
+		var message:String = "<p>You eye the contraption that dominates this room, after a bit of work you figure out how to get yourself into it and start working out. How the thing works confuses you slightly but you manage to get it working and work yourself hard.</p><br>";
+		var effects:Array<String> = new Array();
+		effects = ["height", "weight", "fat", "chest", "waist", "hip", "butt", "breast", "penis length", "penis width", "balls"];
+		var rndEffect:Int = Math.round(Math.random() * (effects.length - 1));
+		var posOrNeg:Int = Math.round(Math.random() * 1);
+		var toChange:Float = -1;
+		var oldValue:Float = -1;
+		
+		if (optionsBtn.visible) {
+			optionsBtn.visible = false;
+			charDesc.visible = false;
+			newRoom = false;
+		}
+		
+		clearAllEvents();
+		
+		switch (posOrNeg) {
+		case 0:
+			posOrNeg = -1;
+		case 1:
+			posOrNeg = 1;
+		}
+		
+		if (playerCharacter.lastGoldTrainDay == playerCharacter.day) {
+			//Player has used a Gold Machine today
+			message = "<p>You're still a little sore from the last time you used one of Shay's machines. You'll have to wait to use another.</p>";
+		} else {
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+			switch(effects[rndEffect]) {
+			case "height":
+				oldValue = playerCharacter.tall;
+				toChange = Math.round(Math.random() * 11) + 1;
+				toChange *= posOrNeg;
+				playerCharacter.tall += toChange;
+				if (playerCharacter.tall < globals.minHeight && oldValue == globals.minHeight) {
+					playerCharacter.tall = globals.minHeight;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else if (playerCharacter.tall > globals.maxHeight && oldValue == globals.maxHeight) {
+					playerCharacter.tall = globals.maxHeight;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>You feel strange, when you step out of the machine you find your self slightly taller.</p>";
+					} else {
+						message += "<p>You feel strange, when you step out of the machine you find your self slightly shorter.</p>";
+					}
+				}
+			case "weight":
+				oldValue = playerCharacter.weight;
+				toChange = Math.round(Math.random() * 100) + 10;
+				toChange *= posOrNeg;
+				playerCharacter.weight += toChange;
+				if (playerCharacter.weight < 40 && oldValue == 40) {
+					playerCharacter.weight = 40;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>You feel odd, when you step free of the machine you find yourself slightly heavier.</p>";
+					} else {
+						message += "<p>You feel odd, when you step free of the machine you find yourself slightly lighter.</p>";
+					}
+				}
+			case "fat":
+				oldValue = playerCharacter.fat;
+				toChange = Math.round(Math.random() * 1000) + 50;
+				toChange *= posOrNeg;
+				playerCharacter.fat += Math.round(toChange);
+				if (playerCharacter.fat < 0 && oldValue == 0) {
+					playerCharacter.fat = 0;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>You feel odd, when you step free of the machine you find yourself slightly heavier.</p>";
+					} else {
+						message += "<p>You feel odd, when you step free of the machine you find yourself slightly lighter.</p>";
+					}
+				}
+			case "chest":
+				oldValue = playerCharacter.chestSize;
+				toChange = Math.round(Math.random() * 11) + 1;
+				toChange *= posOrNeg;
+				playerCharacter.chestSize += Math.round(toChange);
+				if (playerCharacter.chestSize < 18 && oldValue == 18) {
+					playerCharacter.chestSize = 18;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>Your chest feels tight, when you step free you find your torso has broadened.</p>";
+					} else {
+						message += "<p>Your chest feels tight, when you step free you find your torso has narrowed.</p>";
+					}
+				}
+			case "waist":
+				oldValue = playerCharacter.waistSize;
+				toChange = Math.round(Math.random() * 11) + 1;
+				toChange *= posOrNeg;
+				playerCharacter.waistSize += Math.round(toChange);
+				if (playerCharacter.waistSize < 12 && oldValue == 12) {
+					playerCharacter.waistSize = 12;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>You feel something pinch around your waist, when you step out you find your waist has thickened.</p>";
+					} else {
+						message += "<p>You feel something pinch around your waist, when you step out you find your waist has narrowed.</p>";
+					}
+				}
+			case "hip":
+				oldValue = playerCharacter.hipSize;
+				toChange = Math.round(Math.random() * 11) + 1;
+				toChange *= posOrNeg;
+				playerCharacter.hipSize += toChange;
+				if (playerCharacter.hipSize < 12 && oldValue == 12) {
+					playerCharacter.hipSize = 12;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>A sharp pain shoots through your hips, you stumble when you exit the machine not expecting the wider hips you now have.</p>";
+					} else {
+						message += "<p>A sharp pain shoots through your hips, you stumble when you exit the machine not expecting the narrower hips you now have.</p>";
+					}
+				}
+			case "butt":
+				oldValue = playerCharacter.buttSize;
+				toChange = Math.round(Math.random() * 4) + 1;
+				toChange *= posOrNeg;
+				playerCharacter.buttSize += Math.round(toChange);
+				if (playerCharacter.buttSize < 1 && oldValue == 1) {
+					playerCharacter.buttSize = 1;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>A feeling like someone just swatted you from behind hits you just before you step out of the machine. You spin around to find no one there. When you check your rear, you find it has grown.</p>";
+					} else {
+						message += "<p>A feeling like someone just swatted you from behind hits you just before you step out of the machine. You spin around to find no one there. When you check your rear, you find it has shrunk.</p>";
+					}
+				}
+			case "breast":
+				oldValue = playerCharacter.breastSize;
+				toChange = Math.round(Math.random() * 6) + 1;
+				toChange *= posOrNeg;
+				playerCharacter.breastSize += Math.round(toChange);
+				if (playerCharacter.breastSize < 1 && oldValue == 1 && playerCharacter.breasts) {
+					playerCharacter.breastSize = 0;
+					playerCharacter.breasts = false;
+					message += "<p>A very strange feeling of cold rushes through your breasts, when it passes and you manage to get yourself free of the machine, you discover your breasts are gone.</p>";
+				} else if (playerCharacter.breastSize >= 1 && !playerCharacter.breasts) {
+					playerCharacter.breasts = true;
+					message += "<p>A very strange feeling of cold rushes through your chest, when it passes and you manage to get yourself free of the machine, you discover you have breasts!</p>";
+				} else if (playerCharacter.breastSize < 1 && oldValue == 0 && !playerCharacter.breasts) {
+					playerCharacter.breastSize = 0;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else if (playerCharacter.breastSize < 1 && oldValue > 1 && playerCharacter.breasts) {
+					playerCharacter.breastSize = 1;
+					message += "<p>A very strange feeling of cold rushes through your breasts, when it passes and you manage to get yourself free of the machine, you discover your breasts have shrunk.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>A very strange feeling of cold rushes through your breasts, when it passes and you manage to get yourself free of the machine, you discover your breasts have grown.</p>";
+					} else {
+						message += "<p>A very strange feeling of cold rushes through your breasts, when it passes and you manage to get yourself free of the machine, you discover your breasts have shrunk.</p>";
+					}
+				}
+			case "penis length":
+				oldValue = playerCharacter.penisL;
+				toChange = Std.parseFloat(truncateDecimalPlaces(Math.random() * 2)) + .5;
+				toChange *= posOrNeg;
+				playerCharacter.penisL += toChange;
+				if (playerCharacter.penisL < .1 && oldValue == .1 && playerCharacter.penis) {
+					playerCharacter.penisL = 0;
+					playerCharacter.penisW = 0;
+					playerCharacter.penis = false;
+					message += "<p>Your penis feels strange, like you have an errection only different. Once you extract yourself from the machine you discover you no longer have a penis.</p>";
+				} else if (playerCharacter.penisL < .1 && oldValue != .1 && playerCharacter.penis) {
+					playerCharacter.penisL = .1;
+					message += "<p>Your penis feels like it's getting harder, but when you escape the machine and check it, you discover it's gotten shorter.</p>";
+				} else if (playerCharacter.penisL > 0 && oldValue == 0 && !playerCharacter.penis) {
+					playerCharacter.penis = true;
+					if (playerCharacter.penisW < .1)
+						playerCharacter.penisW = .1;
+					message += "<p>Your crotch feels strange, like you're getting aroused only different. Once you extract yourself from the machine you discover you have a penis.</p>";
+				} else if (playerCharacter.penisL < 0 && oldValue == 0 && !playerCharacter.penis) {
+					playerCharacter.penisL = 0;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>Your penis feels like it's getting harder, but when you escape the machine and check it, you discover it's gotten longer.</p>";
+					} else {
+						message += "<p>Your penis feels like it's getting harder, but when you escape the machine and check it, you discover it's gotten shorter.</p>";
+					}
+				}
+			case "penis width":
+				oldValue = playerCharacter.penisW;
+				toChange = Std.parseFloat(truncateDecimalPlaces(Math.random() * 1)) + .1;
+				toChange *= posOrNeg;
+				playerCharacter.penisW += toChange;
+				if (playerCharacter.penisW < .1 && oldValue == .1 && playerCharacter.penis) {
+					playerCharacter.penisW = 0;
+					playerCharacter.penisL = 0;
+					playerCharacter.penis = false;
+					message += "<p>Your penis feels like it's getting harder, but when you escape the machine and check it, you discover it's gotten thinner.</p>";
+				} else if (playerCharacter.penisW < .1 && oldValue != .1 && playerCharacter.penis) {
+					playerCharacter.penisW = .1;
+					message += "<p>Your penis feels like it's getting harder, but when you escape the machine and check it, you discover it's gotten thinner.</p>";
+				} else if (playerCharacter.penisW > 0 && oldValue == 0 && !playerCharacter.penis) {
+					playerCharacter.penis = true;
+					if (playerCharacter.penisL < .1)
+						playerCharacter.penisL = .1;
+					message += "<p>Your crotch feels strange, like you're getting aroused only different. Once you extract yourself from the machine you discover you have a penis.</p>";
+				} else if (playerCharacter.penisW < 0 && oldValue == 0 && !playerCharacter.penis) {
+					playerCharacter.penisW = 0;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>Your penis feels like it's getting harder, but when you escape the machine and check it, you discover it's gotten thicker.</p>";
+					} else {
+						message += "<p>Your penis feels like it's getting harder, but when you escape the machine and check it, you discover it's gotten thinner.</p>";
+					}
+				}
+			case "balls":
+				oldValue = playerCharacter.ballSize;
+				toChange = Std.parseFloat(truncateDecimalPlaces(Math.random() * 2)) + .2;
+				toChange *= posOrNeg;
+				playerCharacter.ballSize += toChange;
+				if (playerCharacter.ballSize < .1 && oldValue == .1 && playerCharacter.balls) {
+					playerCharacter.ballSize = 0;
+					playerCharacter.balls = false;
+					message += "<p>A warm feeling spreads through your balls, when it passes and you get yourself out of the machine, you discover your balls have vanished.</p>";
+				} else if (playerCharacter.ballSize < .1 && oldValue != .1 && playerCharacter.balls) {
+					playerCharacter.ballSize = .1;
+					message += "<p>A warm feeling spreads through your balls, when it passes and you get yourself out of the machine, you discover your balls have shrunk.</p>";
+				} else if (playerCharacter.ballSize > 0 && oldValue == 0 && !playerCharacter.balls) {
+					playerCharacter.balls = true;
+					message += "<p>A warm feeling spreads through your crotch, when it passes and you get yourself out of the machine, you discover you have balls.</p>";
+				} else if (playerCharacter.ballSize < 0 && oldValue == 0 && !playerCharacter.balls) {
+					playerCharacter.ballSize = 0;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>A warm feeling spreads through your balls, when it passes and you get yourself out of the machine, you discover your balls have grown.</p>";
+					} else {
+						message += "<p>A warm feeling spreads through your balls, when it passes and you get yourself out of the machine, you discover your balls have shrunk.</p>";
+					}
+				}
+			}
+		}
+		
+		outputText(message, "Gym - Staff Room");
+		
+		btns[11].setButton("Leave", null, null, movePlayer);
+	}
+	
+	static function doGoldRoom( e:MouseEvent ) {
+		var message:String = "";
+		var clicked:Dynamic = e.currentTarget.btnID;
+		var increase:Int = 0;
+		var increaseCock:Float = 0;
+		
+		clearAllEvents();
+		
+		switch (clicked) {
+		case "list":
+			optionsBtn.visible = false;
+			charDesc.visible = false;
+			newRoom = false;
+			
+			if (playerCharacter.lastGoldTrainDay == playerCharacter.day) {
+				message += "<p>You eye the machines in the room, but your body still feels sore for your last session. You'll have to come back tomorrow.</p>";
+				btns[11].setButton("Next", null, null, movePlayer);
+			} else {
+				message += "Which machine would you like to use?";
+				
+				btns[0].setButton("Height", "Increase your height", "height", doGoldRoom);
+				btns[1].setButton("Skinny", "Squeeze yourself skinny", "skinny", doGoldRoom);
+				btns[2].setButton("Cock", "Make your cock bigger", "cock", doGoldRoom);
+				if (!playerCharacter.penis)
+					btns[2].disableButton();
+				btns[3].setButton("Balls", "Make your balls bigger", "balls", doGoldRoom);
+				if (!playerCharacter.balls)
+					btns[3].disableButton();
+				btns[4].setButton("Errection", "Make your cock bigger when you have an errection", "errection", doGoldRoom);
+				if (!playerCharacter.penis)
+					btns[4].disableButton();
+				btns[5].setButton("Hips", "Make your hips slimmer", "hips", doGoldRoom);
+				btns[6].setButton("Butt", "Make your butt tighter", "butt", doGoldRoom);
+			}
+		case "height":
+			//Increase player's height by 3-5 inches
+			message += "<p>You strap yourself into the machine and turn it on. The thing vibrates all over your body, a pleasant tingle going over you which quickly increases to an embarrassing level of enjoyment. All too soon the machine beeps that it's finished. You step out, after carefully untangling yourself from the contraption and see that yes, you are a few inches taller then you were when you went in.</p><br><p>Your body feels oddly sore after your last session with the machine, you're probably going to need to wait before doing another session.</p>";
+			
+			increase = Math.round(Math.random() * 3) + 2;
+			
+			playerCharacter.tall += increase;
+			playerCharacter.arousal += 10;
+			playerCharacter.fat -= Math.round(playerCharacter.fat / 6);
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+		case "skinny":
+			//Make the player very skinny
+			message += "<p>You get yourself into the machine, the top closing on you when you turn it on. It's very claustrophobic and as it closes it squeezes tight on you it feels like something is oozing out of you. While it's not totally uncomfortable, it's not really what you would call pleasant either.</p><br><p>Your body feels oddly sore after your last session with the machine, you're probably going to need to wait before doing another session.</p>";
+			
+			if (playerCharacter.fat > 5)
+				playerCharacter.fat = 5;
+			if (playerCharacter.arousal >= 10)
+				playerCharacter.arousal -= 10;
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+		case "cock":
+			//Make the player's Cock slighlty bigger, a player without a cock shouldn't be able to get to this screen.
+			message += "<p>Feeling very uncomfortable, you slide your cock into the slot on the machine. A few twists of a knob and it's secure and tight. You activate the machine and it starts pumping over your shaft, you feel yourself grow hard very quickly, then the strangest sensation as you continue to swell larger. It feels like you grow to a massive size, but when the machine finally finishes and releases you you find you're only slightly larger then you started.</p><br><p>Your body feels oddly sore after your last session with the machine, you're probably going to need to wait before doing another session.</p>";
+			
+			increaseCock = (Math.round(Math.random() * 3) / 10) + .1;
+			
+			playerCharacter.penisW += increaseCock;
+			playerCharacter.penisL += increaseCock + .2;
+			
+			if (playerCharacter.arousal < 100) {
+				playerCharacter.arousal = 100;
+			} else {
+				playerCharacter.arousal += 30;
+			}
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+		case "balls":
+			//Make the player's balls bigger
+			message += "<p>It takes you a moment, but you manage to figure out where you're supposed to put yourself on this bizarre machine. Once you're settled in you adjust everything until the machine is just gripping your balls, then you turn it on. You feel a strange, warm sensation pour out of the machine, your balls feeling like they want to pull up towards you without actually moving. The strange sensation is rather pleasurable ";
+			if (playerCharacter.penis && !playerCharacter.vagina)
+				message += "and your penis quickly responds, growing painfully hard. ";
+			if (playerCharacter.vagina && !playerCharacter.penis)
+				message += " and your slit grows hot and very wet. ";
+			if (playerCharacter.vagina && playerCharacter.penis)
+				message += " and your cock quickly responds, growing painfully hard. Your slit, not to be outdone, heats and almost spills fluid. ";
+			
+			message += "It's all you can do to resist playing with yourself. When the machine finally finishes and you manage to extract yourself you find your balls slightly larger and heavier.</p><br><p>Your body feels oddly sore after your last session with the machine, you're probably going to need to wait before doing another session.</p>";
+			
+			increaseCock = (Math.round(Math.random() * 2) / 10) + .1;
+			
+			playerCharacter.ballSize += increaseCock;
+			if (playerCharacter.arousal < 100) {
+				playerCharacter.arousal = 100;
+			} else {
+				playerCharacter.arousal += 30;
+			}
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+		case "errection":
+			//Make the player's cock bigger when they're aroused
+			message += "<p>This machine is by far the weirdest and most embarrassing one in the room, but you manage to get yourself placed and the machine closed around you. You turn it on and your cock quickly becomes painfully hard, again it feels like your still getting hard even though you can tell you're as hard as you can get. The machine doesn't seem to care and it keeps making you bigger. When the machine finally releases you you find your erection is much bigger then you're used to. When it finally goes down, you see your the same size soft as you usually are.</p><br><p>Your body feels oddly sore after your last session with the machine, you're probably going to need to wait before doing another session.</p>";
+			
+			increaseCock = (Math.round(Math.random() * 4) / 10) + .1;
+			
+			playerCharacter.errect += increaseCock;
+			if (playerCharacter.arousal < 100) {
+				playerCharacter.arousal = 200;
+			} else {
+				playerCharacter.arousal += 70;
+			}
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+		case "hips":
+			//Make the player's hips narrower
+			message += "<p>You slide your waist into the machine and turn it on, the odd sensations going over your hips feel very strange. You can't decide if you like it or not and by the time the machine is done working you still haven't figured out if it's good or not. The machine releases you and you step out, staggering slightly as your legs have moved slightly closer together.</p><br><p>Your body feels oddly sore after your last session with the machine, you're probably going to need to wait before doing another session.</p>";
+			
+			increase = Math.round(Math.random() * 4) + 1;
+			
+			playerCharacter.hipSize -= increase;
+			if (playerCharacter.hipSize < 15)
+				playerCharacter.hipSize = 15;
+			if (playerCharacter.arousal >= 30)
+				playerCharacter.arousal -= 30;
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+		case "butt":
+			//Make the player's ass smaller
+			message += "<p>You back yourself into the machine, the design forcing you to stick your butt out as you close yourself into it. Your turn it on and a very weird feeling, like thousands of tiny paws, swarms over your rear. The whole contraption vibrates around you until it suddenly shutters to a stop. You extract yourself from it and find your butt is noticeably smaller then it was before.</p><br><p>Your body feels oddly sore after your last session with the machine, you're probably going to need to wait before doing another session.</p>";
+			
+			increase = Math.round(Math.random() * 4) + 1;
+			
+			playerCharacter.buttSize -= increase;
+			if (playerCharacter.buttSize < 1)
+				playerCharacter.buttSize = 1;
+			if (playerCharacter.arousal > 40)
+				playerCharacter.arousal -= 40;
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+		}
+		
+		btns[11].setButton("Leave", null, null, movePlayer);
+		
+		outputText(message, "Gym - Gold Room");
+	}
+	
+	static function doPerk( e:MouseEvent ) {
+		//System to allow players to buy additional perks
+		//Perks cost 8 * Pride of fat and 8 * Pride of cash per perk rank
+		var actionChoice:String = e.currentTarget.btnID.split("|")[0];
+		var actionValue:Int = Std.parseInt(e.currentTarget.btnID.split("|")[1]);
+		var title:String = "Perk Selection";
+		var message:String = "The machine lights up as you slide your arm into the cuff. The screen lists a number of perks you can choose from, as well as the cost of each. Looks like it will cost an amount of body fat and money to make the changes.</p><br><p>";
+		var perkCost:Int = 0;
+		
+		var perks:Array<MyPerk> = new Array();
+		
+		var dspItem:Int = 0;
+		var dspFirstItem:Int = 0;
+		
+		newRoom = false;
+		optionsBtn.visible = false;
+		charDesc.visible = false;
+		
+		clearAllEvents();
+		
+		for (i in 0...globals.perks.length) {
+			if (globals.perks[i].showPerk)
+				perks.push(globals.perks[i]);
+		}
+		
+		switch (actionChoice) {
+		case "list":
+			//List of avalible perks
+			if (perks.length > 9) {
+				dspFirstItem = actionValue * 9;
+				dspItem = dspFirstItem + 9;
+			}
+			
+			if (dspItem > perks.length)
+				dspItem = perks.length;
+			
+			if (perks.length != 0) {
+				for (i in dspFirstItem...dspItem) {
+					message += perks[i].dispName + " -- " + perks[i].desc + "<br>";
+					btns[i - dspFirstItem].setButton(perks[i].dispName, null, "perk|" + i);
+					btns[i - dspFirstItem].setClickFunc(doPerk);
+				}
+				if (perks.length > dspItem) {
+					message += "More...";
+					btns[10].setButton("Next", null, "list|" + (actionValue + 1));
+					btns[10].setClickFunc(doPerk);
+				}
+				if (dspFirstItem != 0) {
+					btns[9].setButton("Prev", null, "list|" + (actionValue - 1));
+					btns[9].setClickFunc(doPerk);
+				}
+			}
+		case "perk":
+			message = "Would you like to buy this perk?</p><br><p>";
+			
+			message += perks[actionValue].dispName + " --- " + perks[actionValue].desc + "<br>";
+			
+			if ((!perks[actionValue].multipleLevels && playerCharacter.hasPerk(perks[actionValue].name) == false) || perks[actionValue].multipleLevels) {
+				if (playerCharacter.hasPerk(perks[actionValue].name)) {
+					perkCost = Math.round((globals.perkCostMultiplier * playerCharacter.pride) * playerCharacter.perkCount(globals.perks[actionValue].name)) + 27;
+					message += "Fat Cost: " + perkCost + "  Cash Cost: " + perkCost + "</p><br><p>";
+					message += "Perk count: " + playerCharacter.perkCount(globals.perks[actionValue].name);
+				} else {
+					perkCost = Math.round((globals.perkCostMultiplier * playerCharacter.pride) / 2);
+					message += "Fat Cost: " + perkCost + "  Cash Cost: " + perkCost + "</p><br><p>";
+					message += "Perk Unowned";
+				}
+				
+				if (playerCharacter.getMoney() >= perkCost && playerCharacter.fat >= perkCost) {
+					//Player has enough money and fat to buy the perk
+					btns[0].setButton("Buy", null, "buy|" + actionValue);
+					btns[0].setClickFunc(doPerk);
+				} else if (playerCharacter.getMoney() < perkCost && playerCharacter.fat >= perkCost) {
+					//Player does not have enough money for the perk
+					message += "</p><br><p>Not enough money!";
+					btns[0].setButton("Buy", "Not enough money", "error");
+					btns[0].disableButton();
+				} else if (playerCharacter.getMoney() >= perkCost && playerCharacter.fat < perkCost) {
+					//player does not have enough fat for the perk
+					message += "</p><br><p>Not enough fat!";
+					btns[0].setButton("Buy", "Not enough fat", "error");
+					btns[0].disableButton();
+				} else {
+					//player has neither enough fat or money
+					message += "</p><br><p>Not enough fat or money!";
+					btns[0].setButton("Buy", "Not enough fat or money", "error");
+					btns[0].disableButton();
+				}
+			} else {
+				message += "Perk already owned.";
+			}
+			
+			btns[2].setButton("No", null, "list|0");
+			btns[2].setClickFunc(doPerk);
+		case "buy":
+			message = "You make your selection on the machine's display. It whirrs to life and a sharp pinch travels up your arm, you feel your body change in subtle ways. The display shows the process is complete after a moment.";
+			
+			playerCharacter.addPerk(perks[actionValue].name, globals);
+			
+			if (playerCharacter.hasPerk(perks[actionValue].name)) {
+				perkCost = Math.round((globals.perkCostMultiplier * playerCharacter.pride) * playerCharacter.perkCount(globals.perks[actionValue].name)) + 27;
+			} else {
+				perkCost = Math.round((globals.perkCostMultiplier * playerCharacter.pride + 27) / 2);
+			}
+			
+			playerCharacter.fat -= perkCost;
+			playerCharacter.addMoney( -perkCost);
+			
+			updateHUD();
+			
+			btns[0].setButton("Next", null, "perk|" + actionValue);
+			btns[0].setClickFunc(doPerk);
+		}
+		
+		outputText(message, title);
+		
+		btns[11].setButton("Leave");
+		btns[11].setClickFunc(movePlayer);
 	}
 	
 	static function doCombat( e:MouseEvent ) {
@@ -414,6 +1054,12 @@ class Main {
 		var txtTime:Object = Lib.current.getChildByName("Time");
 		var message:String = "";
 		var title:String = "";
+		var cash:Int = 0;
+		var difficulty:Int = Math.round(playerCharacter.pointsSpent * globals.difficulty);
+		var reward:Array<Dynamic> = new Array();
+		var createdItems:Array<Dynamic> = new Array();
+		
+		var npcAttackResult:String = "";
 		
 		var damage:Int = 0;
 		
@@ -446,16 +1092,42 @@ class Main {
 			grabbedPC = false;
 			
 			roomNPC = new MyNPC();
-			roomNPC.randomNPC(species, playerCharacter);
+			if (globals.difficulty == 0.5 )
+				roomNPC.randomNPC(species, playerCharacter, -difficulty);
+			if (globals.difficulty == 1.5 )
+				roomNPC.randomNPC(species, playerCharacter, difficulty);
+			if (globals.difficulty == 1 )
+				roomNPC.randomNPC(species, playerCharacter);
+			
+			createdItems.push(createItem("weapon"));
+			createdItems.push(createItem("armor"));
+			
+			roomNPC.weapon = createdItems[0];
+			roomNPC.armor = createdItems[1];
 			
 			title = "Park - Hunting Prey";
 			
 			//Should probably add some element of randomness to the fight generation
 			//Right now this code will make a battle pop up every time the player clicks 'hunt' in the park
-			if (rollDie(roomNPC.agi + roomNPC.sneak) >= rollDie(playerCharacter.int + playerCharacter.spot)) {
+			if (rollDie(roomNPC.agility() + roomNPC.skillSneak()) >= rollDie(playerCharacter.intelligence() + playerCharacter.skillSpot())) {
 				//NPC gets the drop on the player
 				message += "A [NPCNAME] appears. [SUBJC] suprises you and attacks!<br>";
-				message += npcAttack();
+				npcAttackResult = npcAttack();
+				switch (npcAttackResult) {
+				case ">KILLED<":
+					//Player died. How..?
+					playerDied = "Combat";
+					doDeath();
+					return;
+				case ">ESCAPE<":
+					message += "The [NPCNAME] turns tail and flees, quickly escaping you.<br>";
+					btns[0].setButton("Next", null, 12);
+					btns[0].setClickFunc(doCombat);
+					outputText(message, title);
+					return;
+				default:
+					message += npcAttackResult;
+				}
 				
 				btns[0].setButton("Next", null, 1);
 				btns[0].setClickFunc(doCombat);
@@ -463,8 +1135,8 @@ class Main {
 				//The player spots the NPC first
 				message += "You come across a [NPCNAME]. [SUBJC] readies a weapon and takes an aggressive stance. It's a fight!<br>";
 				
-				message += advanceSkill(1, "spot");
-				message += advanceSkill(1, "int");
+				message += playerCharacter.advanceSkill(1, "spot");
+				message += playerCharacter.advanceSkill(1, "int");
 				
 				btns[0].setButton("Next", null, 1);
 				btns[0].setClickFunc(doCombat);
@@ -474,12 +1146,21 @@ class Main {
 			
 		case 1:
 			//Action choice screen
-			title = "Park - Under Attack";
+			if (grabbedPC) {
+				title = "Park - Grabbed!";
+			} else {
+				title = "Park - Under Attack!";
+			}
 			
 			message += "You are under attack by a [NPCNAME]. [SUBJC] appears [WOUNDED].</p><p>";
 			
-			if (globals.debugMode) //debug mode on
-				message += "Debug info:<br>[NPCNAME] health: " + roomNPC.healthCurr + "/" + roomNPC.healthMax + "<br>";
+			if (globals.debugMode) { //debug mode on
+				message += "Debug info:<br>[NPCNAME] health: " + roomNPC.healthCurr + "/" + roomNPC.health() + "<br>";
+				message += "Player stats: agi: " + playerCharacter.agility() + ", str: " + playerCharacter.strength() + ", end: " + playerCharacter.endurance() + ", int: " + playerCharacter.intelligence() + "<br>";
+				message += "Player skills: melee: " + playerCharacter.skillMelee() + ", run: " + playerCharacter.skillRun() + ", dodge: " + playerCharacter.skillDodge() + ", sneak: " + playerCharacter.skillSneak() + ", spot: " + playerCharacter.skillSpot() + "<br>";
+				message += "NPC stats: agi: " + roomNPC.agility() + ", str: " + roomNPC.strength() + ", end: " + roomNPC.endurance() + ", int: " + roomNPC.intelligence() + "<br>";
+				message += "NPC skills: melee: " + roomNPC.skillMelee() + ", run: " + roomNPC.skillRun() + ", dodge: " + roomNPC.skillDodge() + ", sneak: " + roomNPC.skillSneak() + ", spot: " + roomNPC.skillSpot() + "<br";
+			}
 			
 			if (!grabbedNPC && !grabbedPC) { //No one is grabbing anyone
 				btns[0].setButton("Attack", "Attack with your equipped weapon", 2);
@@ -507,21 +1188,23 @@ class Main {
 			//Attack
 			title = "Park - Attack!";
 			
+			
 			//Attack the NPC, first try and hit it
-			if (rollDie(roomNPC.agi + roomNPC.dodge) > rollDie(playerCharacter.agi + playerCharacter.melee + playerCharacter.equipWepObj.attack)) {
+			if (rollDie(roomNPC.agility() + roomNPC.skillDodge()) > rollDie(playerCharacter.agility() + playerCharacter.skillMelee() + playerCharacter.equipWepObj.attack)) {
 				//NPC dodges
 				message += "You swing your " + playerCharacter.equipWepObj.name.toLowerCase() + " at the [NPCNAME] but [SUBJ] evades your attack.<br>";
 			} else {
 				//PC hits
 				
 				//damage
-				damage = rollDie(playerCharacter.str + playerCharacter.equipWepObj.attack);
+				damage = rollDie(playerCharacter.strength() + playerCharacter.equipWepObj.attack);
 				if (damage <= 0)
-					damage = 1; //Minimum damage
+					damage = playerCharacter.strength(); //Minimum damage
 				
-				advanceSkill(1, "agi");
-				advanceSkill(1, "melee");
-				advanceSkill(1, "str");
+				playerCharacter.advanceSkill(1, "agi");
+				playerCharacter.advanceSkill(1, "melee");
+				playerCharacter.advanceSkill(1, "str");
+				
 				
 				message += "You swing your " + playerCharacter.equipWepObj.name.toLowerCase() + " at the [NPCNAME] for " + damage + " damage.<br>";
 				
@@ -544,7 +1227,21 @@ class Main {
 				}
 			}
 			
-			message += npcAttack();
+			npcAttackResult = npcAttack();
+			switch (npcAttackResult) {
+			case ">KILLED<":
+				playerDied = "Combat";
+				doDeath();
+				return;
+			case ">ESCAPE<":
+				message += "The [NPCNAME] turns tail and flees, quickly escaping you.<br>";
+				btns[0].setButton("Next", null, 12);
+				btns[0].setClickFunc(doCombat);
+				outputText(message, title);
+				return;
+			default:
+				message += npcAttackResult;
+			}
 			
 			btns[0].setButton("Next", null, 1);
 			btns[0].setClickFunc(doCombat);
@@ -555,17 +1252,32 @@ class Main {
 			//Attempt to grab the NPC
 			message += "You lunge forward, trying to get your hands around the [NPCNAME]. ";
 			
-			if (rollDie(roomNPC.agi + roomNPC.dodge) >= rollDie(playerCharacter.agi + playerCharacter.melee)) {
+			if (rollDie(roomNPC.agility() + roomNPC.skillDodge()) >= rollDie(playerCharacter.agility() + playerCharacter.skillMelee())) {
 				//NPC dodges
 				message += "But [SUBJ] slips out of your grasp.<br>";
 				
-				message += npcAttack();
+				npcAttackResult = npcAttack();
+				switch (npcAttackResult) {
+				case ">KILLED<":
+					//Player died. How..?
+					playerDied = "Combat";
+					doDeath();
+					return;
+				case ">ESCAPE<":
+					message += "The [NPCNAME] turns tail and flees, quickly escaping you.<br>";
+					btns[0].setButton("Next", null, 12);
+					btns[0].setClickFunc(doCombat);
+					outputText(message, title);
+					return;
+				default:
+					message += npcAttackResult;
+				}
 			} else {
 				//PC grabs the NPC
 				message += "You successfully wrap your arms around [OBJ].<br>";
 				
-				advanceSkill(1, "agi");
-				advanceSkill(1, "melee");
+				playerCharacter.advanceSkill(1, "agi");
+				playerCharacter.advanceSkill(1, "melee");
 				
 				grabbedNPC = true;
 			}
@@ -579,11 +1291,26 @@ class Main {
 			//Player attempts to escape the combat
 			message += "You turn and attempt to escape, ";
 			
-			if (rollDie(roomNPC.agi + roomNPC.run) >= rollDie(playerCharacter.agi + playerCharacter.run)) {
+			if (rollDie(roomNPC.agility() + roomNPC.skillRun()) >= rollDie(playerCharacter.agility() + playerCharacter.skillRun())) {
 				//Player fails to escape
 				message += "but the [NPCNAME] stays with you.<br>";
 				
-				message += npcAttack();
+				npcAttackResult = npcAttack();
+				switch (npcAttackResult) {
+				case ">KILLED<":
+					//Player died. How..?
+					playerDied = "Combat";
+					doDeath();
+					return;
+				case ">ESCAPE<":
+					message += "The [NPCNAME] turns tail and flees, quickly escaping you.<br>";
+					btns[0].setButton("Next", null, 12);
+					btns[0].setClickFunc(doCombat);
+					outputText(message, title);
+					return;
+				default:
+					message += npcAttackResult;
+				}
 				
 				btns[0].setButton("Next", null, 1);
 				btns[0].setClickFunc(doCombat);
@@ -598,12 +1325,12 @@ class Main {
 			//Crush
 			title = "Park - Grabbing";
 			
-			damage = rollDie(playerCharacter.str);
+			damage = rollDie(playerCharacter.strength());
 			
-			if (damage < playerCharacter.str)
-				damage = playerCharacter.str; //Minimum damage
+			if (damage < playerCharacter.strength())
+				damage = playerCharacter.strength(); //Minimum damage
 			
-			advanceSkill(1, "str");
+			playerCharacter.advanceSkill(1, "str");
 			
 			message += "You squeeze the [NPCNAME] tightly for " + damage + " damage.<br>";
 			
@@ -626,11 +1353,11 @@ class Main {
 			}
 			
 			//NPC tries to escape
-			if (rollDie(roomNPC.str) <= rollDie(playerCharacter.str)) {
+			if (rollDie(roomNPC.strength()) <= rollDie(playerCharacter.strength())) {
 				//NPC fails to escape
 				message += "Your foe struggles in your grasp, but fails to escape from you.<br>";
 				
-				advanceSkill(1, "str");
+				playerCharacter.advanceSkill(1, "str");
 			} else {
 				//NPC escapes
 				message += "Your foe struggles in your grasp and bursts free of you.<br>";
@@ -644,7 +1371,7 @@ class Main {
 			//Eat Grabbed Foe
 			title = "Park - Consume Foe";
 			
-			if (rollDie(roomNPC.str) <= rollDie(playerCharacter.str + playerCharacter.gluttony)) {
+			if (rollDie(roomNPC.strength()) <= rollDie(playerCharacter.strength() + playerCharacter.gluttony)) {
 				//NPC gets eaten
 				
 				message += "(Placeholder) You lift your struggling prey to your mouth and quickly slide [OBJ] down your throat.<br>";
@@ -653,7 +1380,8 @@ class Main {
 				playerCharacter.stomachContents.push(roomNPC);
 				playerCharacter.stomachCurrent += roomNPC.mass;
 				playerCharacter.numEaten++;
-				advanceSkill(1, "str");
+
+				playerCharacter.advanceSkill(1, "str");
 				
 				btns[0].setButton("Next", null, 12);
 				btns[0].setClickFunc(doCombat);
@@ -679,8 +1407,37 @@ class Main {
 			btns[0].setClickFunc(doCombat);
 		case 8:
 			//Struggle
+			title = "Park - Grabbed!";
 			
-			//Player attempts to escape being grabbed. This function isn't needed until after npcAttack is finished
+			if (rollDie(playerCharacter.strength()) > rollDie(roomNPC.strength())) {
+				//Player breaks free
+				message += "You struggle and break free from the [NPCNAME]'s grasp.<br>";
+				grabbedPC = false;
+				message += playerCharacter.advanceSkill(1, "str");
+			} else {
+				//player failed to escape
+				message += "You struggle but the [NPCNAME] holds you tight.<br>";
+				
+				npcAttackResult = npcAttack();
+				switch (npcAttackResult) {
+				case ">KILLED<":
+					//Player died. How..?
+					playerDied = "Combat";
+					doDeath();
+					return;
+				case ">ESCAPE<":
+					message += "The [NPCNAME] turns tail and flees, quickly escaping you.<br>";
+					btns[0].setButton("Next", null, 12);
+					btns[0].setClickFunc(doCombat);
+					outputText(message, title);
+					return;
+				default:
+					message += npcAttackResult;
+				}
+			}
+			
+			btns[0].setButton("Next", null, 1);
+			btns[0].setClickFunc(doCombat);
 		case 9:
 			//Wait
 			title = "Park - Wait";
@@ -688,7 +1445,22 @@ class Main {
 			//Player waits, letting the NPC do what they want for a round
 			message += "You wait, watching the [NPCNAME].<br>";
 			
-			message += npcAttack();
+			npcAttackResult = npcAttack();
+			switch (npcAttackResult) {
+			case ">KILLED<":
+				//Player died. How..?
+				playerDied = "Combat";
+				doDeath();
+				return;
+			case ">ESCAPE<":
+				message += "The [NPCNAME] turns tail and flees, quickly escaping you.<br>";
+				btns[0].setButton("Next", null, 12);
+				btns[0].setClickFunc(doCombat);
+				outputText(message, title);
+				return;
+			default:
+				message += npcAttackResult;
+			}
 			
 			btns[0].setButton("Next", null, 1);
 			btns[0].setClickFunc(doCombat);
@@ -699,7 +1471,7 @@ class Main {
 			
 			//Finishing moves are based on the weapon. For now, something simple.
 			
-			message += "You snap the [NPCNAME]'s neck, finishing [OBJ] off.<br>";
+			message += playerCharacter.equipWepObj.finisher;
 			
 			btns[0].setButton("Next", null, 12);
 			btns[0].setClickFunc(doCombat);
@@ -713,13 +1485,59 @@ class Main {
 			playerCharacter.stomachCurrent += roomNPC.mass;
 			playerCharacter.numEaten++;
 			playerCharacter.gluttony++;
+			playerCharacter.arousal += 1;
 			
 			btns[0].setButton("Next", null, 12);
 			btns[0].setClickFunc(doCombat);
 		case 12:
-			//Return to the movement system
-			
+			//Return to the movement system and get rewards
+			title = "Combat Ends";
 			message += "You sigh, relaxing from the combat.<br>";
+			
+			//items, nothing currently
+			
+			if (roomNPC.weapon != null) {
+				reward.push(roomNPC.weapon);
+			}
+			if (roomNPC.armor != null) {
+				reward.push(roomNPC.armor);
+			}
+			if (Math.round(Math.random() * 10) == 0)
+				reward.push(createItem("ring"));
+			
+			for (i in 0...playerCharacter.greed) {
+				if (Math.round(Math.random() * playerCharacter.luck()) == 1) {
+					reward.push(globals.food[Math.round(Math.random() * globals.food.length - 1)].copyItem());
+				}
+			}
+			//cash
+			if (playerCharacter.greed == 0)
+				playerCharacter.greed = 1;
+			
+			cash = (Math.round(Math.random() * playerCharacter.intelligence()) * playerCharacter.greed) * 10;
+			
+			if (cash <= 0)
+				cash = 10;
+			
+			playerCharacter.greed++;
+			
+			if (reward.length == 0) {
+				message += "You don't find any items, but you do pick up $" + cash + " and put it in your pocket.<br>";
+			} else {
+				message += "You find ";
+				for (i in 0...reward.length) {
+					message += reward[i].name;
+					if (i != reward.length - 1)
+						message += ", ";
+				}
+				message += " on your fallen foe and $" + cash + " and put all of it away.<br>";
+			}
+			
+			for (i in 0...reward.length) {
+				reward[i].give(playerCharacter);
+			}
+			
+			playerCharacter.addMoney(cash);
 			
 			btns[0].setButton("Next", null, 0);
 			btns[0].setClickFunc(movePlayer);
@@ -728,6 +1546,7 @@ class Main {
 			message = "Warning, unknown takeAction value in doCombat: " + takeAction;
 		}
 		
+		updateHUD();
 		outputText(message, title);
 	}
 	
@@ -782,9 +1601,9 @@ class Main {
 			//Player needs to pay, make sure they have the money to do so
 			message = "You head towards the bank of machines, swiping your card as you do so.</p><br><p>";
 			
-			if (playerCharacter.money >= globals.gymFee) {
+			if (playerCharacter.getMoney() >= globals.gymFee) {
 				message += "The card reader beeps and your account is lighter by $" + globals.gymFee + ".</p><br><p>";
-				playerCharacter.money -= globals.gymFee;
+				playerCharacter.addMoney(-globals.gymFee);
 				playerCharacter.lastDayTrained = playerCharacter.day;
 			} else {
 				//Not enough money
@@ -818,6 +1637,10 @@ class Main {
 			message += "You leave the workout area and move to the showers to wash your workout sweat off you.</p><br>";
 			
 			//To-Do: Add an NPC encounter event here.
+			var rndEnct:Int = Math.round(Math.random() * 2);
+			if (rndEnct == 0 && playerCharacter.quest[2].stage == 1) {
+				message += "<p>As you are leaving the showers, a tall and massively muscular human shoulder-checks you in passing. His gym shorts strain at holding back a very large buldge. He scoffs at you and pushes you out of his way, \"Move it tiny. Got places to be.\"</p><br><p>Ass.</p><br>";
+			}
 			
 			newRoom = true;
 			
@@ -846,22 +1669,22 @@ class Main {
 			switch (choice) {
 			case "str":
 				workoutMessage = strWorkoutMessages[Math.round(Math.random() * (strWorkoutMessages.length - 1))] + "</p><br><p>";
-				skillTrainSucc = rollDie(playerCharacter.str + 10);
-				advanceSkill(skillTrainSucc, "str");
+				skillTrainSucc = rollDie(playerCharacter.strength() + 10);
+				playerCharacter.advanceSkill(skillTrainSucc, "str");
 				workoutTime = 60;
 				
 				btns[0].setButton("Strength", "Follow the Strength path again.", "workout:str");
 			case "agi":
 				workoutMessage = agiWorkoutMessages[Math.round(Math.random() * (agiWorkoutMessages.length - 1))] + "</p><br><p>";
-				skillTrainSucc = rollDie(playerCharacter.agi + 10);
-				advanceSkill(skillTrainSucc, "agi");
+				skillTrainSucc = rollDie(playerCharacter.agility() + 10);
+				playerCharacter.advanceSkill(skillTrainSucc, "agi");
 				workoutTime = 60;
 				
 				btns[1].setButton("Agility", "Follow the Agility path again.", "workout:agi");
 			case "end":
 				workoutMessage = endWorkoutMessages[Math.round(Math.random() * (endWorkoutMessages.length - 1))] + "</p><br><p>";
-				skillTrainSucc = rollDie(playerCharacter.end + 10);
-				advanceSkill(skillTrainSucc, "end");
+				skillTrainSucc = rollDie(playerCharacter.endurance() + 10);
+				playerCharacter.advanceSkill(skillTrainSucc, "end");
 				workoutTime = 90;
 				
 				btns[2].setButton("Endurance", "Follow the Endurance path again.", "workout:end");
@@ -881,7 +1704,7 @@ class Main {
 				message += "You tackle the path with glee and even do an extra set on each machine. You made amazing progress today.</p><br>";
 			
 			//Random NPC encounter
-			rndNPCChance = Math.round(Math.random() * 10);
+			rndNPCChance = Math.round(Math.random() * 5);
 			
 			roomNPC = new MyNPC();
 			roomNPC.name = "NULL";
@@ -889,9 +1712,11 @@ class Main {
 			switch (rndNPCChance) {
 			case 0:
 				//Gold member
-				message += "<p>A tall, massively muscular human sits at the machine next to you.</p><br>";
-				
-				roomNPC.newNPC(nonPlayerCharacters[7]); //Erik, need to check on this.
+				if (playerCharacter.quest[2].stage < 2) {
+					message += "<p>A tall, massively muscular human sits at the machine next to you.</p><br>";
+					
+					roomNPC.newNPC(nonPlayerCharacters[7]); //Erik, need to check on this.
+				}
 			//Random Named NPCs
 			case 1:
 				//Kyra
@@ -899,10 +1724,6 @@ class Main {
 			case 2:
 				// Empty Slot
 			case 3:
-				// Empty Slot
-			case 4:
-				// Empty Slot
-			case 5:
 				// Randomly generated NPC
 				roomNPC.randomNPC(species, playerCharacter);
 				
@@ -913,11 +1734,7 @@ class Main {
 			
 			if (roomNPC.name != "NULL") {
 				btns[9].setButton("Talk", "Talk to the " + roomNPC.species.name.toLowerCase(), 0);
-				if (globals.debugMode) {
-					btns[9].setClickFunc(doTalk);
-				} else {
-					btns[9].disableButton();
-				}
+				btns[9].setClickFunc(doTalk);
 			}
 			
 			//Time pass, this might need to get tweaked for the gym
@@ -925,13 +1742,13 @@ class Main {
 			
 			//Player fat burn, the more fat they have, the more should be burned off with each seasion.
 			if (playerCharacter.fat >= 10)
-				playerCharacter.fat -= Math.round(playerCharacter.fat * 0.9); //Aubatray number, might need some tweaking still. Also I can't spell. I am aware of this.
+				playerCharacter.fat -= Math.round(playerCharacter.fat * 0.09); //Aubatray number, might need some tweaking still. Also I can't spell. I am aware of this.
 			//This should also keep the fat level from going into the negitives.
 			if (playerCharacter.fat < 10)
 				playerCharacter.fat = 0;
 			
 			if (globals.debugMode) {
-				message += "<p>{Debug} Workout time: " + workoutTime + ", fat burn: " + Math.round(playerCharacter.fat * 0.9) + "</p>";
+				message += "<p>{Debug} Workout time: " + workoutTime + ", fat burn: " + Math.round(playerCharacter.fat * 0.09) + "</p>";
 			}
 		}
 		
@@ -1005,7 +1822,8 @@ class Main {
 	static function doDeath( ?e:MouseEvent ) {
 		var message:String = "";
 		var title:String = "You Died";
-		var clicked:String = "";
+		var clicked:Int = -1;
+		var smCap:Float = globals.textSize - 4;
 		
 		if (e != null)
 			clicked = e.currentTarget.btnID;
@@ -1019,31 +1837,133 @@ class Main {
 			roomNPC = new MyNPC();
 			roomNPC.randomNPC(species, playerCharacter);
 			
-			title = "Consume - Prey";
-			message = "You spend some time on the dance floor, eventually making your way to the bar to enjoy the free drinks. Several drinks later and you've got a nice buzz going on and a " + roomNPC.name + " approaches you and takes you into the back rooms. " + roomNPC.gender("sub") + " doesn't waste any time on pleasantries and simply shoves you down " + roomNPC.gender("pos").toLowerCase() + " throat as soon as the door locks. It takes you a few moments to process what just happened, the alcohol in your system making everything feel like a dream. In the last moments you start to panic slightly before everything goes black.";
-			
-			playerDied = "eaten";
-			
-			btns[0].setButton("Next", null, "eaten");
-			btns[0].setClickFunc(doDeath);
-		default:
-			switch (clicked) {
-			case "eaten":
-				//Player got eaten, silly player.
-				message = "You got yourself eaten. You're supposed to eat them dummy.</p><br><p>";
-			default:
-				message = "ERROR: Unknown death type: " + clicked;
+			for (i in 0...playerCharacter.quest.length) {
+				if (playerCharacter.quest[i].name == "club")
+					playerCharacter.quest[i].stage = 0;
 			}
 			
-			message += "Score: " + Math.round(playerCharacter.fat + playerCharacter.numEaten) + "</p><br><p>";
+			title = "Consume - Prey";
+			message = "You spend some time on the dance floor, eventually making your way to the bar to enjoy the free drinks. Several drinks later and you've got a nice buzz going on and a " + roomNPC.name + " approaches you and takes you into the back rooms. " + roomNPC.gender("sub") + " doesn't waste any time on pleasantries and simply shoves you down " + roomNPC.gender("pos").toLowerCase() + " throat as soon as the door locks. It takes you a few moments to process what just happened, the alcohol in your system making everything feel like a dream. In the last moments you start to panic slightly before everything goes black.</p><br><p>";
+		case "bouncer":
+			title = "Becoming Cum";
 			
-			//Deal with death
+			message = "You feel movement, the bouncer is walking somewhere. Then you feel someone touching and running their hands over you. The last thing you feel, as your body dissolves into cum, is the balls around you starting to tighten as someone continues to play with them.</p><br><p>";
 			
+		case "Combat":
+			//Player killed in combat
+			message = "You fall to the ground, your foe grinning as [SUBJ] steps closer.</p><br><p>";
+		case "Erik":
+			message = "The large human scowles down at you, finally lifting a foot and crushing you under his mass.</p><br><p>";
+			
+		case "Talking to Death":
+			//This space intentionally left blank
+		default:
+			message = "Unknown Death Type: " + playerDied;
+		}
+			//Time to introduce Death to the game
+			
+		if (playerDied != "Talking To Death")
+			message += "Score: " + Math.round(globals.difficulty * ((playerCharacter.pointsSpent + playerCharacter.numEaten) - playerCharacter.timesDied)) + "</p><br><p>";
+		
+		//Deal with death
+		
+		switch (playerCharacter.quest[3].stage) {
+		case 0:
+			//player hasn't met Death yet
+			message += "You find yourself facing a doorway filled with white light, you step through the doorway, nearly blinded by the light. As your eyes adjust to the brightness you find yourself face to face with the single most beautiful [PCSPECIESL] you've ever laid eyes on. Shi stands only five feet tall with long deep red hair. Hir breasts are at least as large as hir head and seem to be swelling before your eyes. A drip of white liquid forms on the tip of one breast, showing they are full of milk. Hir waist is tiny, small enough you could probably put your hand around it without trouble. Hir hips are round and wide, easily wider than hir shoulders, perhaps a bit more. As you look hir over, shi turns letting you see hir round pert butt, large and perfectly heart-shaped. Between hir legs is a long, thick cock. The head resting near hir knee and quite obviously soft. Behind that, two basketball sized balls rest against hir thighs.</p><br><p>";
+			message += "Shi looks up as you step near, gold eyes glowing softly. Shi speaks without moving hir lips, hir 'voice' more like words simply appearing in your head without going past your ears (which you don't technically have anyway) ";
+			message += "G<font size='" + smCap + "'>REETINGS [PCNAMEC]. </font>I <font size='" + smCap + "'>have good news, and bad news for you.</font></p><br><p>".toUpperCase();
+			message += "Before you can speak, shi continues, ";
+			message += "T<font size='" + smCap + "'>HE BAD NEWS IS THAT YOU ARE DEAD.</font> T<font size='" + smCap + "'>HE GOOD NEWS IS THAT, THOUGH YOU ARE DEAD, THERE IS THE POSSIBILITY FOR YOU TO RETURN TO THE WORLD OF THE LIVING.</font> T<font size='" + smCap + "'>O DO SO, ALL YOU HAVE TO DO IS AGREE TO A FAVOR.</font></p>";
+			
+			playerDied = "Talking to Death";
+			
+			playerCharacter.quest[3].stage = 1;
+			
+			outputText(message, "A Deal Is Offered");
+			
+			btns[0].setButton("Agree", null, 0);
+			btns[0].setClickFunc(doDeath);
+			btns[2].setButton("Disagree", null, 1);
+			btns[2].setClickFunc(doDeath);
+			return;
+		case 1:
+			//The player is offered the choice
+			switch (clicked) {
+			case 0:
+				//Agreed to the deal
+				message += "You pause, but the being before you smiles and waits, so you speak, &quot;Agreed.&quot; Hir smile grows and shi gestures to the side where another glowing doorway has appeared. This one you sense will take you back to the world of the living.</p><br><p>";
+				message += "I'<font size='" + smCap + "'>LL BE IN TOUCH SOON.</font></p>";
+				
+				playerCharacter.quest[3].stage = 2;
+				playerCharacter.timesDied++;
+				
+				playerCharacter.healPlayer();
+				if (playerCharacter.fat + 100 >= 0) {
+					playerCharacter.fat -= 100;
+				} else {
+					playerCharacter.fat = 0;
+				}
+				
+				outputText(message, "A Bargain is Struck");
+				
+				newRoom = true;
+				
+				btns[0].setButton("Next", null, 0);
+				btns[0].setClickFunc(movePlayer);
+				return;
+			case 1:
+				//Declined the deal
+				message += "You pause, but the being before you smiles and waits, so you speak, &quot;No deals.&quot; Hir smile turns sad and shi gestures to the side where another glowing doorway has appeared. This one you sense will take you back to the world of the living.</p><br><p>";
+				message += "V<font size='" + smCap + "'>ERY WELL.</font> C<font size='" + smCap + "'>ONSITER THIS A GIFT FOR SPEAKING WITH ME.</font> W<font size='" + smCap + "'>E WILL NOT MEET AGAIN.</font>";
+				
+				playerCharacter.quest[3].stage = 3;
+				
+				outputText(message, "A Bargain is Declined");
+				
+				newRoom = true;
+				playerCharacter.healPlayer();
+				playerCharacter.timesDied++;
+				
+				if (playerCharacter.fat + 1000 >= 0) {
+					playerCharacter.fat -= 1000;
+				} else {
+					playerCharacter.fat = 0;
+				}
+				
+				btns[0].setButton("Next", null, 0);
+				btns[0].setClickFunc(movePlayer);
+				return;
+			}
+		case 2:
+			//player agreed to the deal
+			message += "You feel eyes watching you, the usual door back to the world of the living waiting before you. You sense there may be more, but Shi is waiting for some reason.";
+			
+			//Random chance for a sexy/vore encounter with death instead of just the door.
+			
+			playerCharacter.timesDied++;
+			playerCharacter.healPlayer();
+			if (playerCharacter.fat + 100 >= 0) {
+				playerCharacter.fat -= 100;
+			} else {
+				playerCharacter.fat = 0;
+			}
+			
+			outputText(message, title);
+			
+			newRoom = true;
+			
+			btns[0].setButton("Next", null, 0);
+			btns[0].setClickFunc(movePlayer);
+		case 3:
+			//player turned the deal down
 			btns[11].setButton("Main Menu");
 			btns[11].setClickFunc(resetGame);
+			
+			playerDead = true;
+			
+			outputText(message, title);
 		}
-		
-		outputText(message, title);
 	}
 	
 	static function doHunt( e:MouseEvent ) {
@@ -1140,6 +2060,7 @@ class Main {
 			playerCharacter.stomachCurrent += roomNPC.mass;
 			playerCharacter.numEaten++;
 			playerCharacter.gluttony++;
+			playerCharacter.arousal += 1;
 			
 			btns[11].setButton("Next", null, 10);
 			btns[11].setClickFunc(movePlayer);
@@ -1186,15 +2107,16 @@ class Main {
 		var move:Bool = false;
 		var moveTo:Int = 0;
 		var consume:Bool = false;
+		var sex:Bool = false;
 		
 		var message:String = "";
 		var returnMessage:String = "";
 		
 		clearAllEvents();
 		
-		switch (clicked) {
-		case 0:
+		if (!talkInProgress) {
 			//Inital screen
+			talkInProgress = true;
 			optionsBtn.visible = false;
 			charDesc.visible = false; /*
 			if (globals.debugMode)
@@ -1235,6 +2157,8 @@ class Main {
 			case "move": //Move the player to a new room
 				move = true;
 				moveTo = Std.parseInt(talkCommandArray[i].split(" ")[1]);
+			case "sex": //Fuck the roomNPC
+				sex = true;
 			}
 			
 			if (quest) {
@@ -1250,15 +2174,15 @@ class Main {
 				case "giveKey":
 					//give the player keyID
 					key.newKey(globals.keys[keyID]);
-					returnMessage += key.giveKey();
+					returnMessage += key.giveKey(playerCharacter);
 				case "skip":
 					//Skip to questSkip if questID.stage is greater then questValue
 					if (playerCharacter.quest[questID].stage > questValue)
 						clicked = questSkip;
 				case "check":
 					//Check playerCharacter.money agianst money if the player has less then money go to questSkip
-					if (playerCharacter.money >= moneyChangeAmount) {
-						playerCharacter.money -= moneyChangeAmount;
+					if (playerCharacter.getMoney() >= moneyChangeAmount) {
+						playerCharacter.addMoney(-moneyChangeAmount);
 					} else {
 						clicked = questSkip;
 					}
@@ -1280,6 +2204,14 @@ class Main {
 			playerCharacter.stomachContents.push(roomNPC);
 			playerCharacter.numEaten++;
 		}
+		if (sex) {
+			playerCharacter.arousal = 0;
+			if (playerCharacter.balls || playerCharacter.hasPerk("inbal")) {
+				returnMessage += playerCharacter.cum("NPC");
+				roomNPC.mass += Math.round(playerCharacter.cumCurrent);
+				playerCharacter.cumCurrent = 0;
+			}
+		}
 		
 		message = roomNPC.talk[clicked][0];
 		
@@ -1292,8 +2224,13 @@ class Main {
 			case -1:
 				//Exit option
 				btns[i].setClickFunc(movePlayer);
+			case -2:
+				playerDied = "bouncer";
+				btns[i].setClickFunc(doDeath);
 			case -7:
-				//Drop into QTE, for now just turn that button off
+				QTEstage = 0;
+				btns[i].setClickFunc(doQTE);
+			case -8:
 				btns[i].disableButton();
 			default:
 				btns[i].setClickFunc(doTalk);
@@ -1301,6 +2238,127 @@ class Main {
 		}
 		
 		outputText(message, charName);
+	}
+	
+	static function doQTE( ?e:MouseEvent ) {
+		var message:String = "";
+		var title:String = "Erik the Mighty";
+		
+		clearAllEvents();
+		Lib.current.removeEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+		if (optionsBtn.visible) {
+			optionsBtn.visible = false;
+			charDesc.visible = false;
+			if (globals.debugMode) {
+				txtDebug.removeEventListener(MouseEvent.CLICK, debugMenu);
+				txtDebug.visible = false;
+			}
+		}
+		
+		switch (QTEstage) {
+		case 0:
+			message = "<p>You make your decision and rush forward in an attempt to grab a hold of Erik. He somehow senses you moving towards him and evades your initial rush, his own hand swiping towards your head.</p>";
+			
+			timerQTE = new MyTimer(10, "s", 1, 2);
+			Lib.current.addChild(timerQTE);
+			Lib.current.addEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+			timerQTE.tmrQuick.addEventListener(TimerEvent.TIMER_COMPLETE, timerFailEvent);
+		case 1:
+			message = "<p>You quickly evade his sweeping hand and catch it, pinning his arm to his side. The motion is enough to knock the two of you over with you landing on top. His other, still free arm comes towards you fast.</p>";
+			
+			timerQTE = new MyTimer(9, "d", 3, 4);
+			Lib.current.addChild(timerQTE);
+			Lib.current.addEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+			timerQTE.tmrQuick.addEventListener(TimerEvent.TIMER_COMPLETE, timerFailEvent);
+		case 2:
+			message = "<p>You move to dodge the hand heading towards your head, but you're not quite fast enough. The huge hand closes around your head before you can evade it and he lifts you into the air, starting to squeeze tightly. Fortuitously, his lift brings your foot level with his crotch.</p>";
+			
+			timerQTE = new MyTimer(15, "a", 8, 9);
+			Lib.current.addChild(timerQTE);
+			Lib.current.addEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+			timerQTE.tmrQuick.addEventListener(TimerEvent.TIMER_COMPLETE, timerFailEvent);
+		case 3:
+			message = "<p>You dodge his second sweep, catching his arm and using your weight to pin him to the ground. He struggles under you, kicking with his legs as he attempts to get free. His strength is so great you can tell he will be free in moments.</p>";
+			
+			timerQTE = new MyTimer(11, "e", 5, 6);
+			Lib.current.addChild(timerQTE);
+			Lib.current.addEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+			timerQTE.tmrQuick.addEventListener(TimerEvent.TIMER_COMPLETE, timerFailEvent);
+		case 4:
+			message = "<p>You duck to avoid the second swing, but in doing so you release his other arm which he uses to grab you tightly about the waist. He lifts you and stands in one motion, showing off his power muscles as he holds you before him, one hand closing around your face as he starts to squeeze tightly. Fortuitously, his lift brings your foot level with his crotch.</p>";
+			
+			timerQTE = new MyTimer(11, "x", 8, 9);
+			Lib.current.addChild(timerQTE);
+			Lib.current.addEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+			timerQTE.tmrQuick.addEventListener(TimerEvent.TIMER_COMPLETE, timerFailEvent);
+		case 5:
+			//Eventually add in options to allow other forms of vore for this guy. Getting crammed into a cock would be a fitting end for him.
+			message = "<p>With only moments before Erik manages to escape your grasp you lunge, mouth open as wide as you can and take his head into it. You begin to swallow powerfully, his neck and shoulders vanishing just as quickly down your throat. With his arms now pinned by your mouth you are able to slow down and take your time getting the rest of the huge man down. It's quite a challenge, his bulk paired with his struggling make you nearly loose him several times, but soon the giant jackass has been reduced to nothing more then a very large bulge in your stomach.</p><br><p>You sit on the ground for a moment, processing what just happened, slightly amazed that you managed to get him down. The struggles and kicks from your stomach slowly lessen and finally stop. Soon Erik the mighty will be nothing more then another layer on your mighty body. Once you think you can manage it, you stand, staggering from the sudden addition of weight in your front, and head home to sleep off your big meal.</p>";
+			
+			title = "Erik the Digested";
+			
+			playerCharacter.stomachContents.push(roomNPC);
+			playerCharacter.stomachCurrent += roomNPC.mass;
+			playerCharacter.numEaten++;
+			playerCharacter.gluttony++;
+			playerCharacter.arousal += 1;
+			
+			playerCharacter.quest[2].stage = 2; //Gold Membership is now avalible
+			
+			newRoom = true;
+			
+			btns[0].setButton("Next", null, 0, movePlayer);
+		case 6:
+			message = "<p>You struggle, trying to get him pinned enough to force him down your throat. Unfortunately his struggles prove too much for you and he kicks you off him. By the time you regain your feet he is rushing towards you, murder in his eyes.</p>";
+			
+			timerQTE = new MyTimer(6, "w", 11, 12);
+			Lib.current.addChild(timerQTE);
+			Lib.current.addEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+			timerQTE.tmrQuick.addEventListener(TimerEvent.TIMER_COMPLETE, timerFailEvent);
+		case 7:
+			//Legecy option
+		case 8:
+			message = "<p>You swing your foot back and throw it forward with all your might. The strike landing square in his massively swollen cock. He bellows in pain and drops and you take the chance to pin his arms to his sides and hold him down. He recovers quickly and starts struggling under you, his strength such that he will be free in moments.</p>";
+			
+			timerQTE = new MyTimer(11, "e", 5, 6);
+			Lib.current.addChild(timerQTE);
+			Lib.current.addEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+			timerQTE.tmrQuick.addEventListener(TimerEvent.TIMER_COMPLETE, timerFailEvent);
+		case 9:
+			message = "<p>You swing your foot towards his crotch, but he moves at the last moment and you miss, only striking his thigh. He grunts in pain but tightens his grip on you as everything starts to go black. A low growl comes from him and the last thing you hear is something important in your head crack.</p>";
+			
+			playerDied = "Erik";
+			
+			btns[9].setButton("Next", null, null, doDeath);
+		case 10:
+			//Legecy option
+		case 11:
+			message = "<p>Thinking fast you rush forward, leaping to catch him in your open mouth just before he would have hit you. The speed of his rush pushes you back against the far wall, but also shoves him down your throat to his waist. You are able to swallow his struggling lower half quickly, his continuing struggles nearly causing you to loose him several times, but soon the giant jackass has been reduced to nothing more then a very large bulge in your stomach.</p><br><p>You sit on the ground for a moment, processing what just happened, slightly amazed that you managed to get him down. The struggles and kicks from your stomach slowly lessen and finally stop. Soon Erik the mighty will be nothing more then another layer on your mighty body. Once you think you can manage it, you stand, staggering from the sudden addition of weight in your front, and head home to sleep off your big meal.</p>";
+			
+			title = "Erik the Digested";
+			
+			playerCharacter.stomachContents.push(roomNPC);
+			playerCharacter.stomachCurrent += roomNPC.mass;
+			playerCharacter.numEaten++;
+			playerCharacter.gluttony++;
+			playerCharacter.arousal += 1;
+			
+			playerCharacter.quest[2].stage = 2; //Gold Membership is now avalible
+			
+			newRoom = true;
+			
+			btns[0].setButton("Next", null, 0, movePlayer);
+		case 12:
+			message = "<p>You dodge to the side, only to find your path blocked by one of the large machines in the room. Your struggles have gotten you trapped and Erik hits you like a linebacker, shoulder to your chest. You feel something break as he slams you into the far wall. The roundhouse punch that follows is almost overkill, but it does bring on the black that much faster.</p>";
+			
+			playerDied = "Erik";
+			
+			btns[9].setButton("Next", null, null, doDeath);
+		default:
+			new AlertBox("QuickTime Event Failure, Unknown QTE Stage; " + QTEstage + ".");
+		}
+		
+		outputText(message, title);
 	}
 	
 	static function doPoop( e:MouseEvent ) {
@@ -1413,6 +2471,55 @@ class Main {
 	static function doSleep( e:MouseEvent ) {
 		
 		outputText("Sleep", "Sleep");
+	}
+	
+	static function doMasterbate( e:MouseEvent ) {
+		//Player jerks off
+		var message:String = "{Placeholder} ";
+		
+		//Player has only a penis
+		if (playerCharacter.penis && !playerCharacter.vagina) {
+			message += "You wrap your hand around your shaft and begin slowly stroking along your length. ";
+			if (playerCharacter.balls) {
+				message += "Your other hand cups your balls and you tease your length, toying with your head until you feel your orgasm building. With a surge you shoot cum from your cock.";
+			} else {
+				message += "You stroke along your length, toyin with the head of your cock until you feel your orgasm building.";
+				if (playerCharacter.hasPerk("inbal")) {
+					message += " With a surge you shoot cum from your cock.";
+				}
+			}
+		}
+		
+		//Player has only a vagina
+		if (!playerCharacter.penis && playerCharacter.vagina) {
+			message += "You slide a finger inside your slit finding your clit and teasing it until you orgasm.";
+		}
+		
+		//Player has both a vagina and penis
+		if (playerCharacter.penis && playerCharacter.vagina) {
+			message += "You wrap one hand around your cock and slide the other into your vagina teasing both until you shutter and cum hard.";
+		}
+		
+		//Player has neither a vagina or a penis
+		if (!playerCharacter.penis && !playerCharacter.vagina) {
+			if (playerCharacter.breasts) {
+				message += "You cup your breasts and massage them, teasing your nipples until you drive yourself to orgasm.";
+			} else {
+				message += "You slide a finder into your ass, teasing and toying with your prostate until you manage to acheive something close to an orgasm.";
+			}
+		}
+		
+		playerCharacter.arousal = 0;
+		
+		charDesc.visible = false;
+		optionsBtn.visible = false;
+		newRoom = false;
+		
+		clearAllEvents();
+		updateHUD();
+		outputText(message, "Masterbation");
+		
+		btns[0].setButton("Next", null, null, movePlayer);
 	}
 	
 	static function doPhone( e:MouseEvent ) {
@@ -1587,13 +2694,10 @@ class Main {
 			pizzaMass = pizzaSize; //For readability
 			
 			//Money check
-			if (playerCharacter.money >= pizzaCostDeliv) {
+			if (playerCharacter.getMoney() >= pizzaCostDeliv) {
 				message = "You hand the [NPCNAME] $" + pizzaCostDeliv + ". [SUBJC] looks at the money and gives you an indignant look, then turns and walks off without another word, leaving you with a steaming hot pizza. You go back into your apartment and set about devouring the pizza. You make short work of it, belly full of food and burp happily.";
-				playerCharacter.money -= pizzaCostDeliv;
+				playerCharacter.addMoney(-pizzaCostDeliv);
 				playerCharacter.stomachCurrent += pizzaMass;
-				
-				//it shouldn't happen, but just in case we end up with a string of repeading decimals again...
-				playerCharacter.money = Std.parseFloat(truncateDecimalPlaces(playerCharacter.money));
 				
 				updateHUD();
 				
@@ -1608,7 +2712,7 @@ class Main {
 			
 			pizzaCostDeliv = Std.parseFloat(truncateDecimalPlaces(pizzaCostDeliv));
 			
-			if (playerCharacter.money < pizzaCostDeliv) {
+			if (playerCharacter.getMoney() < pizzaCostDeliv) {
 				// player doesn't have enough money to pay for the pizza. Only two options left
 				message = "You check your wallet to pay for the pizza, but you find you don't have enough money! Now what?";
 				
@@ -1620,10 +2724,8 @@ class Main {
 				// player has money, time to buy the pizza!
 				message = "You hand the [NPCNAME] $" + pizzaCostDeliv + ". [SUBJC] glances at the money and tucks it away, giving you a smile and saying &quot;Enjoy your pizza.&quot; Before turning and walking away down the hall.";
 				
-				playerCharacter.money -= pizzaCostDeliv;
+				playerCharacter.addMoney(-pizzaCostDeliv);
 				playerCharacter.stomachCurrent += pizzaMass;
-				
-				playerCharacter.money = Std.parseFloat(truncateDecimalPlaces(playerCharacter.money));
 				
 				updateHUD();
 				
@@ -1727,11 +2829,11 @@ class Main {
 		case 0:
 			//Player description
 			message += playerCharacter.playerDesc();
+			message += "You are wearing " + playerCharacter.equipArmObj.name + " as armor and have " + playerCharacter.equipWepObj.name + " ready to defend yourself with.</p><br><p>";
 			message += "You have eaten " + playerCharacter.numEaten + " prey.";
 			
-			btns[0].setButton("Inventory", "View your inventory", 1);
-			//btns[0].setClickFunc(doDescription);
-			btns[0].disableButton();
+			btns[0].setButton("Inventory", "View your inventory", "page|0");
+			btns[0].setClickFunc(doInventory);
 			
 			btns[1].setButton("Keys", "View your keys", 2);
 			btns[1].setClickFunc(doDescription);
@@ -1746,7 +2848,7 @@ class Main {
 			btns[11].setClickFunc(movePlayer);
 			
 		case 1:
-			//Player invintory
+			//Player invintory, old code. Ignore
 			
 		case 2:
 			//Keys
@@ -1841,47 +2943,647 @@ class Main {
 		outputText(message, title);
 	}
 	
-	static function doShop( e:MouseEvent ) {
-		// ic - ice cream shop
-		// rat - black market
-		// gen - general store
+	static function doInventory( e:MouseEvent ) {
+		var title:String = "Inventory";
+		var message:String = "You quickly check your pockets and find:<br>";
+		var choice:String = e.currentTarget.btnID;
+		var dspItems:Int = 9;
+		var dspFirstItem:Int = 0;
 		
-		var shopType:String = e.currentTarget.btnID.split(":")[0];
-		var shopStage:Int = e.currentTarget.btnID.split(":")[1];
-		var shopList:Array<Dynamic> = new Array();
+		var choiceType:String = choice.split("|")[0];
+		var choiceValue:Int = Std.parseInt(choice.split("|")[1]);
+		
+		var specialSkill:String = "";
+		var specialValue:String = "";
+		
+		clearAllEvents();
+		
+		switch(choiceType) {
+		case "page":
+			//The player is just looking at their invintory list
+			
+			if (playerCharacter.invObject.length > 9) {
+				dspFirstItem = choiceValue * 9;
+				dspItems = dspFirstItem + 9;
+			}
+			
+			if (playerCharacter.invObject.length < dspItems)
+				dspItems = playerCharacter.invObject.length;
+			
+			if (playerCharacter.invObject.length != 0) {
+				for (i in dspFirstItem...dspItems) {
+					message += playerCharacter.invObject[i].name + " --- " + playerCharacter.invObject[i].desc + "<br>";
+					btns[i - dspFirstItem].setButton(playerCharacter.invObject[i].name, null, "item|" + i);
+					btns[i - dspFirstItem].setClickFunc(doInventory);
+				}
+				if (playerCharacter.invObject.length > dspItems) {
+					message += "More...<br>";
+					btns[10].setButton("Next", null, "page|" + (choiceValue + 1));
+					btns[10].setClickFunc(doInventory);
+				}
+				if (dspFirstItem != 0) {
+					btns[9].setButton("Prev", null, "page|" + (choiceValue - 1));
+					btns[9].setClickFunc(doInventory);
+				}
+			} else {
+				message += "Nothing!<br>";
+			}
+			
+			
+		case "item":
+			//display item details
+			title += " -- Item Detail";
+			
+			message += "Name: " + playerCharacter.invObject[choiceValue].name + "<br>";
+			message += "Type: " + playerCharacter.invObject[choiceValue].type + "<br>";
+			message += "Mass: " + playerCharacter.invObject[choiceValue].mass + " ";
+			message += "Value: " + playerCharacter.invObject[choiceValue].value + "<br>";
+			message += playerCharacter.invObject[choiceValue].desc + "<br>";
+			
+			switch (playerCharacter.invObject[choiceValue].type) {
+			case "weapon":
+				message += "Attack: " + playerCharacter.invObject[choiceValue].attack + " ";
+				if (playerCharacter.invObject[choiceValue].twoHanded) {
+					message += "2H";
+				} else {
+					message += "1H";
+				}
+				
+				message += "<br>Special Qualities:<br>";
+				
+				btns[0].setButton("Equip", "Ready the weapon", "equip|" + choiceValue);
+				btns[0].setClickFunc(doInventory);
+			case "armor":
+				message += "Defense: " + playerCharacter.invObject[choiceValue].defend + ".<br>";
+				message += "Special Qualities:<br>";
+				
+				btns[0].setButton("Equip", "Don the armor", "equip|" + choiceValue);
+				btns[0].setClickFunc(doInventory);
+			case "ring":
+				message += "Special Qualities:<br>";
+				
+				btns[0].setButton("Equip", "Equip the ring", "equip|" + choiceValue);
+				btns[0].setClickFunc(doInventory);
+			case "food":
+				message += "Quantity: " + playerCharacter.invObject[choiceValue].count;
+			}
+			
+			for (i in 0...playerCharacter.invObject[choiceValue].specials.length) {
+				specialSkill = playerCharacter.invObject[choiceValue].specials[i].split("|")[0];
+				specialValue = playerCharacter.invObject[choiceValue].specials[i].split("|")[1];
+				switch(specialSkill) {
+				case "str":
+					message += "Strength +" + specialValue;
+				case "agi":
+					message += "Agility +" + specialValue;
+				case "end":
+					message += "Endurance +" + specialValue;
+				case "int":
+					message += "Intelligence +" + specialValue;
+				case "health":
+					message += "Health +" + specialValue;
+				case "spot":
+					message += "Spot +" + specialValue;
+				case "dodge":
+					message += "Dodge +" + specialValue;
+				case "run":
+					message += "Run +" + specialValue;
+				case "melee":
+					message += "Melee +" + specialValue;
+				case "sneak":
+					message += "Sneak +" + specialValue;
+				}
+				if (i < playerCharacter.invObject[choiceValue].specials.length - 1)
+					message += ", ";
+			}
+			
+			btns[1].setButton("Consume", "Consume the item", "eat|" + choiceValue);
+			btns[1].setClickFunc(doInventory);
+			btns[2].setButton("Drop", "Discard the item", "drop|" + choiceValue);
+			btns[2].setClickFunc(doInventory);
+			
+			btns[9].setButton("Close", "Close the item description", "page|0");
+			btns[9].setClickFunc(doInventory);
+		case "equip":
+			message = playerCharacter.invObject[choiceValue].equip(playerCharacter);
+			
+			updateHUD();
+			outputText(message);
+			
+			btns[0].setButton("Next", null, "page|0");
+			btns[0].setClickFunc(doInventory);
+			return;
+		case "eat":
+			message = playerCharacter.invObject[choiceValue].eat(playerCharacter);
+			
+			updateHUD();
+			outputText(message);
+			
+			btns[0].setButton("Next", null, "page|0");
+			btns[0].setClickFunc(doInventory);
+			return;
+		case "drop":
+			message = playerCharacter.invObject[choiceValue].toss(playerCharacter);
+			
+			updateHUD();
+			outputText(message);
+			
+			btns[0].setButton("Next", null, "page|0");
+			btns[0].setClickFunc(doInventory);
+			return;
+		}
+		
+		btns[11].setButton("Description", null, 0);
+		btns[11].setClickFunc(doDescription);
+		
+		outputText(message, title);
+	}
+	
+	static function iceCreamShop( e:MouseEvent ) {
+		var message:String = "";
+		var title:String = "Ice Cream Shop - ";
+		var action:String = e.currentTarget.btnID.split("|")[0];
+		var value:String = e.currentTarget.btnID.split("|")[1];
+		var page:String = "0";
+		var price:Int = 0;
+		var flavor:String = "";
+		var eat:String = "";
+		var foodMass:Int = 5;
 		
 		clearAllEvents();
 		updateHUD();
 		
+		if (optionsBtn.visible) {
+			optionsBtn.visible = false;
+			charDesc.visible = false;
+			newRoom = false;
+		}
+		
+		switch (action) {
+		case "list":
+			//List the ice cream choices for the player to buy
+			message += "<p>You step up to the counter, ";
+			
+			if (((playerCharacter.hour >= 8 && playerCharacter.hour < 14) || playerCharacter.quest[5].stage >= 6) && playerCharacter.quest[7].stage < 2) {
+				//Guffin works the 8am-2pm shift, unless he's been eaten or Bessie is tied up in the back
+				roomNPC = new MyNPC();
+				roomNPC.newNPC(nonPlayerCharacters[3]);
+				
+				message += "Guffin smiles and says, &quot;O-oh, uh, what would you like? T-theres a lot to choose from.&quot;";
+			} else if (((playerCharacter.hour >= 14 && playerCharacter.hour < 20) || (playerCharacter.quest[7].stage == 2)) && playerCharacter.quest[5].stage < 6) {
+				//Bessie works the 2pm-8pm shift, unless Guffin has been eaten or she's tied up in the back room
+				roomNPC = new MyNPC();
+				roomNPC.newNPC(nonPlayerCharacters[4]);
+				
+				message += "Bessie scowls at you. &quot;Buy something already.&quot;";
+			}
+			
+			message += "</p><br><p>";
+			
+			switch (value) {
+			case "0":
+				message += "&nbsp;&nbsp;&nbsp;Vanilla, $2<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ah, the classic vanilla flavor.<br>&nbsp;&nbsp;&nbsp;Chocolate, $2<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tastes just like… Chocolate.<br>&nbsp;&nbsp;&nbsp;Strawberry, $2<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;There are real strawberry bits inside!<br>&nbsp;&nbsp;&nbsp;Caramel, $2<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;With veins of pure caramel within, it must be hard to resist.<br>&nbsp;&nbsp;&nbsp;Blue Bubblegum, $4<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The color pink was taken, so bubblegum will just settle on blue.<br>&nbsp;&nbsp;&nbsp;Cookies & Cream, $5<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;It even has bits of cookies mashed in!<br>";
+				message += "&nbsp;&nbsp;&nbsp;Neapolitan Blast, $5<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Couldn’t decide? Have some vanilla, chocolate, AND strawberry!<br>&nbsp;&nbsp;&nbsp;Peanut Butter, $4<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;You could almost swear it’s literally a tub of peanut butter, just frozen.<br>&nbsp;&nbsp;&nbsp;Quadruple Chocolate, $5<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Its chocolate, times 4, with chocolate pieces!";
+				message += "</p><br><p>More...</p>";
+				
+				btns[0].setButton("Vanilla", "Classic Vanilla", "buy|vanilla", iceCreamShop);
+				btns[1].setButton("Chocolate", "Tasty Chocolate", "buy|chocolate", iceCreamShop);
+				btns[2].setButton("Strawberry", "With Real Strawberries!", "buy|strawberry", iceCreamShop);
+				btns[3].setButton("Caramel", "Classic Vanilla with pure caramel mixed in", "buy|caramel", iceCreamShop);
+				btns[4].setButton("Bubblegum", "Blue bubblegum; strange, but tasty", "buy|bubblegum", iceCreamShop);
+				btns[5].setButton("Cookies & Cream", "With bits of real cookie!", "buy|c&c", iceCreamShop);
+				btns[6].setButton("Neapolitan", "All three classic choices", "buy|neap", iceCreamShop);
+				btns[7].setButton("Peanut Butter", "Still looks like a tub of peanut butter", "buy|peanut", iceCreamShop);
+				btns[8].setButton("4x Chocolate", "Chocolate, only more", "buy|4choc", iceCreamShop);
+				
+				btns[11].setButton("More", null, "list|1", iceCreamShop);
+			case "1":
+				message += "<br>&nbsp;&nbsp;&nbsp;Banana Split, $4<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A banana, cut in half, with some ice cream and whipped cream, topped with a cherry!<br>&nbsp;&nbsp;&nbsp;Milkshake, $3<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Milk and ice cream and syrup, shaken up in a tall cup. Comes in multiple flavors!<br>&nbsp;&nbsp;&nbsp;Glutton’s Delight, $15<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The sweetest of the sweets, a bit of every flavor put into one huge tub.";
+				
+				btns[0].setButton("Banana Split", "Banana and ice cream", "buy|split", iceCreamShop);
+				btns[1].setButton("Milkshake", "Milk and ice cream", "shake|list", iceCreamShop);
+				btns[1].disableButton();
+				btns[2].setButton("Glutton", "A little of everything", "buy|glutton", iceCreamShop);
+				
+				btns[9].setButton("Prev", null, "list|0", iceCreamShop);
+			}
+			
+			
+			title += "Buy";
+		case "free":
+			//List the ice cream choices for the player to eat
+			
+		case "buy":
+			//First screen of buy
+			message += "<p>Buy ";
+			
+			switch (value) {
+			case "vanilla":
+				price = 2;
+				message += "vanilla";
+			case "chocolate":
+				price = 2;
+				message += "chocolate";
+			case "strawberry":
+				price = 2;
+				message += "strawberry";
+			case "caramel":
+				price = 2;
+				message += "caramel";
+			case "bubblegum":
+				price = 4;
+				message += "blue bubblegum";
+			case "c&c":
+				price = 5;
+				message += "cookies and cream";
+			case "neap":
+				price = 5;
+				message += "neapolitan";
+			case "peanut":
+				price = 4;
+				message += "peanut butter";
+			case "4choc":
+				price = 5;
+				message += "quadruple chocolate";
+			case "split":
+				price = 4;
+				message += "a banana split";
+				page = "1";
+			case "glutton":
+				price = 15;
+				message += "glutton's delight";
+				page = "1";
+			}
+			
+			message += "? For $" + price + "</p>";
+			
+			btns[0].setButton("Yes", null, "confirm|" + value, iceCreamShop);
+			if (playerCharacter.getMoney() < price) 
+				btns[0].disableButton();
+			btns[2].setButton("No", null, "list|" + page, iceCreamShop);
+		case "confirm":
+			eat = "You take a seat and a spoon and prepare to eat out of your tub of ";
+			
+			switch (value) {
+			case "vanilla":
+				price = 2;
+				flavor = "vanilla";
+				eat += "vanilla ice cream.</p><br><p>With each spoonful, you savor the sweet, vanilla taste. It’s the closest you can get to vanilla perfection.";
+			case "chocolate":
+				price = 2;
+				flavor = "chocolate";
+				eat += "chocolate ice cream.</p><br><p>It feels thick and creamy, as you shovel it into your mouth. It’s really, great, shame they didn’t give you the recipe for it.";
+			case "strawberry":
+				price = 2;
+				flavor = "strawberry";
+				eat += "strawberry ice cream.</p><br><p>The ice cream fills your taste buds with a soft, light taste that is strawberry. As you eat, you come along small chunks, which when you bite into them, are juicy and sweet.";
+			case "caramel":
+				price = 2;
+				flavor = "caramel";
+				eat += "caramel ice cream.</p><br><p>It tends to be a rather rich, nutty flavor; ironic considering it's made by burning sugar and milk together. If you were blindfolded, you could not mistake this taste for anything else.";
+			case "bubblegum":
+				price = 4;
+				flavor = "blue bubblegum";
+				eat += "Blue Bubblegum ice cream.</p><br><p>As one of the sweetest things on the menu, the sweetness is immense. It probably has a huge amount of sugar in it, but the more the better. Your tongue is a bright blue now.";
+			case "c&c":
+				price = 5;
+				flavor = "cookies and cream";
+				eat += "cookies & cream ice cream.</p><br><p>Surprisingly smooth, even with the chunks of cookies within. The creamy texture really makes it live up to its name.";
+			case "neap":
+				price = 5;
+				flavor = "neapolitan";
+				eat += "Neapolitan blast ice cream.</p><br><p>You could almost say that it doesn’t get any better than this. Vanilla, chocolate and strawberry all in one tub. Three different tastes that all melt in your mouth at once, creating a sweet, creamy blend.";
+			case "peanut":
+				price = 4;
+				flavor = "peanut butter";
+				eat += "peanut butter ice cream.</p><br><p>You don’t remember this ice cream from when you worked here, so they must have gotten it in since you left. It’s really strong, with small lumps of the actual peanuts. If it wasn't cold, you would be able to say it were just straight up peanut butter.";
+			case "4choc":
+				price = 5;
+				flavor = "quadruple chocolate";
+				eat += "quadruple chocolate ice cream.</p><br><p>This ice cream is so thick, it feels like someone had sex in your mouth, leaving their cold chocolate love in your mouth. Plus, there's chocolate chips, which are nice too.";
+			case "split":
+				price = 4;
+				foodMass = 7;
+				flavor = "a banana split";
+				page = "1";
+			case "glutton":
+				price = 15;
+				foodMass = 40;
+				flavor = "glutton's delight";
+				page = "1";
+				if (roomNPC != null) {
+					if (roomNPC.name == "Guffin") {
+						eat = "You take a seat and a spoon and prepare to eat out of your enormous tub of Glutton’s Delight ice cream.</p><br><p>This tub has a scoop from every flavor in the shop. The amount of ice cream that fills it is about as big as your head. You can see Guffin look at you with a bit of envy from the counter, wishing he could eat that much for free on one occasion and not get in trouble for it. He watches you eat, getting more envious with every spoonful.";
+					} else {
+						eat = "You take a seat and a spoon and prepare to eat out of your enormous tub of Glutton’s Delight ice cream.</p><br><p>This tub has a scoop from every flavor in the shop. The amount of ice cream that fills it is about as big as your head. You can see Bessie watch you empty the tub from behind the counter, a curious look on her face. You can't decide if it's envy or anger.";
+					}
+				}
+			}
+			
+			if (roomNPC != null) {
+				if (roomNPC.name == "Guffin") {
+					message = "You pass over $" + price + " to Guffin, and he passes over your " + flavor + " ice cream.</p><br><p>" + eat + "</p><br><p>Once you’re done, you feel a little bit fuller.";
+				} else {
+					message = "You pass over $" + price + " to Bessie, and she passes over your " + flavor + " ice cream.</p><br><p>" + eat + "</p><br><p>Once you’re done, you feel a little bit fuller.";
+				}
+			}
+			
+			message += "</p>";
+			
+			playerCharacter.stomachCurrent += foodMass;
+			playerCharacter.addMoney( -price);
+			updateHUD();
+		case "shake":
+			
+		}
+		
+		btns[10].setButton("Leave", "Step away from the counter", null, movePlayer);
+		outputText(message, title);
+	}
+	
+	static function doShop( e:MouseEvent ) {
+		// rat - black market
+		// gen - general store
+		
+		var shopAction:String = e.currentTarget.btnID.split("|")[1];
+		var shopType:String = e.currentTarget.btnID.split("|")[0];
+		var shopActionValue:Int = Std.parseInt(e.currentTarget.btnID.split("|")[2]);
+		var canSell:Bool = false;
+		var message:String = "";
+		var title:String = "";
+		
+		var dspItems:Int = 9;
+		var dspFirstItem:Int = 0;
+		
+		var tempItem:MyItem = new MyItem();
+		
+		newRoom = false;
+		
+		clearAllEvents();
+		updateHUD();
+		optionsBtn.visible = false;
+		charDesc.visible = false;
+		
 		switch (shopType) {
 		case "gen":
 			//General Store
-			shopList = globals.shopLists[0];
+			if (shopListMade == false) {
+				shopList = new Array();
+				for (i in 0...globals.shopLists[0].length) {
+					switch (globals.shopLists[0][i].split("|")[0]) {
+					case "food":
+						tempItem = new MyItem_Food();
+						tempItem = globals.food[globals.shopLists[0][i].split("|")[1]].copyItem();
+						
+						shopList.push(new MyItem_Food());
+						shopList[shopList.length - 1] = tempItem;
+					}
+				}
+					
+				for (i in 0...(Math.round(Math.random() * 5) + 1)) {
+					switch (Math.round(Math.random() * 3)) {
+					case 0:
+						//Armor
+						shopList.push(createItem("armor"));
+					case 1:
+						//Weapon
+						shopList.push(createItem("weapon"));
+					case 2:
+						//Ring
+						shopList.push(createItem("ring"));
+					}
+				}
+			shopListMade = true;
+			}
+			canSell = true;
+			title = "General Store";
 			
+		//Ice cream shop has been moved to it's own function as it's not adding prebuilt items to the player's invintory
+		//Rather it's going to directly feed the player ice cream
+		
 		case "rat":
 			//Black Market
 			
-		case "ic":
-			//Ice Cream Shop
+		}
+		
+		switch (shopAction) {
+		case "list":
+			//List the items the shop has to sell
+			if (shopList.length > 9) {
+				dspFirstItem = shopActionValue * 9;
+				dspItems = dspFirstItem + 9;
+			}
 			
+			if (shopList.length < dspItems) 
+				dspItems = shopList.length;
+			
+			message = "The shop has the following items for sale:</p><br><p>";
+			
+			if (shopList.length != 0) {
+				for (i in dspFirstItem...dspItems) {
+					message += shopList[i].name + ": $" + shopList[i].value + "<br>     " + shopList[i].desc + "</p><br><p>";
+					btns[i - dspFirstItem].setButton(shopList[i].name, null, shopType + "|item|" + i);
+					btns[i - dspFirstItem].setClickFunc(doShop);
+				}
+				if (shopList.length > dspItems) {
+					message += "More...";
+					btns[10].setButton("Next", null, shopType + "|list|" + (shopActionValue + 1));
+					btns[10].setClickFunc(doShop);
+				}
+				if (dspFirstItem != 0) {
+					btns[9].setButton("Prev", null, shopType + "|list|" + (shopActionValue - 1));
+					btns[9].setClickFunc(doShop);
+				} else {
+					if (canSell) {
+						btns[9].setButton("Sell", "Sell extra items to the shop.", shopType + "|sell|0");
+						btns[9].setClickFunc(doShop);
+					}
+				}
+			}
+			
+			outputText(message, title);
+			
+			btns[11].setButton("Leave");
+			btns[11].setClickFunc(movePlayer);
+		case "item":
+			//Item detail view
+			title += " --- Item Detail";
+			
+			message = "Name: " + shopList[shopActionValue].name + "<br>";
+			message += "Type: " + shopList[shopActionValue].type + "<br>";
+			message += "Mass: " + shopList[shopActionValue].mass + " ";
+			message += "Value: " + shopList[shopActionValue].value + "<br>";
+			message += shopList[shopActionValue].desc + "<br>";
+			
+			switch (shopList[shopActionValue].type) {
+			case "weapon":
+				message += "Attack: " + shopList[shopActionValue].attack + " ";
+				if (shopList[shopActionValue].twoHanded) {
+					message += "2H";
+				} else {
+					message += "1H";
+				}
+				
+				message += "<br>Special Qualities:<br>";
+			case "armor":
+				message += "Defense: " + shopList[shopActionValue].defend + ".<br>";
+				message += "Special Qualities:<br>";
+			case "ring":
+				message += "Special Qualities:<br>";
+			case "food":
+				
+			}
+			
+			for (i in 0...shopList[shopActionValue].specials.length) {
+				var specialSkill = shopList[shopActionValue].specials[i].split("|")[0];
+				var specialValue = shopList[shopActionValue].specials[i].split("|")[1];
+				switch(specialSkill) {
+				case "str":
+					message += "Strength +" + specialValue;
+				case "agi":
+					message += "Agility +" + specialValue;
+				case "end":
+					message += "Endurance +" + specialValue;
+				case "int":
+					message += "Intelligence +" + specialValue;
+				case "health":
+					message += "Health +" + specialValue;
+				case "spot":
+					message += "Spot +" + specialValue;
+				case "dodge":
+					message += "Dodge +" + specialValue;
+				case "run":
+					message += "Run +" + specialValue;
+				case "melee":
+					message += "Melee +" + specialValue;
+				case "sneak":
+					message += "Sneak +" + specialValue;
+				case "heal":
+					message += (Std.parseFloat(specialValue) * 100) + "% Healing";
+				default:
+					message += "{ERROR} Special not found:" + specialSkill + " with value: " + specialValue;
+				}
+				if (i < shopList[shopActionValue].specials.length - 1)
+					message += ", ";
+			}
+			
+			outputText(message, title);
+			
+			btns[0].setButton("Buy", null, shopType + "|buy|" + shopActionValue);
+			btns[0].setClickFunc(doShop);
+			btns[2].setButton("Back", null, shopType + "|list|0");
+			btns[2].setClickFunc(doShop);
+		case "buy":
+			//Buy item check screen
+			message = "Buy " + shopList[shopActionValue].name + " for $" + shopList[shopActionValue].value + "?";
+			
+			btns[0].setButton("Buy", null, shopType + "|confirmBuy|" + shopActionValue);
+			btns[0].setClickFunc(doShop);
+			
+			if (playerCharacter.getMoney() < shopList[shopActionValue].value) {
+				message += " Not enough money!";
+				btns[0].disableButton();
+			}
+			
+			updateHUD();
+			outputText(message, title);
+			
+			btns[2].setButton("Back", null, shopType + "|item|" + shopActionValue);
+			btns[2].setClickFunc(doShop);
+		case "confirmBuy":
+			//Actually buy the item
+			message = "You hand over the money and the shopkeeper gives you the " + shopList[shopActionValue].name + ". ";
+			
+			playerCharacter.addMoney( -shopList[shopActionValue].value);
+			message += shopList[shopActionValue].give(playerCharacter);
+			shopList.remove(shopList[shopActionValue]);
+			updateHUD();
+			outputText(message, "Item Bought");
+			
+			btns[11].setButton("Next", null, shopType + "|list|0");
+			btns[11].setClickFunc(doShop);
+		case "sell":
+			//Sell items back to the shop
+			title = "Sell";
+			message = "You check your pockets and find;<br>";
+			
+			if (playerCharacter.invObject.length > 9) {
+				dspFirstItem = shopActionValue * 9;
+				dspItems = dspFirstItem + 9;
+			}
+			
+			if (playerCharacter.invObject.length < dspItems)
+				dspItems = playerCharacter.invObject.length;
+			
+			if (playerCharacter.invObject.length != 0) {
+				for (i in dspFirstItem...dspItems) {
+					message += playerCharacter.invObject[i].name + " $" + Math.round(Std.parseInt(playerCharacter.invObject[i].value) / 2) + "<br>     " + playerCharacter.invObject[i].desc + "<br>";
+					btns[i - dspFirstItem].setButton(playerCharacter.invObject[i].name, null, shopType + "|sellItem|" + i);
+					btns[i - dspFirstItem].setClickFunc(doShop);
+				}
+				if (playerCharacter.invObject.length > dspItems) {
+					message += "More...<br>";
+					btns[10].setButton("Next", null, shopType + "|sell|" + (shopActionValue + 1));
+					btns[10].setClickFunc(doShop);
+				}
+				if (dspFirstItem != 0) {
+					btns[9].setButton("Prev", null, shopType + "|sell|" + (shopActionValue - 1));
+					btns[9].setClickFunc(doShop);
+				}
+			} else {
+				message += "Nothing!<br>";
+			}
+			
+			outputText(message, title);
+			btns[11].setButton("Back", null, shopType + "|list|0");
+			btns[11].setClickFunc(doShop);
+		case "sellItem":
+			//Confirm sell off the item
+			title = "Sell Item";
+			message = "You offer the shopkeeper your " + playerCharacter.invObject[shopActionValue].name.toLowerCase() + ", [OBJ] offers you $" + Math.round(Std.parseInt(playerCharacter.invObject[shopActionValue].value) / 2) + "</p><br><p>Sell it?";
+			
+			outputText(message, title);
+			updateHUD();
+			
+			btns[0].setButton("Yes", null, shopType + "|doSell|" + shopActionValue);
+			btns[0].setClickFunc(doShop);
+			
+			btns[2].setButton("No", null, shopType + "|sell|0");
+			btns[2].setClickFunc(doShop);
+		case "doSell":
+			//Actually sell off the item
+			title = "Sold";
+			
+			message = "You agree to the sale, the shopkeeper hands you $" + Math.round(Std.parseInt(playerCharacter.invObject[shopActionValue].value) / 2) + " and puts the " + playerCharacter.invObject[shopActionValue].name.toLowerCase() + " behind the counter.";
+			
+			playerCharacter.addMoney(Math.round(Std.parseInt(playerCharacter.invObject[shopActionValue].value) / 2));
+			playerCharacter.invObject[shopActionValue].toss(playerCharacter);
+			
+			updateHUD();
+			outputText(message, title);
+			
+			btns[0].setButton("Next", null, shopType + "|sell|0");
+			btns[0].setClickFunc(doShop);
 		}
 		
 	}
 	
 	static function doWork( e:MouseEvent ) {
 		var workTime:Int = e.currentTarget.btnID;
-		var workSucc:Int = rollDie(playerCharacter.int);
-		var payment:Int = (workSucc * 75) * workTime;
+		var workSucc:Int = rollDie(playerCharacter.intelligence());
+		var payment:Int = ((workSucc * 75) * workTime) + playerCharacter.greed;
 		var message:String = "";
 		
 		clearAllEvents();
 		
-		message = advanceSkill(workSucc, "int");
+		message = playerCharacter.advanceSkill(workSucc, "int");
+		
+		payment = Std.parseInt(truncateDecimalPlaces(payment));
 		
 		if (payment < 75)
 			payment = 75;
 		
-		playerCharacter.money += payment;
+		playerCharacter.addMoney(payment);
 		
 		playerCharacter.passTime_with_output(workTime * 60);
 		
@@ -1906,12 +3608,16 @@ class Main {
 			
 			btns[0].setButton("Yes", null, 1);
 			btns[0].setClickFunc(resetGame);
-			btns[2].setButton("No");
-			btns[2].setClickFunc(optionsScreen);
+			if (!playerDead) {
+				btns[2].setButton("No");
+				btns[2].setClickFunc(optionsScreen);
+			}
 		case 1:
 			Lib.current.removeChildren();
 			globals = new GlobalVars();
 			playerCharacter = new MyPlayerObject();
+			currentRoom = null;
+			newRoom = true;
 			initialize();
 			drawPlayfield();
 			welcomeScreen();
@@ -1924,6 +3630,7 @@ class Main {
 		var questID:Int = -1;
 		var stage:Int = -1;
 		var btnOptions:Array<String> = new Array();
+		var newItem:MyItem = new MyItem();
 		
 		txtPublic.visible = false;
 		optionsBtn.visible = false;
@@ -1967,6 +3674,15 @@ class Main {
 			btns[2].setClickFunc(debugMenu);
 			btns[3].setButton("Logic Test", null, 7);
 			btns[3].setClickFunc(debugMenu);
+			btns[4].setButton("Create Item", null, 8);
+			btns[4].setClickFunc(debugMenu);
+			btns[5].setButton("Perks", null, 9);
+			btns[5].setClickFunc(debugMenu);
+			btns[6].setButton("+Fat", null, 10);
+			btns[6].setClickFunc(debugMenu);
+			btns[7].setButton("+Cash", null, 11);
+			btns[7].setClickFunc(debugMenu);
+			btns[8].setButton("Arousal", null, 12, debugMenu);
 			
 			btns[11].setButton("Back");
 			btns[11].setClickFunc(movePlayer);
@@ -2014,7 +3730,7 @@ class Main {
 			btns[11].setClickFunc(debugMenu);
 		case 5:
 			//Teleport
-			message = "Enter Room ID to teleport to:<br><br>(Tip: Your bedroom has an ID of 0)";
+			message = "Enter Room ID to teleport to:<br><br>(Tip: The Hospital Backroom has an ID of 32)";
 			
 			var txtFormat:TextFormat = new TextFormat("Sans", globals.textSize);
 			
@@ -2066,6 +3782,59 @@ class Main {
 			btns[0].setClickFunc(debugMenu);
 			btns[11].setButton("Main", null, 0);
 			btns[11].setClickFunc(debugMenu);
+		case 8:
+			//Create an item and give it to the player
+			newItem = createItem("weapon");
+			
+			message = "Generated item:<br>";
+			message += "Item type: " + newItem.name + "<br>";
+			message += "Item rarity: " + newItem.rarity + "<br>";
+			message += "Item specials: ";
+			
+			for (i in 0...newItem.specials.length) {
+				message += newItem.specials[i] + " ";
+			}
+			
+			playerCharacter.invObject.push(newItem);
+			
+			btns[0].setButton("Again", null, 8);
+			btns[0].setClickFunc(debugMenu);
+			btns[11].setButton("Main", null, 0);
+			btns[11].setClickFunc(debugMenu);
+		case 9:
+			//list perks owned by the player
+			message = "Perks Owned:<br>";
+			
+			for (i in 0...globals.perks.length) {
+				if (playerCharacter.hasPerk(globals.perks[i].name))
+					message += globals.perks[i].dispName + " x" + playerCharacter.perkCount(globals.perks[i].name) + "<br>";
+			}
+			
+			btns[11].setButton("Back", null, 0);
+			btns[11].setClickFunc(debugMenu);
+		case 10:
+			//Fatten up the player
+			message = "You get fatter.";
+			
+			playerCharacter.fat += 1000;
+			
+			btns[11].setButton("Next", null, 0);
+			btns[11].setClickFunc(debugMenu);
+		case 11:
+			//Gain money
+			message = "You find some money.";
+			
+			playerCharacter.addMoney(1000);
+			
+			btns[11].setButton("Next", null, 0);
+			btns[11].setClickFunc(debugMenu);
+		case 12:
+			//Make the player horny
+			message = "You suddenly get inexplicably horny.";
+			
+			playerCharacter.arousal = 100;
+			
+			btns[11].setButton("Next", null, 0, debugMenu);
 		}
 		
 		outputText(message, "Debug Menu");
@@ -2073,6 +3842,7 @@ class Main {
 	
 	static function loadGame( e:MouseEvent ) {
 		var saveDataObject:SharedObject = SharedObject.getLocal(globals.gameSaveName, "/");
+		var loadedSaveDataObject:MyFileSaveObject = new MyFileSaveObject();
 		var gameLogo:Object = Lib.current.getChildByName("gameLogo");
 		
 		var save1Name:String = "No saved data";
@@ -2120,6 +3890,14 @@ class Main {
 								saveDataObject.data.player1.equipWepObj = globals.weapons[0]; //Unarmed
 								saveDataObject.data.save1[0] = 15;
 							}
+							if (saveDataObject.data.save1[0] == 15) {//Version 15 had no difficulty
+								saveDataObject.data.globals.push(1);
+								saveDataObject.data.save1[0] = 16;
+							}
+							if (saveDataObject.data.save1[0] == 16) {
+								saveDataObject.data.player1.equipArmObj = globals.armor[0];
+								saveDataObject.data.save1[0] = 17;
+							}
 							save1Name = saveDataObject.data.player1.name + " -- Updated";
 							save1Tip = "Load " + saveDataObject.data.player1.name;
 						}
@@ -2147,6 +3925,15 @@ class Main {
 							if (saveDataObject.data.save2[0] == 14) { //Version 14 had no weapons
 								saveDataObject.data.player2.equipWepObj = globals.weapons[0]; //Unarmed
 								saveDataObject.data.save2[0] = 15;
+							}
+
+							if (saveDataObject.data.save2[0] == 15) { //Version 15 had no difficulty
+								saveDataObject.data.globals.push(1);
+								saveDataObject.data.save2[0] = 16;
+							}
+							if (saveDataObject.data.save2[0] == 16) {
+								saveDataObject.data.player2.equipArmObj = globals.armor[0];
+								saveDataObject.data.save2[0] = 17;
 							}
 							save2Name = saveDataObject.data.player2.name + " -- Updated";
 							save2Tip = "Load " + saveDataObject.data.player2.name;
@@ -2176,6 +3963,14 @@ class Main {
 								saveDataObject.data.player3.equipWepObj = globals.weapons[0]; //Unarmed
 								saveDataObject.data.save3[0] = 15;
 							}
+							if (saveDataObject.data.save3[0] == 15) {//Version 15 had no difficulty
+								saveDataObject.data.globals.push(1);
+								saveDataObject.data.save3[0] = 16;
+							}
+							if (saveDataObject.data.save3[0] == 16) {
+								saveDataObject.data.player3.equipArmObj = globals.armor[0]; //Skin
+								saveDataObject.data.save3[0] = 17;
+							}
 							save3Name = saveDataObject.data.player3.name + " -- Updated";
 							save3Tip = "Load " + saveDataObject.data.player3.name;
 						}
@@ -2204,6 +3999,8 @@ class Main {
 			btns[2].setButton("Slot 3", save3Tip, 3);
 			if (slot3Filled)
 				btns[2].setClickFunc(loadGame);
+			btns[9].setButton("File", "Load from a file", 4);
+			btns[9].setClickFunc(loadGame);
 			
 			btns[11].setButton("Back");
 			switch (globals.backTo) {
@@ -2220,6 +4017,7 @@ class Main {
 			globals.allowScat = saveDataObject.data.globals[2];
 			globals.allowSex = saveDataObject.data.globals[3];
 			globals.allowedGenders = saveDataObject.data.globals[4];
+			globals.difficulty = saveDataObject.data.globals[5];
 			
 			switch (clicked) {
 			case 1:
@@ -2231,13 +4029,20 @@ class Main {
 			case 3:
 				globals.currentRoomID = saveDataObject.data.save3[1];
 				loadedPlayer = saveDataObject.data.player3;
+			case 4:
+				fileSaveObject.browse();
+				
+				fileSaveObject.addEventListener(Event.SELECT, doFileLoad);
+				fileSaveObject.addEventListener(Event.COMPLETE, doDataLoad);
+				fileSaveObject.addEventListener(Event.CANCEL, doLoadCancel);
+				
+				outputText("Please choose a file.");
+				return;
 			}
 			
 			playerCharacter = loadedPlayer;
 			
-			globals.playerCharacter = playerCharacter;
-			
-			doorFuckCount = playerCharacter.end;
+			doorFuckCount = playerCharacter.endurance();
 			
 			if (playerCharacter.cumStretchCountdown == -1)
 				playerCharacter.cumStretchCountdown = playerCharacter.stretchRateCum;
@@ -2268,6 +4073,7 @@ class Main {
 	
 	static function saveGame( e:MouseEvent ) {
 		var saveDataObject:SharedObject = SharedObject.getLocal(globals.gameSaveName, "/");
+		var loadedFileSaveObject:MyFileSaveObject = new MyFileSaveObject();
 		
 		var save1Name:String = "";
 		var save2Name:String = "";
@@ -2359,6 +4165,8 @@ class Main {
 			btns[1].setClickFunc(saveGame);
 			btns[2].setButton("Slot 3", save3Tip, 3);
 			btns[2].setClickFunc(saveGame);
+			btns[9].setButton("File", "Save to file", 4);
+			btns[9].setClickFunc(saveGame);
 			
 			btns[11].setButton("Back");
 			btns[11].setClickFunc(optionsScreen);
@@ -2371,6 +4179,7 @@ class Main {
 			globalSaveArray.push(globals.allowScat);
 			globalSaveArray.push(globals.allowSex);
 			globalSaveArray.push(globals.allowedGenders);
+			globalSaveArray.push(globals.difficulty);
 			
 			playerSaveArray[0] = globals.buildNumber;
 			playerSaveArray[1] = globals.currentRoomID;
@@ -2387,15 +4196,32 @@ class Main {
 			case 3:
 				saveDataObject.data.save3 = playerSaveArray;
 				saveDataObject.data.player3 = playerCharacter;
+			case 4: //Attempting to allow saving to files. We'll see how this goes.
+				var saveBytes:ByteArray = new ByteArray();
+				
+				loadedFileSaveObject.globals = globalSaveArray;
+				loadedFileSaveObject.save = playerSaveArray;
+				loadedFileSaveObject.player = playerCharacter;
+				
+				saveBytes.writeObject(loadedFileSaveObject);
+				saveBytes.deflate();
+				
+				fileSaveObject.save(saveBytes, playerCharacter.name + "'s save.sol");
+				
+				fileSaveObject.addEventListener(Event.CANCEL, doSaveCancel);
+				fileSaveObject.addEventListener(Event.COMPLETE, doSaveComplete);
+				return;
 			default:
 				new AlertBox("ERROR: Bad save slot target " + clicked);
 			}
 			
-			var saving:AlertBox = new AlertBox("Saving, please wait", false);
-			
-			saveResult = saveDataObject.flush(); //Something here is throwing an error, however FlashDevelop is fighting with me again about starting the debugger so I can't see anuything useful
-			
-			saving.remove();
+			try { saveResult = saveDataObject.flush(); } catch (myError:Error) {
+				//Something here is throwing an error, however FlashDevelop is fighting with me again about starting the debugger so I can't see anuything useful
+				outputText("Save error: " + myError.message);
+				btns[11].setButton("Back", null, 0);
+				btns[11].setClickFunc(saveGame);
+				return;
+			}
 			
 			//The goal here is to display a message if the user has prevented flash from saving data locally, I think this code will work but I can't test it due to the issue with FlashDevelop's debugger
 			
@@ -2773,15 +4599,19 @@ class Main {
 				playerCharacter.newPlayer(thisSpecies, breasts, vagina, penis, balls, str, agi, end, int, playerName, finalPerks);
 				playerCharacter.quest = new Array();
 				
+				playerCharacter.pride = 2;
+				
 				for (i in 0...quests.length) {
 					playerCharacter.quest.push(new MyQuest());
 					playerCharacter.quest[playerCharacter.quest.length - 1].newQuest(quests[i]);
 				}
 				
-				playerCharacter.emptyStomachCountdown = playerCharacter.end;
-				doorFuckCount = playerCharacter.end;
+				playerCharacter.emptyStomachCountdown = playerCharacter.endurance();
+				doorFuckCount = playerCharacter.endurance();
 				
-				globals.playerCharacter = playerCharacter;
+				//equip the player with the 'unarmed' 'weapon'
+				playerCharacter.equipWepObj = globals.weapons[0];
+				playerCharacter.equipArmObj = globals.armor[0];
 				
 				updateHUD();
 				
@@ -2869,6 +4699,7 @@ class Main {
 		var txtBowels:Object = Lib.current.getChildByName("Bowels");
 		var txtDebug:Object = Lib.current.getChildByName("Debug");
 		var txtArousal:Object = Lib.current.getChildByName("Arousal");
+		var message:String = "";
 		
 		if (gameLogo != null)
 			Lib.current.removeChild(gameLogo);
@@ -2880,7 +4711,20 @@ class Main {
 		
 		clearAllEvents();
 		
-		outputText("Debug Mode: " + globals.debugMode + "</p><p>Text Size: " + globals.textSize + "</p><p>Allow Scat: " + globals.allowScat + "</p><p>Allow Sex: " + globals.allowSex, "Options");
+		message = "Debug Mode: " + globals.debugMode + "</p><p>Text Size: " + globals.textSize + "</p><p>Allow Scat: " + globals.allowScat + "</p><p>Allow Sex: " + globals.allowSex + "</p><p>Difficulty: ";
+		
+		switch(globals.difficulty) {
+		case 1:
+			message += "Normal";
+		case 0.5:
+			message += "Easy";
+		case 1.5:
+			message += "Hard";
+		}
+		if (globals.debugMode)
+			message += " " + globals.difficulty;
+		
+		outputText(message, "Options");
 		
 		btnOptions.visible = false;
 		btnDesc.visible = false;
@@ -2900,6 +4744,18 @@ class Main {
 			btns[3].setClickFunc(increaseFontSize);
 			btns[4].setButton("Font Size-");
 			btns[4].setClickFunc(decreaseFontSize);
+			btns[5].setButton("Difficulty-", "Reduce combat difficulty", 4);
+			if (globals.difficulty == 0.5) {
+				btns[5].disableButton();
+			} else {
+				btns[5].setClickFunc(optionsScreen);
+			}
+			btns[8].setButton("Difficulty+", "Increase combat difficulty", 5);
+			if (globals.difficulty == 1.5) {
+				btns[8].disableButton();
+			} else {
+				btns[8].setClickFunc(optionsScreen);
+			}
 			
 			if (globals.backTo != "Welcome") {
 				btns[6].setButton("Main Menu", "Start a new game. Current game will be lost.", 0);
@@ -2947,6 +4803,28 @@ class Main {
 			} else {
 				globals.allowSex = true;
 				txtArousal.visible = true;
+			}
+			optionsScreen();
+		case 4:
+			//Decrease Combat Difficulty
+			switch (globals.difficulty) {
+			case 1:
+				globals.difficulty = 0.5;
+			case 1.5:
+				globals.difficulty = 1;
+			default:
+				new AlertBox("Error, cannot decrease difficulty");
+			}
+			optionsScreen();
+		case 5:
+			//Increase Combat Difficulty
+			switch (globals.difficulty) {
+			case 0.5:
+				globals.difficulty = 1;
+			case 1:
+				globals.difficulty = 1.5;
+			default:
+				new AlertBox("Error, cannot increase difficulty");
 			}
 			optionsScreen();
 		}
@@ -3218,7 +5096,7 @@ class Main {
 		logo.visible = true;
 		Lib.current.addChild(logo);
 		
-		txtOutput.htmlText = "<body><br><br><p><span class='byline'>Created by Kyra Sunseeker</span></p><br><br><p><span class = 'heading'>&nbsp;&nbsp;Welcome to</span></p><br><br><br><br><br><br><br><p><font size='" + textSize + "'><br><br><p align = 'center'><u><a target='_blank' href='http://dancingfoxstudios.com/'>Dancing Fox Studios</a></u></p><br><br><br><font size = '" + textSize + "'><p align = 'center'>" + message + "</p></font></body>";
+		txtOutput.htmlText = "<body><br><br><p><span class='byline'>Created by Kyra Sunseeker</span></p><br><br><p><span class = 'heading'>&nbsp;&nbsp;Welcome to</span></p><br><br><br><br><br><br><br><p><font size='" + textSize + "'><br><br><p align = 'center'><u><a href=\"https://twitter.com/SillySnowFox\">Follow @SillySnowFox</a></u></p><br><br><br><font size = '" + textSize + "'><p align = 'center'>" + message + "</p></font></body>";
 		
 		clearAllEvents();
 		
@@ -3262,14 +5140,395 @@ class Main {
 		txtOutput.scrollV = txtOutput.maxScrollV;
 	}
 	
+	static function debugDump( e:MouseEvent ) {
+		//Dump data to the screen, hopefully this will help with crashes
+		var message:String = "";
+		
+		clearAllEvents();
+		
+		newRoom = true;
+		
+		message = "Current Room ID: " + globals.currentRoomID;
+		
+		outputText(message);
+		
+		btns[0].setButton("Recover", "Attempt game recovery", 0, movePlayer);
+	}
+	
 	/**************************\
 	 *                        *
 	 * Non-cickable functions *
 	 *                        *
 	\**************************/
 	
-	static function npcAttack( ):String {
-		return "The [NPCNAME] flails unfinishedly at you";
+	static function timerKeyEvent( e:KeyboardEvent ) {
+		var keyPressed:String = String.fromCharCode(e.charCode).toLowerCase();
+		
+		if (keyPressed == timerQTE.tmrKey) {
+			timerQTE.tmrQuick.stop();
+			
+			QTEstage = timerQTE.successScene;
+			
+			Lib.current.removeChild(timerQTE);
+			
+			doQTE();
+		}
+	}
+	
+	static function timerFailEvent( e:TimerEvent ) {
+		QTEstage = timerQTE.failScene;
+		timerQTE.tmrQuick.stop();
+		
+		Lib.current.removeChild(timerQTE);
+		
+		doQTE();
+	}
+	
+	static function createItem(item:String):MyItem {
+		var madeItem:MyItem = new MyItem();
+		var randItem:Int = 0;
+		var rarity:String = "";
+		var rare:Int = Math.round((Math.random() * 100));
+		
+		if (rare <= 60) {
+			rarity = "common";
+		} else if (rare > 60 && rare <= 80) {
+			rarity = "uncommon";
+		} else if (rare > 80 && rare <= 90) {
+			rarity = "rare";
+		} else if (rare > 90 && rare <= 99) {
+			rarity = "epic";
+		} else if (rare == 100) {
+			rarity = "legendary";
+		}
+		
+		switch(item) {
+		case "armor":
+			while (randItem == 0) {
+				//Don't want skin, that's not really armor
+				randItem = Math.round(Math.random() * (globals.armor.length - 1));
+			}
+			
+			madeItem = globals.armor[randItem].copyItem();
+		case "weapon":
+			while (randItem == 0) {
+				//Don't want Fists, those aren't really a weapon
+				randItem = Math.round(Math.random() * (globals.weapons.length - 1));
+			}
+			
+			madeItem = globals.weapons[randItem].copyItem();
+		case "ring":
+			randItem = Math.round(Math.random() * (globals.rings.length - 1));
+			
+			madeItem = globals.rings[randItem].copyItem();
+		default:
+			new AlertBox("Unknown item type: " + item);
+		}
+		
+		//Add special effects base on item rarity
+		madeItem.rarity = rarity;
+		switch(madeItem.rarity) {
+		case "common":
+			//Common items get one ability
+			rare = 1;
+		case "uncommon":
+			//uncommons get two
+			rare = 2;
+		case "rare":
+			//Rare get three
+			rare = 3;
+		case "epic":
+			//epics get four
+			rare = 4;
+		case "legendary":
+			//legendary get five
+			rare = 5;
+		}
+		
+		madeItem.specials = new Array();
+		
+		for (i in 0...rare) {
+			madeItem.specials.push(generateAbility(rare));
+		}
+		
+		return madeItem;
+	}
+	
+	static function generateAbility(rarity:Int):String {
+		var abilities:Array<String> = new Array();
+		var chooseAbility:String = "";
+		var improveBy:Int = 0;
+		
+		while (improveBy == 0) {
+			improveBy = Math.round(Math.random() * (rarity * 10));
+		}
+		
+		abilities = ["str", "agi", "end", "int", "health", "spot", "dodge", "run", "melee", "sneak"];
+		
+		while (chooseAbility == "" || chooseAbility == null) {
+			chooseAbility = abilities[Math.round(Math.random() * abilities.length - 1)];
+		}
+		
+		return chooseAbility + "|" + improveBy;
+	}
+	
+	static function catchRefError( e:ReferenceError ) {
+		var message:String = "";
+		
+		message = e.message;
+		
+		printError(message);
+	}
+	
+	static function reportError( e:UncaughtErrorEvent ) {
+		var message:String;
+		
+		if (e.error == "Error") {
+			message = e.error.message;
+		} else if (e.error == "ErrorEvent") {
+			message = e.error.text;
+		} else {
+			message = e.error.toString();
+		}
+		
+		printError(message);
+	}
+	
+	static function printError( errorMessage:String ) {
+		var message:String = "Flash has encountered an error, please report the following;</p><hr><p>";
+		
+		outputText(message + errorMessage);
+		return;
+	}
+	
+	static function doSaveComplete( e:Event ) {
+		fileSaveObject.removeEventListener(Event.COMPLETE, doSaveComplete);
+		fileSaveObject.removeEventListener(Event.CANCEL, doSaveCancel);
+		
+		outputText("Game saved to file.", "Save Game");
+		btns[11].setButton("Next");
+		btns[11].setClickFunc(optionsScreen);
+	}
+	
+	static function doSaveCancel( e:Event ) {
+		fileSaveObject.removeEventListener(Event.CANCEL, doSaveCancel);
+		
+		outputText("Save attempt canceled by player request.", "Save Game");
+		btns[11].setButton("Next", null, 0);
+		btns[11].setClickFunc(saveGame);
+	}
+	
+	static function doLoadCancel( e:Event ) {
+		fileSaveObject.removeEventListener(Event.SELECT, doFileLoad);
+		fileSaveObject.removeEventListener(Event.COMPLETE, doDataLoad);
+		fileSaveObject.removeEventListener(Event.CANCEL, doLoadCancel);
+		fileSaveObject = null;
+		
+		outputText("Load attampt canceled by player request.", "Load Game");
+		btns[11].setButton("Next", null, 0);
+		btns[11].setClickFunc(loadGame);
+	}
+	
+	static function doFileLoad( e:Event ) {
+		fileSaveObject.load();
+	}
+	
+	static function doDataLoad( e:Event ) {
+		var saveBytes:ByteArray = new ByteArray();
+		var loadedFileSaveObject:MyFileSaveObject = new MyFileSaveObject();
+		
+		saveBytes = fileSaveObject.data;
+		
+		try { saveBytes.inflate(); } catch (myError:Error) { outputText("Failed to decompress saved data."); return; }
+		
+		try { loadedFileSaveObject = saveBytes.readObject(); } catch (myError:Error) {
+			outputText("Object Load Error: " + myError.message);
+			return;
+		}
+		
+		fileSaveObject.removeEventListener(Event.SELECT, doFileLoad);
+		fileSaveObject.removeEventListener(Event.COMPLETE, doDataLoad);
+		fileSaveObject.removeEventListener(Event.CANCEL, doLoadCancel);
+		fileSaveObject = null;
+		
+		if (loadedFileSaveObject.save[0] < globals.minBuildNumber) {
+			//This code should never trigger as it shouldn't be possible for the player to try and load a save with a buildNumber less the 16
+			//It's here just in case, as well as to mark where any other version checking should go.
+			outputText("Incompatable save data");
+			btns[11].setButton("Next");
+			btns[11].setClickFunc(welcomeScreen);
+			return;
+		}
+		if (loadedFileSaveObject.save[0] == 16) {
+			loadedFileSaveObject.player.equipArmObj = globals.armor[0];
+			loadedFileSaveObject.save[0] = 17;
+		}
+		
+		globals.debugMode = loadedFileSaveObject.globals[0];
+		globals.textSize = loadedFileSaveObject.globals[1];
+		globals.allowScat = loadedFileSaveObject.globals[2];
+		globals.allowSex = loadedFileSaveObject.globals[3];
+		globals.allowedGenders = loadedFileSaveObject.globals[4];
+		globals.difficulty = loadedFileSaveObject.globals[5];
+		
+		globals.currentRoomID = loadedFileSaveObject.save[1];
+		playerCharacter = loadedFileSaveObject.player;
+		
+		updateHUD();
+		outputText("Game loaded from file.", "Load Game");
+		
+		btns[11].setButton("Next", null, globals.currentRoomID + ":0");
+		btns[11].setClickFunc(movePlayer);
+	}
+	
+	static function npcAttack():String {
+		var message:String = "";
+		var damage:Int = 0;
+		var attackAction:Int = -1;
+		var fatAbsorbed:Bool = false;
+		
+		/*NPC gets a chance to attack;
+		 * 0 - 6: Strike
+		 * 7 - 8: Grab
+		 * 9 - Run
+		 * 
+		 * Action should be weighted towards strike
+		 */ 
+		
+		if (playerCharacter.healthCurr <= 0)
+			return ">KILLED<"; //Somehow the player is in combat with no health. Lets correct that.
+		
+		attackAction = Math.round(Math.random() * 10);
+		
+		if (attackAction <= 6)
+			attackAction = 10;
+		if (attackAction >= 7 && attackAction <= 8)
+			attackAction = 11;
+		if (attackAction == 9)
+			attackAction = 12;
+		
+		//NPCs need weapons, work on that later
+		
+		switch (attackAction) {
+		case 10:
+			//Strike
+			if (grabbedPC) {
+				//NPC has a hold of the player, crush
+				damage = rollDie(roomNPC.strength());
+				
+				if (damage < 1)
+					damage = roomNPC.strength(); //minimum damage
+				
+				damage = damage - playerCharacter.equipArmObj.defend; //Player's armor eats damage
+				if (playerCharacter.hasPerk("narmor1")) {
+					damage -= 10;
+					if (damage <= 0)
+						fatAbsorbed = true;
+				}
+				if (playerCharacter.hasPerk("narmor2")) {
+					damage -= 10;
+					if (damage <= 0)
+						fatAbsorbed = true;
+				}
+				if (playerCharacter.hasPerk("narmor3")) {
+					damage -= 10;
+					if (damage <= 0)
+						fatAbsorbed = true;
+				}
+				if (damage <= 0 && !fatAbsorbed) {
+					message = "The [NPCNAME] squeezes you, but your armor blocks the damage.<br>";
+				} else if (damage <= 0 && fatAbsorbed) {
+					message = "The [NPCNAME] squeezes you, but your thick protective layer of fat absorbs the damage.<br>";
+				} else {
+					playerCharacter.healthCurr = playerCharacter.healthCurr - damage;
+					
+					message = "The [NPCNAME] squeezes you for " + damage + " damage.<br>";
+				}
+				
+				if (playerCharacter.healthCurr <= 0)
+					return ">KILLED<";
+			} else {
+				//if player isn't grabbed;
+				if (rollDie(roomNPC.agility() + roomNPC.skillMelee()) > rollDie(playerCharacter.agility() + playerCharacter.skillDodge())) {
+					//player hit
+					damage = rollDie(roomNPC.strength());
+					
+					if (damage < 1)
+						damage = roomNPC.strength(); //minimum damage
+					
+					damage = damage - playerCharacter.equipArmObj.defend; //Player's armor eats damage
+					if (playerCharacter.hasPerk("narmor1")) {
+						damage -= 10;
+						if (damage <= 0)
+							fatAbsorbed = true;
+					}
+					if (playerCharacter.hasPerk("narmor2")) {
+						damage -= 10;
+						if (damage <= 0)
+							fatAbsorbed = true;
+					}
+					if (playerCharacter.hasPerk("narmor3")) {
+						damage -= 10;
+						if (damage <= 0)
+							fatAbsorbed = true;
+					}
+					if (damage <= 0 && !fatAbsorbed) {
+						message = "The [NPCNAME] strikes you, but your armor blocks the damage.<br>";
+					} else if (damage <= 0 && fatAbsorbed) {
+						message = "The [NPCNAME] strikes you, but your thick protective layer of fat absorbs the damage.<br>";
+					} else {
+						playerCharacter.healthCurr = playerCharacter.healthCurr - damage;
+						
+						message = "The [NPCNAME] strikes you for " + damage + " damage.<br>";
+					}
+					
+					if (playerCharacter.healthCurr <= 0)
+						return ">KILLED<";
+				} else {
+					//player dodges
+					message += "The [NPCNAME] swings at you but you skillfully evade [POS] swing.<br>";
+					message += playerCharacter.advanceSkill(1, "agi");
+					message += playerCharacter.advanceSkill(1, "dodge");
+				}
+			}
+		case 11:
+			//Grab attempt
+			if (grabbedPC) {
+				//player grabbed, reroll
+				message = npcAttack();
+				return message;
+			} else {
+				if (rollDie(roomNPC.agility() + roomNPC.skillMelee()) > rollDie(playerCharacter.agility() + playerCharacter.skillDodge())) {
+					//player gets caught
+					message += "The [NPCNAME] lunges forward and grabs you tightly.<br>";
+					grabbedPC = true;
+				} else {
+					//player evades the grab
+					message += "The [NPCNAME] lunges forward but you evade [POS] grasp.<br>";
+					message += playerCharacter.advanceSkill(1, "agi");
+					message += playerCharacter.advanceSkill(1, "dodge");
+				}
+			}
+		case 12:
+			//Run attempt
+			if (grabbedPC) {
+				//player grabbed, let them go
+				message += "The [NPCNAME] releases you and steps back, ready for another attack.<br>";
+				grabbedPC = false;
+			} else {
+				if (rollDie(roomNPC.agility() + roomNPC.skillRun()) > rollDie(playerCharacter.agility() + playerCharacter.skillRun())) {
+					//NPC escapes
+					message = ">ESCAPE<";
+				} else {
+					//NPC fails to escape
+					message += "The [NPCNAME] turns and flees but you keep with [OBJ] until [SUBJ] stops and turns back towards you.<br>";
+				}
+			}
+		default:
+			message = "Error: bad attackAction value: " + attackAction + " in npcAttack<br>";
+		}
+		
+		return message;
 	}
 	
 	static function truncateDecimalPlaces(InVal:Float):String {
@@ -3303,107 +5562,6 @@ class Main {
 		}
 		
 		return numSucc;
-	}
-	
-	static function advanceSkill(advanceBy:Int, skill:String):String {
-		var skillOver:Float = -1;
-		var message:String = "";
-		
-		switch (skill) {
-		case "str":
-			playerCharacter.strNeededToUp -= advanceBy;
-		case "agi":
-			playerCharacter.agiNeededToUp -= advanceBy;
-		case "int":
-			playerCharacter.intNeededToUp -= advanceBy;
-		case "end":
-			playerCharacter.endNeededToUp -= advanceBy;
-		case "dodge":
-			playerCharacter.dodgeNeededToUp -= advanceBy;
-		case "run":
-			playerCharacter.runNeededToUp -= advanceBy;
-		case "melee":
-			playerCharacter.meleeNeededToUp -= advanceBy;
-		case "sneak":
-			playerCharacter.sneakNeededToUp -= advanceBy;
-		case "spot":
-			playerCharacter.spotNeededToUp -= advanceBy;
-		}
-		
-		if (playerCharacter.strNeededToUp <= 0) {
-			playerCharacter.str += 1;
-			playerCharacter.pointsSpent += 1;
-			skillOver = Math.abs(playerCharacter.strNeededToUp);
-			playerCharacter.strNeededToUp = Math.round((playerCharacter.str * 5) - skillOver);
-			message = "You feel stronger.</p><p>";
-		}
-		
-		if (playerCharacter.agiNeededToUp <= 0) {
-			playerCharacter.agi += 1;
-			playerCharacter.pointsSpent += 1;
-			skillOver = Math.abs(playerCharacter.agiNeededToUp);
-			playerCharacter.agiNeededToUp = Math.round((playerCharacter.agi * 5) - skillOver);
-			message += "You feel more agile.</p><p>";
-		}
-		
-		if (playerCharacter.endNeededToUp <= 0) {
-			playerCharacter.end += 1;
-			playerCharacter.healthMax += 2;
-			playerCharacter.healthCurr += 2;
-			playerCharacter.pointsSpent += 1;
-			skillOver = Math.abs(playerCharacter.endNeededToUp);
-			playerCharacter.endNeededToUp = Math.round((playerCharacter.end * 5) - skillOver);
-			message += "You feel tougher.</p><p>";
-		}
-		
-		if (playerCharacter.intNeededToUp <= 0) {
-			playerCharacter.int += 1;
-			playerCharacter.pointsSpent += 1;
-			skillOver = Math.abs(playerCharacter.intNeededToUp);
-			playerCharacter.intNeededToUp = Math.round((playerCharacter.int * 5) - skillOver);
-			message += "You feel smarter.</p><p>";
-		}
-		
-		if (playerCharacter.dodgeNeededToUp <= 0) {
-			playerCharacter.dodge++;
-			playerCharacter.pointsSpent++;
-			skillOver = Math.abs(playerCharacter.dodgeNeededToUp);
-			playerCharacter.dodgeNeededToUp = Math.round((playerCharacter.dodge * 5) - skillOver);
-			message += "You feel like you are better able to evade attacks.</p><p>";
-		}
-		
-		if (playerCharacter.runNeededToUp <= 0) {
-			playerCharacter.run++;
-			playerCharacter.pointsSpent++;
-			skillOver = Math.abs(playerCharacter.runNeededToUp);
-			playerCharacter.runNeededToUp = Math.round((playerCharacter.run * 5) - skillOver);
-			message += "You feel faster.</p><p>";
-		}
-		
-		if (playerCharacter.meleeNeededToUp <= 0) {
-			playerCharacter.melee++;
-			playerCharacter.pointsSpent++;
-			skillOver = Math.abs(playerCharacter.meleeNeededToUp);
-			playerCharacter.meleeNeededToUp = Math.round((playerCharacter.melee * 5) - skillOver);
-			message += "Your skill with weapons has improved.</p><p>";
-		}
-		
-		if (playerCharacter.sneakNeededToUp <= 0) {
-			playerCharacter.sneak++;
-			playerCharacter.pointsSpent++;
-			skillOver = Math.abs(playerCharacter.sneakNeededToUp);
-			playerCharacter.sneakNeededToUp = Math.round((playerCharacter.sneak * 5) - skillOver);
-			message += "You feel like you're able to move quieter.</p><p>";
-		}
-		
-		if (playerCharacter.spotNeededToUp <= 0) {
-			playerCharacter.spot++;
-			playerCharacter.pointsSpent++;
-			skillOver = Math.abs(playerCharacter.spotNeededToUp);
-			playerCharacter.spotNeededToUp = Math.round((playerCharacter.spot * 5) - skillOver);
-			message += "You feel more observant.</p><p>";
-		}
-		return message;
 	}
 	
 	static function convertTime(minutes:Int):String {
@@ -3599,6 +5757,8 @@ class Main {
 		switch (text) {
 		case "PCNAME":
 			parsedText = playerCharacter.name;
+		case "PCNAMEC":
+			parsedText = playerCharacter.name.toUpperCase();
 		case "PCSPECIESC":
 			parsedText = playerCharacter.species.name;
 		case "PCSPECIESL":
@@ -3652,7 +5812,7 @@ class Main {
 				parsedText = value;
 		
 		default:
-			parsedText = "{Unknown variable: " + text + "}";
+			parsedText = "[" + text + "]";
 		}
 		
 		return parsedText;
@@ -3687,19 +5847,22 @@ class Main {
 		var txtInt:Object = Lib.current.getChildByName("Intelligence");
 		var txtTime:Object = Lib.current.getChildByName("Time");
 		
+		if (playerCharacter.fat < 0)
+			playerCharacter.fat = 0;
+		
 		txtName.htmlText = "<body><font size = '" + globals.textSize + "'><p>" + playerCharacter.name + "</p></font></body>";
-		txtHealth.htmlText = "<body><font size = '" + globals.textSize + "'><p>Health: " + playerCharacter.healthCurr + "/" + playerCharacter.healthMax + "</p></font></body>";
+		txtHealth.htmlText = "<body><font size = '" + globals.textSize + "'><p>Health: " + playerCharacter.healthCurr + "/" + playerCharacter.health() + "</p></font></body>";
 		txtStomach.htmlText = "<body><font size = '" + globals.textSize + "'><p>Fullness: " + Math.round(playerCharacter.stomachCurrent) + "/" + Math.round(playerCharacter.stomachCap) + "</p></font></body>";
-		txtWeight.htmlText = "<body><font size = '" + globals.textSize + "'><p>Weight: " + Math.round(playerCharacter.weight) + "lbs</p></font></body>";
+		txtWeight.htmlText = "<body><font size = '" + globals.textSize + "'><p>Weight: " + truncateDecimalPlaces(playerCharacter.totalWeight()) + "lbs</p></font></body>";
 		txtFat.htmlText = "<body><font size = '" + globals.textSize + "'><p>Fatness: " + playerCharacter.fat + "</p></font></body>";
-		txtMoney.htmlText = "<body><font size = '" + globals.textSize + "'><p>$" + playerCharacter.money + "</p></font></body>";
-		txtStr.htmlText = "<body><font size = '" + globals.textSize + "'><p>Strength: " + playerCharacter.str + "</p></font></body>";
-		txtAgi.htmlText = "<body><font size = '" + globals.textSize + "'><p>Agility: " + playerCharacter.agi + "</p></font></body>";
-		txtEnd.htmlText = "<body><font size = '" + globals.textSize + "'><p>Endurance: " + playerCharacter.end + "</p></font></body>";
-		txtInt.htmlText = "<body><font size = '" + globals.textSize + "'><p>Intelligence: " + playerCharacter.int + "</p></font></body>";
+		txtMoney.htmlText = "<body><font size = '" + globals.textSize + "'><p>$" + playerCharacter.getMoney() + "</p></font></body>";
+		txtStr.htmlText = "<body><font size = '" + globals.textSize + "'><p>Strength: " + playerCharacter.strength() + "</p></font></body>";
+		txtAgi.htmlText = "<body><font size = '" + globals.textSize + "'><p>Agility: " + playerCharacter.agility() + "</p></font></body>";
+		txtEnd.htmlText = "<body><font size = '" + globals.textSize + "'><p>Endurance: " + playerCharacter.endurance() + "</p></font></body>";
+		txtInt.htmlText = "<body><font size = '" + globals.textSize + "'><p>Intelligence: " + playerCharacter.intelligence() + "</p></font></body>";
 		
 		if (globals.allowSex)
-			txtArousal.htmlText = "<body><font size = '" + globals.textSize + "'><p>Arousal: " + playerCharacter.arousal + "%</p></font></body>";
+			txtArousal.htmlText = "<body><font size = '" + globals.textSize + "'><p>Arousal: " + truncateDecimalPlaces(playerCharacter.arousal) + "%</p></font></body>";
 		if (globals.allowScat)
 			txtBowels.htmlText = "<body><font size = '" + globals.textSize + "'><p>Bowels: " + Math.round(playerCharacter.bowelsCurrent) + "/" + Math.round(playerCharacter.bowelsCap) + "</p></font></body>";
 		var displayMin:String = ":" + playerCharacter.minute;
@@ -3767,12 +5930,13 @@ class Main {
 		txtPublic = new TextField();
 		txtPublic.name = "Public";
 		txtPublic.x = 676;
-		txtPublic.y = 11;
+		txtPublic.y = 12;
 		txtPublic.width = 34;
 		txtPublic.height = 26;
 		txtPublic.border = false;
 		txtPublic.text = "Public";
 		txtPublic.visible = false;
+		txtPublic.background = true;
 		
 		var txtOutput:TextField = new TextField();
 		txtOutput.name = "Output Field";
@@ -3970,12 +6134,13 @@ class Main {
 		var txtTime:TextField = new TextField();
 		txtTime.name = "Time";
 		txtTime.x = 590;
-		txtTime.y = 460;
+		txtTime.y = 458;
 		txtTime.width = 200;
 		txtTime.height = 22;
 		txtTime.htmlText = "Time";
 		txtTime.selectable = false;
 		txtTime.visible = false;
+		txtTime.background = true;
 
 		txtName.setTextFormat(charNameFormat);
 		txtHealth.setTextFormat(labelFormat);
@@ -4022,24 +6187,32 @@ class Main {
 		
 		charDesc = new MyButton(720, 300);
 		optionsBtn = new MyButton(720, 335);
+		btnDebugDump = new MyButton(720, 265);
+		
+		btns[0].addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, reportError);
 		
 		charDesc.name = "Desc Button";
 		optionsBtn.name = "Options Button";
 		
 		charDesc.setButton("Description", null, 0);
 		optionsBtn.setButton("Options");
+		btnDebugDump.setButton("Data Dump", null, null, debugDump);
 		
 		charDesc.addEventListener(MouseEvent.CLICK, doDescription);
 		optionsBtn.addEventListener(MouseEvent.CLICK, optionsScreen);
 		
 		charDesc.visible = false;
 		optionsBtn.visible = false;
+		btnDebugDump.visible = false;
 	}
 	
 	static function initialize() {
 		var allSpecies:Array<Dynamic> = new Array();
 		var perks:Array<Dynamic> = new Array();
 		var characters:Array<Dynamic> = new Array();
+		var weapons:Array<Dynamic> = new Array();
+		var armor:Array<Dynamic> = new Array();
+		var ring:Array<Dynamic> = new Array();
 		
 		quests = new Array();
 		globals = new GlobalVars();
@@ -4053,6 +6226,9 @@ class Main {
 		AMFConnection.registerClassAlias("consume.NPCObject", MyNPC);
 		AMFConnection.registerClassAlias("consume.keyObject", MyItem_Key);
 		AMFConnection.registerClassAlias("consume.weaponObject", MyItem_Weapon);
+		AMFConnection.registerClassAlias("consume.fileSaveObject", MyFileSaveObject);
+		AMFConnection.registerClassAlias("consume.armorObject", MyItem_Armor);
+		AMFConnection.registerClassAlias("consume.ringObject", MyItem_Ring);
 		
 		//Species, both playable and non
 		species = new Array();
@@ -4079,59 +6255,47 @@ class Main {
 		//Perks, even hidden ones
 		globals.perks = new Array();
 		
-		//			Name		Display Name		Description															Effect				Buyable, if false the perk can only be granted by an event. Not bought.
-		perks.push(["comps",    "Compressable",		"You can cram your body through any opening, no matter how small.", "DOOR:YES",			true]);
+		//			Name		Display Name		Description															Effect				Buyable, if false the perk can only be granted by an event. Not bought.  Multiple levels
+		perks.push(["comps",    "Compressable",		"You can cram your body through any opening, no matter how small.", "DOOR:YES",			true,		false]);
 		
-		perks.push(["ineat",	"Inedible",			"You cannot be eaten.",												"EATEN:NO",			true]);
-		perks.push(["nskinny",	"Naturally Skinny",	"Burn fat at an increased rate.",									"FAT:-10",				true]);
-		perks.push(["nchubby",	"Naturally Chubby", "Gain more fat from food.",											"FAT:*2",				true]);
-		perks.push(["narmor1",	"Natural Armor 1",	"Gain 10 armor as long as you have at least 100 fat.",				"IF(FAT>100)|ARMOR:+10", true]);
-		perks.push(["narmor2",	"Natural Armor 2",	"Gain an additional 10 armor as long as you are over 200 fat.", 	"IF(FAT>200)|ARMOR:+10", false]);
-		perks.push(["narmor3",  "Natural Armor 3",  "Gain an additional 10 armor as long as you are over 300 fat.", 	"IF(FAT>300)|ARMOR:+10", false]);
-		perks.push(["bellyb",	"Belly Bash",		"Gain a bash attack with your stomach as long as it contains at least 100 mass of prey.",	"IF(STOMACH>100)|BASH:10", true]);
-		perks.push(["httr",		"Heavy Hitter",		"Deal more damage in combat with melee attacks.",					"ATTACK:+10",			true]);
-		perks.push(["fstm",		"Fast Metabolism",	"Heal faster while you have prey in your stomach.",					"DIGESTHEAL:+10",		true]);
-		perks.push(["clctr",	"Collector",		"More likely to find items on defeated (or eaten) foes.",			"ITEMCHANCE:+10",		true]);
-		perks.push(["bigbly1",	"Big Belly 1",		"Even when empty, your belly is bigger than most.",					"BELLYSIZE:+100",		true]);
-		perks.push(["bigbly2",	"Big Belly 2",		"Your empty belly is even bigger.",									"BELLYSIZE:+100",		false]);
-		perks.push(["bigbly3",	"Big Belly 3",		"Your belly is always massive, full or empty.",						"BELLYSIZE:+100",		false]);
-		perks.push(["mtn",		"The Mountian",		"When rendered immobile you cannot be attacked.", 					"IF(IMMOBLE)|ATTACK:NO", true]);
-		perks.push(["pit",		"Bottomless Pit",	"You are always hungry and can continue to consume prey even when immoble.", "IF(IMMOBLE)|EAT:YES", true]);
-		perks.push(["bgbst1",	"Big Breasts 1",	"Your breasts are larger than most.",								"BREASTSIZE:+4",		true]);
-		perks.push(["bgbst2",	"Big Breasts 2",	"Your breasts are much larger than most.",							"BREASTSIZE:+4",		false]);
-		perks.push(["bgbst3",	"Big Breasts 3",	"Your breasts are massive.",										"BREASTSIZE:+4",		false]);
-		perks.push(["bgcok1",	"Big Cock 1",		"Your penis is bigger than most.",									"PENISLENGTH:+4 PENISWIDTH:+4",	true]);
-		perks.push(["bgcok2",	"Big Cock 2",		"Your penis is much larger than most.",								"PENISLENGTH:+10 PENISWIDTH:+6",	false]);
-		perks.push(["bgcok3",	"Big Cock 3",		"Your penis is massive.",											"PENISLENGTH:+15 PENISWIDTH:+10",	false]);
-		perks.push(["bgbls1",	"Big Balls 1",		"Your balls are larger than most.",									"BALLSIZE:+4",			true]);
-		perks.push(["bgbls2",	"Big Balls 2",		"Your balls are much larger than most.",							"BALLSIZE:+6",			false]);
-		perks.push(["bgbls3",	"Big Balls 3",		"Your balls are massive.",											"BALLSIZE:+10",			false]);
-		perks.push(["hpr1",		"Hyper 1",			"Your everything is bigger than most.",								"BELLYSIZE:+200 BREASTSIZE:+6 PENISLENGTH:+6 PENISWIDTH:+4 BALLSIZE:+8", true]);
-		perks.push(["hpr2",		"Hyper 2",			"Every part of you is simply massive.",								"BELLYSIZE:+400 BREASTSIZE:+12 PENISLENGTH:+12 PENISWIDTH:+6 BALLSIZE:+18", false]);
-		perks.push(["hpr3",		"Hyper 3",			"You are bigger than most buildings.",								"BELLYSIZE:+600 BREASTSIZE:+18 PENISLENGTH:+20 PENISWIDTH:+10 BALLSIZE:+24", false]);
-		perks.push(["inbal",	"Internal Balls",	"You make cum, despite not having hanging balls.",					"CUM:YES",				true]);
-		perks.push(["mulbo1",	"Multiboob 1",		"You have an additional pair of breasts.",							"BREASTS:+2",			true]);
+		perks.push(["ineat",	"Inedible",			"You cannot be eaten.",												"EATEN:NO",			true,		false]);
+		perks.push(["nskinny",	"Naturally Skinny",	"Burn fat at an increased rate.",									"FAT:-10",				true,	true]);
+		perks.push(["nchubby",	"Naturally Chubby", "Gain more fat from food.",											"FAT:*2",				true,   true]);
+		perks.push(["narmor",	"Natural Armor",	"Gain 10 armor as long as you have at least 100 fat.",				"IF(FAT>100)|ARMOR:+10", true,  true]);
+		perks.push(["bellyb",	"Belly Bash",		"Gain a bash attack with your stomach as long as it contains at least 100 mass of prey.",	"IF(STOMACH>100)|BASH:10", true, false]);
+		perks.push(["httr",		"Heavy Hitter",		"Deal more damage in combat with melee attacks.",					"ATTACK:+10",			true,   true]);
+		perks.push(["fstm",		"Fast Metabolism",	"Heal faster while you have prey in your stomach.",					"DIGESTHEAL:+10",		true,   true]);
+		perks.push(["clctr",	"Collector",		"More likely to find items on defeated (or eaten) foes.",			"ITEMCHANCE:+10",		true,   false]);
+		perks.push(["bigbly",	"Big Belly",		"Even when empty, your belly is bigger than most.",					"BELLYSIZE:+100",		true,   true]);
+		perks.push(["mtn",		"The Mountian",		"When rendered immobile you cannot be attacked.", 					"IF(IMMOBLE)|ATTACK:NO", true,  false]);
+		perks.push(["pit",		"Bottomless Pit",	"You are always hungry and can continue to consume prey even when immoble.", "IF(IMMOBLE)|EAT:YES", true, false]);
+		perks.push(["bgbst",	"Big Breasts",		"Your breasts are larger than most.",								"BREASTSIZE:+4",		true,   true]);
+		perks.push(["bgcok",	"Big Cock",			"Your penis is bigger than most.",									"PENISLENGTH:+6 PENISWIDTH:+2",	true, true]);
+		perks.push(["bgbls",	"Big Balls",		"Your balls are larger than most.",									"BALLSIZE:+4",			true,   true]);
+		perks.push(["hpr",		"Hyper",			"Your everything is bigger than most.",								"BELLYSIZE:+200 BREASTSIZE:+6 PENISLENGTH:+6 PENISWIDTH:+4 BALLSIZE:+8", true, true]);
+		perks.push(["inbal",	"Internal Balls",	"You make cum, despite not having hanging balls.",					"CUM:YES",				true,   false]);
+		perks.push(["mulbo",	"Multiboob",		"You have an additional pair of breasts.",							"BREASTS:+2",			true,   true]);
 		
-		perks.push(["mulcoc1",	"Multicock 1",		"You have an additional cock.",										"PENIS:+1",				true]);
+		perks.push(["mulcoc",	"Multicock",		"You have an additional cock.",										"PENIS:+1",				true,   true]);
 		
-		perks.push(["mscl1",	"Big Muscles 1",	"Your muscles are naturally big.",									"MUSCLES:+5",			true]);
+		perks.push(["mscl",		"Big Muscles",		"Your muscles are naturally big.",									"MUSCLES:+5",			true,   true]);
 		
-		perks.push(["afem",		"Always Female",	"You will always be referred to in the femmine, reguardless of genitalia.", "GENDER:Female", true]);
-		perks.push(["amale",	"Always Male",		"You will always be referred to in the masculane, reguardless of genitalia.", "GENDER:Male", true]);
-		perks.push(["aherm",	"Always Herm",		"You will always be referred to in the hermaphroditic, reguardless of genitalia.", "GENDER:Herm", true]);
+		perks.push(["afem",		"Always Female",	"You will always be referred to in the femmine, reguardless of genitalia.", "GENDER:Female", true,  false]);
+		perks.push(["amale",	"Always Male",		"You will always be referred to in the masculane, reguardless of genitalia.", "GENDER:Male", true,  false]);
+		perks.push(["aherm",	"Always Herm",		"You will always be referred to in the hermaphroditic, reguardless of genitalia.", "GENDER:Herm", true, false]);
 		
 		
-		perks.push(["taur",		"Taur",				"You have the elongated lower half of a taur.",						"TAUR WEIGHT:+100 STOMACHCAP:+100 IMMOBILE:-100", true]);
+		perks.push(["taur",		"Taur",				"You have the elongated lower half of a taur. Not Implamented.",	"TAUR WEIGHT:+100 STOMACHCAP:+100 IMMOBILE:-100", true, false]);
 		
-		perks.push(["dbg1",		"DEBUG1 -- Huge",	"For debugging only; hugeness -- Warning may cause problems, enable at own risk", "BREASTSIZE:+24 BELLYSIZE:+65000 BALLSIZE:+24 PENISLENGTH:+50 PENISWIDTH:+45",	true]);
+		perks.push(["dbg1",		"DEBUG1 -- Huge",	"For debugging only; hugeness -- Warning may cause problems, enable at own risk", "BREASTSIZE:+24 BELLYSIZE:+65000 BALLSIZE:+24 PENISLENGTH:+50 PENISWIDTH:+45",	true, false]);
 		
 		
 		
 		//vore types
-		perks.push(["cv",	"Cock Vore",	"Consume prey using your cock and turn them into cum.",		"COCKVORE",		false]);
-		perks.push(["bv",	"Breast Vore",	"Consume prey using your breasts and turn them into milk.",	"BREASTVORE",	false]);
-		perks.push(["av",	"Anal Vore",	"Consume prey using your butt, then digest them.",			"ANALVORE",		false]);
-		perks.push(["ub",	"Unbirth",		"Consume prey using your vagina, then absorb them.",		"UNBIRTH",		false]);
+		perks.push(["cv",	"Cock Vore",	"Consume prey using your cock and turn them into cum.",		"COCKVORE",		false, false]);
+		perks.push(["bv",	"Breast Vore",	"Consume prey using your breasts and turn them into milk.",	"BREASTVORE",	false, false]);
+		perks.push(["av",	"Anal Vore",	"Consume prey using your butt, then digest them.",			"ANALVORE",		false, false]);
+		perks.push(["ub",	"Unbirth",		"Consume prey using your vagina, then absorb them.",		"UNBIRTH",		false, false]);
 		//other types?
 		
 		for (i in 0...perks.length) {
@@ -4190,7 +6354,7 @@ class Main {
 		globals.exits[41] = ["Office",			false,	0,			0,			30,				5,			50,			86];
 		globals.exits[42] = ["Warehouse",		false,	0,			0,			31,				5,			55,			84,		null,	null,	5];
 		globals.exits[43] = ["Storefront",		false,	0,			0,			19,				5,			55,			84];
-		
+		globals.exits[44] = ["Backroom",		false,	0,			0,			32,				10,			55,			84];
 		
 		
 		// Rooms
@@ -4213,7 +6377,7 @@ class Main {
 		globals.rooms[14] = ["Consume - Balcony",		null,	null,	14,		20,		null,	null,	null,	null,	[0],		false,		true,		null,		"An open sided stair leads to a balcony overlooking the dance floor. A number of tables and chairs scattered in groups cover the area and some clever acoustics mute enough of the music to allow for conversation. There are a few groups up here enjoying the relative quiet. Some of them are doing more then just talking. There is a door in the back wall, marked &quot;Lounge&quot;. It's guarded by another of the club's bouncers."];
 		globals.rooms[15] = ["Consume - Lounge",		null,	null,	null,	null,	19,		null,	null,	null,	[0],		true,		true,		null,		"The predator's lounge is a large dark room. Several groups of chairs and couches are arranged around the room allowing predators a place to sit and digest. A number of preds are taking advantage of this, large bellies resting on tables or other rests designed for such use. In the back of the room, under a large light that's giving most of the illumination in the room, sits a poker table. It is currently unoccupied."];
 		globals.rooms[16] = ["North Main Street",		null,	23,		null,	28,		26,		null,	7,		null,	[0],		false,		true,		null,		"What is probably best referred to as the town's market district. It's rather depressing really, there is only a single general store here, located in a tiny building to the east. Across the street to the west is a modern gym, you've never gone inside it before, but perhaps now it would be worth it to take a peek inside. North of here the road heads out of town eventually leading to the highway and the rest of the country. Before it gets that far, and still within walking distance, sits the town's hospital."];
-		globals.rooms[17] = ["Hospital - Waiting Room",	null,	null,	null,	null,	24,		null,	22,		null,	[0],		true,		true,		null,		"A typical hospital waiting area, the reception desk is always occupied by someone looking tired and slightly haggard. You idly wonder if the expression comes with the job, or if it's the other way around. There isn't much to see or do here other then wait, the staff isn't going to let you any deeper into the hospital unless there's something wrong with you."];
+		globals.rooms[17] = ["Hospital - Waiting Room",	null,	null,	null,	44,		24,		null,	22,		null,	[0],		true,		true,		null,		"A typical hospital waiting area, the reception desk is always occupied by someone looking tired and slightly haggard. You idly wonder if the expression comes with the job, or if it's the other way around. There isn't much to see or do here other then wait, the staff isn't going to let you any deeper into the hospital unless there's something wrong with you."];
 		globals.rooms[18] = ["Hospital - Pharmacy",		null,	null,	null,	25,		null,	null,	null,	null,	[0],		false,		true,		null,		"The pharmacy counter of the local hospital, the steel cage keeping random people out is closed and no one seems to be around at the moment. Looks like the pharmacist is out at the moment."];
 		globals.rooms[19] = ["General Store",			null,	null,	null,	27,		null,	null,	42,		null,	[3, [2, "general"]], false,	true,	6,			"The array of junk occupying this store is truly impressive. You feel that, had you the time and desire, you could find some truly remarkable things here. Alas the haphazard piles and disorganized clutter make you fear for your safety as you navigate to the counter."];
 		globals.rooms[20] = ["Gym - Reception",			null,	null,	null,	29,		27,		null,	null,	null,	[3],		false,		true,		1,			"The reception room of this gym is comfortable and modern. Several comfortable looking chairs wait to either side, with a reception desk at the end of the room. A door next to the desk is marked &quot;Members Only&quot; and seems to lead into the main workout area, visible from outside though the large floor to ceiling windows along the street facing wall. A keycard reader next to the door ensures only those with the proper access can get in the building."];
@@ -4228,6 +6392,7 @@ class Main {
 		globals.rooms[29] = ["Ice Cream Shop - Restroom", null,	null,	null,	null,	null,	null,	37,		null,	[5],		true,		true,		null,		"A standard single-occupancy restroom. The door locks."];
 		globals.rooms[30] = ["Ice Cream Shop - Office",	null,	null,	null,	37,		null,	null,	null,	null,	[0],		false,		false,		null,		"While you worked here you were never allowed into this room, you were pretty sure it was just an office since Bessie was usually in here when she was at the shop at all. Now that you can get in here you see that you were mostly correct. The area right inside the door looks like your typical office, a desk sits facing the door and covered in papers and files. An old computer monitor takes up one corner of the desk. You're pretty sure there's a keyboard somewhere under the papers, but you'd have to dig to find it. A pair of filing cabinets rest against the back wall, flanking the desk to either side.</p><br><p>Where the idea of a typical office breaks down is the area to the left of the desk. A raised lip separates the two areas and probably helps keep any spills from reaching the office or escaping out the door. The floor is tiled and gently slops towards the center where a drain is placed in the floor. Slightly offset from the center is a large wooden chair. It looks vaguely like a toilet, with a hole cut in the seat, but is lacking a bowl or tank. Instead it has long, very solid arms with straps hanging off them. The legs likewise have straps placed to go around the occupant's ankles. Behind the chair on a complicated hinge system is what appears to be an automatic milking machine, it looks like it can be moved over the chair and positioned in front of who ever is sitting in the chair. The hoses run to the far corner of the room where a large tank waits to be filled, there's also a machine next to the tank labeled 'Automatic Ice Cream Maker v2.0'"];
 		globals.rooms[31] = ["General Store - Warehouse", null, 43,		null,	null,	null,	null,	null,	null,	[4],		true,		false,		null,		"A massive warehouse under the main shop filled with more stuff then you could possibly sort through in several lifetimes."];
+		globals.rooms[32] = ["Hospital - Backroom",		null,	null,	null,	null,	25,		null,	null,	null,	[11],		true,		false,		null,		"A small room tucked away in the back of the hospital, almost a closet. The only item of note in here is a small machine, examining it closely it seems like you can use it to gain new perks for a small fee."];
 		
 		
 		
@@ -4249,16 +6414,72 @@ class Main {
 		
 		//Food
 		globals.food = new Array();
-		globals.food[0] = new MyItem_Food();
-		globals.food[0].new_food("Cheeseburger", 5, 2, "A thick greesy cheeseburger");
+		var foods:Array<Dynamic> = new Array();
+		
+		//          Name    Mass  Value   Description                    Healing value   Consume String
+		foods.push(["Cheeseburger", 5, 2, "A thick greesy cheeseburger", ["heal|.1"], "Cheeseburger eat"]);
+		foods.push(["Apple", 3, 5, "A ripe healthy apple", ["heal|.3"], "Apple eat"]);
+		foods.push(["Cherry Pie", 10, 5, "A large cherry pie", ["heal|.2"], "Cherry pie eat"]);
+		foods.push(["Chocolate Cake", 20, 7, "A huge chocolate cake, you're not really going to eat the whole thing are you?", ["heal|.01"], "Chocolate cake eat"]);
+		foods.push(["BouncyButt", 5, 1, "A popular 'health' drink. It's basically just sugar and water.", ["heal|.05"], "You crack the top open on the bottle of BouncyButt and drink it down. It tastes mostly like water with just a little flavoring, though you can't quite pin down what it's supposed to be. You do feel a little better after drinking it. Curious you shake your butt a little, disappointed as you don't seem to have any more bounce then you did before."]);
+		foods.push(["BouncyButt+", 5, 250, "A bottle of a popular 'health' drink, BouncyButt, that has been modified in some way.", ["heal|.05", "butt|1"], "You crack the top open on the bottle of BouncyButt and drink it down. It tastes mostly like water with just a little flavoring, though you can't quite pin down what it's supposed to be. You do feel a little better after drinking it. Curious you shake your butt a little and find there's just a little more bounce then there was before."]);
+		
+		
+		for (i in 0...foods.length) {
+			if (foods[i] != null) {
+				globals.food.push(new MyItem_Food());
+				globals.food[globals.food.length - 1].newFood(foods[i]);
+			}
+		}
 		
 		//Weapons
 		globals.weapons = new Array();
-		globals.weapons[0] = new MyItem_Weapon();
-		globals.weapons[0].newWeapon("Unarmed", 0, 0, "Your bare hands.", 0, true);
+		//Weapons    Name           Mass Value Desc                                   Attack TwoHand Finisher Specials
+		weapons.push(["Fists",        0,    0,  "Your bare hands.",                     0,    true,  "You snap the [NPCNAME]'s neck, finishing [OBJ] off.<br>",    null]);
+		weapons.push(["Knife",        3,    1, "A basic knife, used for cooking.",      2,    false, null,    null]);
+		weapons.push(["Short Sword",  5,    5, "A short blade, made for combat.",       4,    false, null,    null]);
+		weapons.push(["Curved Sword", 6,   10, "A curved balde, popular in the east.",  6,    false, null,    null]);
+		weapons.push(["Longsword",   10,   15, "A heavy knight's weapon.",             10,    true,  null,    null]);
+		weapons.push(["Hammer",       5,   11, "A workman's tool.",                     3,    false, null,    null]);
+		weapons.push(["Sledge",      20,   15, "A heavy hammer made for breaking rocks.", 6,  true,  null,    null]);
 		
+		for (i in 0...weapons.length) {
+			if (weapons[i] != null) {
+				globals.weapons.push(new MyItem_Weapon());
+				globals.weapons[globals.weapons.length - 1].newWeapon(weapons[i]);
+			}
+		}
 		//Armor
 		
+		globals.armor = new Array();
+		//Armor     Name   Mass  Value  Desc               Def  Special
+		armor.push(["Skin", 0,     0,   "Your naked flesh", 0,   null]);
+		armor.push(["Leather Jacket", 5, 10, "A thick leather biker's jacket. Not really intended for combat.", 2, null]);
+		armor.push(["Armored Coat", 7, 15, "A heavy leather coat reinforced with hard plastic panels.", 7, null]);
+		armor.push(["Breastplate", 20, 20, "A solid peice of shaped metal. Heavy, but good protection.", 10, null]);
+		
+		for (i in 0...armor.length) {
+			if (armor[i] != null) {
+				globals.armor.push(new MyItem_Armor());
+				globals.armor[globals.armor.length - 1].newArmor(armor[i]);
+			}
+		}
+		
+		globals.rings = new Array();
+		
+		ring.push(["Gold Ring", 0, 50, "A small gold ring."]);
+		ring.push(["Silver Ring", 0, 25, "A small silver ring."]);
+		ring.push(["Electrum Ring", 0, 30, "A small electrum ring."]);
+		ring.push(["Silver Ruby Ring", 0, 50, "A small silver ring set with a professionally cut ruby."]);
+		ring.push(["Gold Ruby Ring", 0, 75, "A small gold ring set with a professionally cut ruby."]);
+		ring.push(["Electrum Ruby Ring", 0, 55, "A small electrum ring set with a professionally cut ruby."]);
+		
+		for (i in 0...ring.length) {
+			if (ring[i] != null) {
+				globals.rings.push(new MyItem_Ring());
+				globals.rings[globals.rings.length - 1].newRing(ring[i]);
+			}
+		}
 		//Shoplists
 		
 		/* Shop format
@@ -4270,7 +6491,7 @@ class Main {
 		 */
 		
 		var genShop:Array<Dynamic> = new Array();
-		genShop[0] = globals.food[0];
+		genShop = ["food|0", "food|1"]; //Item IDs for the items that are to be sold in the shop
 		
 		
 		globals.shopLists = new Array();
@@ -4286,7 +6507,7 @@ class Main {
 		quests[4] = ["cv",		"Pleasing The Wolf", false,		["", "You tried to slip past the bouncer, it wasn't a good idea."], null];
 		quests[5] = ["milk",	"Milking the Cow",	false,		["", "Tweaked her nipple", "Drunk after tweaking", "Milked her", "Agreed to help with her machine", "Heard instructions on using the chair", "Bessie is in the chair", "Eaten"]];
 		quests[6] = ["job",		"Part Time Job",	false,		["You need one", "Accecpted the job in the general store"], null];
-		
+		quests[7] = ["foxboi",	"Guffin's Fate",	true,		["", "You've been fucking Guffin", "You've eaten Guffin. He was as tasty as you'd hoped."], null];
 		
 		
 		
@@ -4330,11 +6551,13 @@ class Main {
 		annTalk[3] = ["You grin and mention you're a little hungry. She looks puzzled for a moment then blushes, &quot;You want to eat me?&quot; She shifts nervously, her eyes darting around. &quot;You really don't. I can't imagine I taste very good, I'm all skin and bones after all!&quot; She laughs nervously and fidgets some more.", ["talk"], [["Go in?", "Ask if you can go inside", 1], ["Gold", "Ask about the Gold membership", 10], ["Name?", "Ask the perky girl her name", 2], ["Leave", " ", -1]]];
 		annTalk[4] = ["You agree to sign up, the perky receptionist takes down your name and a few other random details from you and fills out a form which she has you sign. After which she hands you a card, still warm from the little printer behind her station, it has your name and Basic Membership written on it as well as a barcode. &quot;Just slide that through the door over there and you'll automatically be charged and the door will open! Enjoy!&quot;", ["quest 2|value 1|action set|key 0|action giveKey"], [["Done", " ", -1]]];
 		annTalk[5] = ["You ask if you can head inside and the receptionist smiles, &quot;Just swipe your card through the reader, the door will open for you. You don't need to talk to be every time you come inside, unless you really want to anyway.&quot;", ["talk"], [["Gold", "Ask about the Gold membership", 10], ["Name?", "Ask the perky girl her name", 2], ["Eat", "Ask if you can eat her.", 3], ["Leave", " ", -1]]];
-		annTalk[6] = ["You ask the receptionist about gold memberships and she smiles, &quot;You're in luck actually, we just had a gold membership open up! If you'd like to purchase it I'd be more then happy to get you set up!&quot; She bounces a little as she talks, it would seem she's rather excited about the idea. &quot;Just so you're aware, the Gold membership is a one time fee of $2000. I know that sounds super high, but you don't have to pay for daily use of the gym anymore <i>and</i> you get access to our special Gold room! So, are you interested?&quot;", ["talk"], [["Buy", "Sign up for the exclusive Gold Gym membership", 8], ["Maybe Later", "Think about it and come back later", -1]]];
+		annTalk[6] = ["You ask the receptionist about gold memberships and she smiles, &quot;You're in luck actually, we just had a gold membership open up! If you'd like to purchase it I'd be more then happy to get you set up!&quot; She bounces a little as she talks, it would seem she's rather excited about the idea. &quot;Just so you're aware, the Gold membership is a one time fee of $2000. I know that sounds super high, but you don't have to pay for daily use of the gym anymore <i>and</i> you get access to our special Gold room! So, are you interested?&quot;", ["quest 2|value 2|skip 12|action skip"], [["Buy", "Sign up for the exclusive Gold Gym membership", 8], ["Maybe Later", "Think about it and come back later", -1]]];
 		annTalk[7] = ["She giggles, &quot;Don't get me wrong, I like it when you stop by and talk with me, but you don't need to check with me every time you visit. The keypad there by the door will let you in.&quot; She waves towards it.", ["talk"], [["Gold", "Ask about the Gold membership", 10], ["Name?", "Ask the perky girl her name", 9], ["Eat", "Ask if you can eat her", 10], ["Leave", " ", -1]]];
-		annTalk[8] = ["You agree to buy a gold membership, eager to use some of those machines you caught a glimpse of. The receptionist smiles as you hand over the money. She pulls a tablet out of her booth and makes a few notes on it, the money vanishing somewhere behind it at the same time. When she's done she looks up smiling, &quot;All set! You should be good to go right now if you'd like! Enjoy!&quot;", ["quest 2|money 2000|skip 9|action check"], [["Next", null, -1]]];
+		annTalk[8] = ["You agree to buy a gold membership, eager to use some of those machines you caught a glimpse of. The receptionist smiles as you hand over the money. She pulls a tablet out of her booth and makes a few notes on it, the money vanishing somewhere behind it at the same time. When she's done she looks up smiling, &quot;All set! You should be good to go right now if you'd like! Enjoy!&quot;", ["quest 2|money 2000|skip 9|action check"], [["Next", null, 11]]];
 		annTalk[9] = ["You agree to buy a gold membership, eager to use some of those machines you caught a glimpse of. When you check your wallet however you discover that you're a little short of the $2000 fee. You smile sheepishly and promise you'll come back soon. &quot;Ok, hurry though.&quot; The receptionist makes a note as she talks, &quot;These memberships don't usually stay available for long.&quot;", ["talk"], [["Go in?", "Ask if you can go inside", 1], ["Name?", "Ask the perky girl her name", 2], ["Eat", "Ask if you can eat her", 3], ["Leave", " ", -1]]];
 		annTalk[10] = ["You ask the receptionist about gold memberships, she frowns a little and shakes hear head, &quot;Sorry, we don't have any avalible right now. Check back soon though, I'm sure one will open up soon!", ["quest 2|value 1|skip 6|action skip"], [["Go in?", "Ask if you can go inside", 1], ["Name?", "Ask the perky girl her name", 2], ["Eat", "Ask if you can eat her", 3], ["Leave", " ", -1]]];
+		annTalk[11] = ["Smiling happily Ann finishes up. &quot;Enjoy your Gold Membership!&quot;", ["quest 2|value 3|action set|key 1|action giveKey"], [["Leave", null, -1]]];
+		annTalk[12] = ["Ann giggles, &quot;Silly [PCSPECIESL], you already are a Gold Member! And don't worry, the membership is for life.&quote;", ["talk"], [["Go in?", "Ask if you can go inside", 1], ["Name?", "Ask the perky girl her name", 2], ["Eat", "Ask if you can eat her", 3], ["Leave", " ", -1]]];
 		
 		//Shay
 		var shayTalk:Array<Dynamic> = new Array();
@@ -4342,7 +6565,7 @@ class Main {
 		shayTalk[1] = ["You return Shay's greeting and he grins happily, &quot;Always nice to see a new face. Be careful, some of these machines are a little questionable, you might need to take it easy with them. If you have any questions let me know, I'll be around.&quot; He then steps past you and out the door.", ["quest 2|value 4|action set"], [["Well then", "Well, that was abrupt.", -1]]];
 		shayTalk[2] = ["You find Shay leaning against one of the machines, he grins as you look him over. &quot;Hello again, sorry about rushing out last time, had a few things to take care of. I've got some time now though if you want to talk.&quot;", ["talk"], [["Gold Room", "Ask about the gold room.", 3], ["Him", "Ask about him.", 8], ["Nothing", "Nothing to ask about.", -1]]];
 		shayTalk[3] = ["Curious you ask Shay about the machines in this room, he grins as he looks around, a clear sense of pride as he eyes the room, &quot;You like them? Most of these I made myself. I'm still tweaking them a little, that's the reason we don't let many people in here. Wouldn't want to have the machines break, or a customer.&quot; He grins at his joke. &quot;Let me know how you like them.&quot;", ["talk"], [["Like", "Tell Shay how much you enjoy them", 4], ["Dislike", "Tell Shay that you don't like them", 9], ["Haven't", "Tell him you haven't used them yet.", 10]]];
-		shayTalk[4] = ["You grin and tell Shay that you really like the machines. He looks you over and his grin widens, &quot;I can tell. How's the adjustments working out for you?&quot; He winks.", ["talk", [["Flirty", "Give him a flirty responce", 5], ["Appreciative", "Give him an appreciative responce.", 11], ["More", "Let him know you want more", 12]]]];
+		shayTalk[4] = ["You grin and tell Shay that you really like the machines. He looks you over and his grin widens, &quot;I can tell. How's the adjustments working out for you?&quot; He winks.", ["talk"], [["Flirty", "Give him a flirty responce", 5], ["Appreciative", "Give him an appreciative responce.", 11], ["More", "Let him know you want more", 12]]];
 		shayTalk[5] = ["Your smile spreads and you tell Shay you love the way the machines make you feel as well as they way they make you look. You obviously eye his package and ask if he's made use of his own creations.</p><br><p>Shay laughs lightly, &quot;Oh yes. Had a few side-effects from early versions though. I tend to get... a little large.&quot; He looks a bit bashful as he says this.", ["talk"], [["How big?", "Just how big does he get?", 6], ["Too Bad", "That's no good", 14]]];
 		shayTalk[6] = ["So he gets bigger? You slide a little closer and inquire just how big he gets. Shay shifts a little uncomfortably as you get closer to him. &quot;Oh, I um...&quot; He rubs the back of his neck, his package starting to swell quite dramatically. &quot;I don't really know to be honest. It, well I just kinda keep growing.&quot;", ["talk"], [["Fun", "That could be fun", 7], ["Awkward", "That could be awkward.", 14]]];
 		shayTalk[7] = ["You slide closer still and express how much fun you think that could be, a cock that just gets bigger and bigger. You eye him as he swells larger still, his shorts getting tight around his growing erection. He shifts again, his discomfort growing almost as fast as his cock. He moves away from you and quickly moves towards the door, &quot;I uh... I need to go do something, um... somewhere else.&quot; He darts out quickly.", ["quest 2|value 5|action set"], [["Well", "I guess you embaressed him", -1]]];

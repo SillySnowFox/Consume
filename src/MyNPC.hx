@@ -15,8 +15,14 @@ class MyNPC extends MyCharacter {
 	public function wounded():String {
 		var damageDesc:String = "";
 		
-		if (this.healthCurr == this.healthMax) 
+		if (this.healthCurr == this.health()) 
 			damageDesc = "completely unharmed";
+		if (this.healthCurr < this.health() && this.healthCurr >= (this.health() / 2))
+			damageDesc = "slightly wounded";
+		if (this.healthCurr < (this.health() / 2) && this.healthCurr >= (this.health() / 10))
+			damageDesc = "unsteady";
+		if (this.healthCurr < (this.health() / 10))
+			damageDesc = "about to fall";
 		
 		return damageDesc;
 	}
@@ -237,39 +243,34 @@ class MyNPC extends MyCharacter {
 		case "skinny":
 			
 		case "chubby":
-			this.addPerk(globals.perks[10]);
+			this.addPerk("nchubby", globals);
 		case "heavy":
-			this.addPerk(globals.perks[10]);
-			this.addPerk(globals.perks[11]);
+			this.addPerk("nchubby", globals, 2);
 		case "fat":
-			this.addPerk(globals.perks[10]);
-			this.addPerk(globals.perks[11]);
-			this.addPerk(globals.perks[12]);
+			this.addPerk("nchubby", globals, 3);
 		case "huge":
 			
 		case "fit":
 			
 		case "muscular":
-			this.addPerk(globals.perks[30]);
+			this.addPerk("mscl", globals);
 			
 		}
 		
 		if (this.penis) {
 			if (Math.round(Math.random()) == 0)
-				this.addPerk(globals.perks[29]); //MultiCock
+				this.addPerk("mulcoc", globals); //MultiCock
 			
 			switch (Math.round(Math.random() * 3)) {
 			case 0:
 				//Nothing
 			case 1:
-				this.addPerk(globals.perks[18]); //Big Cock
+				//Big Cock
+				this.addPerk("bgcok", globals);
 			case 2:
-				this.addPerk(globals.perks[18]);
-				this.addPerk(globals.perks[19]);
+				this.addPerk("bgcok", globals, 2);
 			case 3:
-				this.addPerk(globals.perks[18]);
-				this.addPerk(globals.perks[19]);
-				this.addPerk(globals.perks[20]);
+				this.addPerk("bgcok", globals, 3);
 			}
 		}
 		if (this.balls) {
@@ -277,32 +278,27 @@ class MyNPC extends MyCharacter {
 			case 0:
 				//Nothing
 			case 1:
-				this.addPerk(globals.perks[21]); //Big Balls
+				//Big Balls
+				this.addPerk("bgbls", globals);
 			case 2:
-				this.addPerk(globals.perks[21]);
-				this.addPerk(globals.perks[22]);
+				this.addPerk("bgbls", globals, 2);
 			case 3:
-				this.addPerk(globals.perks[21]);
-				this.addPerk(globals.perks[22]);
-				this.addPerk(globals.perks[23]);
+				this.addPerk("bgbls", globals, 3);
 			}
 		}
 		if (this.breasts) {
 			if (Math.round(Math.random()) == 0)
-				this.addPerk(globals.perks[28]); //MultiBoob
+				this.addPerk("mulbo", globals); //MultiBoob
 			
 			switch (Math.round(Math.random() * 3)) {
 			case 0:
 				//nothing
 			case 1:
-				this.addPerk(globals.perks[15]); //Big Breasts
+				this.addPerk("bgbst", globals); //Big Breasts
 			case 2:
-				this.addPerk(globals.perks[15]);
-				this.addPerk(globals.perks[16]);
+				this.addPerk("bgbst", globals, 2);
 			case 3:
-				this.addPerk(globals.perks[15]);
-				this.addPerk(globals.perks[16]);
-				this.addPerk(globals.perks[17]);
+				this.addPerk("bgbst", globals, 3);
 			}
 		}
 		
@@ -319,6 +315,7 @@ class MyNPC extends MyCharacter {
 		talk = new Array();
 		if (globals.currentRoomID == 21) { //Checking for the gym, this will let NPCs have other conversation options in other rooms.
 			var sexOptions:Array<Dynamic> = new Array();
+			var postSexOptions:Array<Dynamic> = new Array();
 			
 			if (playerObject.quest[2].stage >= 3) {
 				talk[0] = ["The [NPCNAME] smiles as you move over to [OBJ]. &quot;Hi, sorry, were you going to use this machine?&quot;", ["talk"], [["Flirt", "Sure why not?", 1], ["Hungry", "See if the [NPCNAME] is willing to go to lunch with you.", 2], ["Leave", null, -1]]];
@@ -338,7 +335,6 @@ class MyNPC extends MyCharacter {
 			 "You sit for a moment as your stomach settles, the struggling of your meal slowing as [SUBJ] continues to masturbate inside your stomach. You pat your belly as the motions stop just after another muffled moan comes out.</p><br><p>Some people are strange...", ["eat|move 25"], [["Leave", null, -1]]];
 			talk[3] = ["You ask the [NPCNAME] if [SUBJ] is a gold gym member. [SUBJC] smiles and says, &quot;No, I'd like to though, but it seems like they never have any available.&quot;", ["talk"], [["Flirt", "Sure why not?", 1], ["Hungry", "See if the [NPCNAME] is willing to go to lunch with you.", 2], ["Leave", null, -1]]];
 			//Sex Talk option
-			talk[4] = ["You lean forward to whisper your proposal in the [NPCNAME]'s ear, a blush running across [POS] cheeks as [SUBJ] gives a slight nod and follows you to the gym's restroom. It's a little cramped in there with the two of you, but it's not much of a hassle to get into position.", ["talk"]];
 			
 			sexOptions[0] = ["Eat", "You're more hungry then horny afterall...", 2];
 			
@@ -346,13 +342,21 @@ class MyNPC extends MyCharacter {
 				sexOptions.push(["Butsex", "Shove your cock up the [NPCNAME]'s ass", 6]);
 			}
 			if (playerObject.vagina) { //Player has a vagina, get the NPC to lick the player
-				sexOptions.push(["Licked", "Have the [NPCNAME] clean out your cunt", 7]);
+				sexOptions.push(["Licked", "Have the [NPCNAME] clean out your cunt", -8]);
 			}
+			
+			talk[4] = ["You lean forward to whisper your proposal in the [NPCNAME]'s ear, a blush running across [POS] cheeks as [SUBJ] gives a slight nod and follows you to the gym's restroom. It's a little cramped in there with the two of you, but it's not much of a hassle to get into position.", ["talk"], sexOptions];
+			
+			postSexOptions[0] = ["Eat", "You've gotten your release, no reason to let them go to waste.", 2];
+			if (playerObject.hasPerk("cv")) {
+				postSexOptions.push(["CockVore", "Now that you've emptied your balls, fill them back up.", -8]);
+			}
+			postSexOptions.push(["Leave", "Leave your prey behind.", -1]);
 			
 			//Fuck and eat
 			//talk[5] = ["
 			//Butsex
-			//talk[6] = ["
+			talk[6] = ["You approach [NPCNAME] from behind, pushing [OBJ] forward and aiming your cock at [POS] butt. With little preamble you press your cock into [POS] hole. Once fully inserted you start thrusting, holding onto [POS] hips as you thrust.", ["sex"], postSexOptions];
 			//V Licked
 			//talk[7] = ["
 		}

@@ -4,17 +4,19 @@ import flash.utils.Object;
 import haxe.xml.Check.Attrib;
 
 class MyPlayerObject extends MyCharacter {
-	public var money:Float;
+	private var money:Float;
 	
 	public var numEaten:Int;
+	public var timesDied:Int = 0;
 	
 	public var quest:Array<MyQuest>;
 	
-	public var invObject:Array<MyItem>;
+	public var invObject:Array<Dynamic>;
 	public var keyRing:Array<MyItem_Key>;
 	
 	public var equipWepObj:MyItem_Weapon;
 	public var equipArmObj:MyItem_Armor;
+	public var equipRing:MyItem_Ring;
 	
 	public var lastDayTrained:Int;
 	public var lastClubDay:Int;
@@ -54,6 +56,175 @@ class MyPlayerObject extends MyCharacter {
 			"Your stomach rumbles happily as it works on its contents.</p><br><p>"
 		];
 	
+	public function luck():Int {
+		var playerLuck:Int = 0;
+		
+		playerLuck += this.greed;
+		if (this.hasPerk("clctr")) {
+			for (i in 0...this.perkCount("clctr")) {
+				playerLuck += 10;
+			}
+		}
+		
+		return Math.round(playerLuck / 100);
+	}
+	
+	public function tempSkill(skill:String, value:Int) {
+		switch (skill) {
+		case "str":
+			this.tempStr += value;
+		case "agi":
+			this.tempAgi += value;
+		case "end":
+			this.tempEnd += value;
+		case "int":
+			this.tempInt += value;
+		case "health":
+			this.tempHealth += value;
+		case "spot":
+			this.tempSpot += value;
+		case "dodge":
+			this.tempDodge += value;
+		case "run":
+			this.tempRun += value;
+		case "melee":
+			this.tempMelee += value;
+		case "sneak":
+			this.tempSneak += value;
+		}
+	}
+	
+	public function getMoney():Float {
+		return this.money;
+	}
+	
+	public function addMoney(amount:Float):Void {
+		var newMoney:Float;
+		
+		this.money += amount;
+		this.greed++;
+		
+		newMoney = this.money;
+		newMoney *= 100;
+		newMoney = Math.ffloor(newMoney);
+		newMoney /= 100;
+		
+		this.money = newMoney;
+	}
+	
+	public function advanceSkill(advanceBy:Int, skill:String):String {
+		var skillOver:Float = -1;
+		var message:String = "";
+		
+		switch (skill) {
+		case "str":
+			this.strNeededToUp -= advanceBy;
+		case "agi":
+			this.agiNeededToUp -= advanceBy;
+		case "int":
+			this.intNeededToUp -= advanceBy;
+		case "end":
+			this.endNeededToUp -= advanceBy;
+		case "dodge":
+			this.dodgeNeededToUp -= advanceBy;
+		case "run":
+			this.runNeededToUp -= advanceBy;
+		case "melee":
+			this.meleeNeededToUp -= advanceBy;
+		case "sneak":
+			this.sneakNeededToUp -= advanceBy;
+		case "spot":
+			this.spotNeededToUp -= advanceBy;
+		}
+		
+		if (this.strNeededToUp <= 0) {
+			this.str++;
+			this.pointsSpent++;
+			skillOver = Math.abs(this.strNeededToUp);
+			this.strNeededToUp = Math.round((this.str * 5) - skillOver);
+			message = "You feel stronger.<br>";
+		}
+		
+		if (this.agiNeededToUp <= 0) {
+			this.agi++;
+			this.pointsSpent++;
+			skillOver = Math.abs(this.agiNeededToUp);
+			this.agiNeededToUp = Math.round((this.agi * 5) - skillOver);
+			message += "You feel more agile.<br>";
+		}
+		
+		if (this.endNeededToUp <= 0) {
+			this.end++;
+			this.healthMax += 2;
+			this.healthCurr += 2;
+			this.pointsSpent++;
+			skillOver = Math.abs(this.endNeededToUp);
+			this.endNeededToUp = Math.round((this.end * 5) - skillOver);
+			message += "You feel tougher.<br>";
+		}
+		
+		if (this.intNeededToUp <= 0) {
+			this.int++;
+			this.pointsSpent++;
+			skillOver = Math.abs(this.intNeededToUp);
+			this.intNeededToUp = Math.round((this.int * 5) - skillOver);
+			message += "You feel smarter.<br>";
+		}
+		
+		if (this.dodgeNeededToUp <= 0) {
+			this.dodge++;
+			this.pointsSpent++;
+			skillOver = Math.abs(this.dodgeNeededToUp);
+			this.dodgeNeededToUp = Math.round((this.dodge * 5) - skillOver);
+			message += "You feel like you are better able to evade attacks.<br>";
+		}
+		
+		if (this.runNeededToUp <= 0) {
+			this.run++;
+			this.pointsSpent++;
+			skillOver = Math.abs(this.runNeededToUp);
+			this.runNeededToUp = Math.round((this.run * 5) - skillOver);
+			message += "You feel faster.<br>";
+		}
+		
+		if (this.meleeNeededToUp <= 0) {
+			this.melee++;
+			this.pointsSpent++;
+			skillOver = Math.abs(this.meleeNeededToUp);
+			this.meleeNeededToUp = Math.round((this.melee * 5) - skillOver);
+			message += "Your skill with weapons has improved.<br>";
+		}
+		
+		if (this.sneakNeededToUp <= 0) {
+			this.sneak++;
+			this.pointsSpent++;
+			skillOver = Math.abs(this.sneakNeededToUp);
+			this.sneakNeededToUp = Math.round((this.sneak * 5) - skillOver);
+			message += "You feel like you're able to move quieter.<br>";
+		}
+		
+		if (this.spotNeededToUp <= 0) {
+			this.spot++;
+			this.pointsSpent++;
+			skillOver = Math.abs(this.spotNeededToUp);
+			this.spotNeededToUp = Math.round((this.spot * 5) - skillOver);
+			message += "You feel more observant.<br>";
+		}
+		return message;
+	}
+	
+	public function healPlayer(amount:Float = 1) {
+		//amount is a percentage, default is fully healed
+		var healed:Int = Math.round(this.health() * amount);
+		
+		if (amount == 1) {
+			this.healthCurr = this.health();
+		} else {
+			this.healthCurr += healed;
+			if (this.healthCurr > this.health())
+				this.healthCurr = this.health();
+		}
+	}
 	
 	public function playerDesc():String {
 		var message:String = "";
@@ -187,7 +358,8 @@ class MyPlayerObject extends MyCharacter {
 		case "door":
 			//Player just fucked a door until they came
 			message = "The feel of the doorway surrounding your massive cock is simply too much for you to bear and with a grunt you feel yourself release, filling the room beyond with thick ropes of your cum.<br>";
-			
+		case "NPC":
+			message = "You shutter and find your release, pumping out your cum quickly.<br>";
 		default:
 			message = "You cum and release yourself.<br>";
 		}
@@ -346,6 +518,12 @@ class MyPlayerObject extends MyCharacter {
 		
 		
 		// Stomach is not empty, proceed with digestion
+		if (this.hasPerk("nchubby")) {
+			//Player gains more weight with each unit of digestion
+			for (i in 0...this.perkCount("nchubby")) {
+				this.fat += this.fatGain;
+			}
+		}
 		this.fat += this.fatGain;
 		emptyStomachCountdown = end;
 		
@@ -403,6 +581,16 @@ class MyPlayerObject extends MyCharacter {
 			}
 		} else {
 			bowelsCurrent = 0;
+			// Fully digested prey also needs to get removed even if Scat is off.
+			// We don't really care what happens to them after however.
+			var i:Int = 0;
+			while (i < stomachContents.length) {
+				if (stomachContents[i].mass <= 0) {
+					stomachContents.remove(stomachContents[i]);
+					i--;
+				}
+				i++;
+			}
 		}
 	}
 	
@@ -415,13 +603,24 @@ class MyPlayerObject extends MyCharacter {
 				cumCurrent += cumGain;
 			if (lac && breasts)
 				breastCurrent += milkGain;
-			if (healthCurr++ >= healthMax)
-				healthCurr = healthMax;
+			if (healthCurr++ >= health())
+				healthCurr = health();
 		}
 		
 		// See if anything stretched
 		checkStretching();
 		
+		//Player arousal building, assuming players all have the likeVore effect
+		if (stomachContents.length != 0) {
+			for (i in 0...stomachContents.length) {
+				if (stomachContents[i].healthCurr > 0 && stomachContents[i].likeVore)
+					arousal += 1; //NPC is enjoying being in a Pred's belly
+				if (stomachContents[i].healthCurr > 0 && !stomachContents[i].likeVore)
+					arousal += .5; //NPC is struggling to get free
+				if (stomachContents[i].healthCurr <= 0)
+					arousal += .1;
+			}
+		}
 	}
 	
 	public function passTime(minutes:Int):Void {
