@@ -304,13 +304,14 @@ class Main {
 					if (playerCharacter.hour >= 8 && playerCharacter.hour < 20) {
 						roomNPC = new MyNPC();
 						message += "The freezer case filled with ice cream is here, ";
+						
+						//Guffin's shift is from 8am to 2pm, unless Bessie is 'missing'
+						if ((playerCharacter.hour >= 8 && playerCharacter.hour < 14) || (playerCharacter.quest[5].stage >= 6 && playerCharacter.quest[7].stage != 2))
+							roomNPC.newNPC(nonPlayerCharacters[3]);
+						//Bessie's shift is from 2pm to 8pm, unless Giffin is 'missing'
+						if ((playerCharacter.hour >= 14 && playerCharacter.hour < 20) || (playerCharacter.quest[7].stage == 2 && playerCharacter.quest[5].stage < 6))
+							roomNPC.newNPC(nonPlayerCharacters[4]);
 					}
-					//Guffin's shift is from 8am to 2pm, unless Bessie is 'missing'
-					if ((playerCharacter.hour >= 8 && playerCharacter.hour < 14) || (playerCharacter.quest[5].stage >= 6 && playerCharacter.quest[7].stage != 2))
-						roomNPC.newNPC(nonPlayerCharacters[3]);
-					//Bessie's shift is from 2pm to 8pm, unless Giffin is 'missing'
-					if ((playerCharacter.hour >= 14 && playerCharacter.hour < 20) || (playerCharacter.quest[7].stage == 2 && playerCharacter.quest[5].stage < 6))
-						roomNPC.newNPC(nonPlayerCharacters[4]);
 					
 					if (roomNPC != null) {
 						btns[9].setButton("Buy", "Buy some tasty Ice Cream.", "list|0", iceCreamShop);
@@ -430,6 +431,21 @@ class Main {
 					btns[10].setButton("Milk", "Turn the machine on", "milk|bessie", milkMachine);
 					btns[11].setButton("Ice Cream", "Make some ice cream", "icecream|start", milkMachine);
 				} else if (playerCharacter.quest[5].stage == 7) {
+					//Bessie has been left in the chair with her hands unstrapped
+					message += "<p>Bessie sits in the char, her hands wrapped around her cock.";
+					
+					if (playerCharacter.quest[9].stage == 3) {
+						//The cup is on Bessie
+						message += " The machine's tone is slightly higher then you're used to as the added volume from her cock is added to the mix. This next batch of ice cream is going to be something special.";
+					} else {
+						message += " The cum shooting from her cock threatens to overpower the drains.";
+					}
+					
+					message += "</p>";
+					
+					btns[11].setButton("Release", "You think you've got enough for now, let Bessie loose", "release", milkMachine);
+					btns[9].setButton("Ice Cream", "Make some ice cream", "icecream|start", milkMachine);
+				} else if (playerCharacter.quest[5].stage == 8) {
 					//Bessie has been eaten
 					message += "<p>The room is empty.</p>";
 					btns[11].setButton("Milk", "You're pretty sure you can get yourself into the machine.", "milk|player", milkMachine);
@@ -440,6 +456,12 @@ class Main {
 					btns[11].setButton("Milk", "You're pretty sure you can get yourself into the machine.", "milk|player", milkMachine);
 					btns[9].setButton("Ice Cream", "Make some ice cream", "icecream|start", milkMachine);
 				}
+			case 13:
+				//Sewer Entrance
+				
+			case 14:
+				//Sewers
+				
 			}
 		}
 		
@@ -618,9 +640,7 @@ class Main {
 				btns[0].setButton("Wait", "Wait for the machine to finish up, it's the polite thing to do", "milk|wait", milkMachine);
 				btns[1].setButton("Play", "You could see how much more milk she'll make if you play with her cock", "milk|play", milkMachine);
 				btns[2].setButton("Suck", "The poor thing looks like it's hardly ever had any attention, why not give Bessie's stick a lick?", "milk|suck", milkMachine);
-				btns[2].disableButton();
 				btns[3].setButton("Unstrap", "Unstrap her hands", "milk|unstrap", milkMachine);
-				btns[3].disableButton();
 			case "player":
 				//Milk yourself
 				message = "<p>You sit in the chair and move the machine over you. It's quite awkward and you can see how Bessie would have trouble using it herself. You place the cups over your nipples and turn the machine on. Moments later the soft humming and vibrating of the machine coaxes your breasts to release their cargo.</p><br>";
@@ -679,12 +699,30 @@ class Main {
 				btns[1].setButton("Leave", "She looks like she could use a break, leave her in there", null, movePlayer);
 			case "suck":
 				//Suck Bessie off
+				message = "<p>You move up and carefully reach forward to touch one of Bessie's massive breasts. When she doesn't react you stroke it gently, kind of amazed at how firm it is despite being rapidly emptied. She moos again in reaction to your touch and you take that as a sign she is enjoying it, so you keep one hand on her breast and move the other to her cock. All that time working for her and you had no idea she was hiding this. It's a rather impressive penis, even among the naturally large dicked bovines, at least 18 inches now that it's fully hard, and thick enough to make her legs look thin. As soon as you touch her cock it throbs and shoots a load of cum over your shoulder, narrowly missing your face. Bessie moans loudly and her breasts actually gain several inches in size.</p><br><p>Oh, this is going to be fun...</p><br><p>You lean in and lick the tip of Bessie's huge cock slowly, the pre dribbling out has a slight milky taste as if her body makes so much milk it leaks from every part of her. You mildly wonder if her sweat is milky too. The teasing on her cock is enough to cause it to throb in your hand and you quickly close your mouth over her tip, letting the first jet of cum shoot down your throat. Using the cum to help lubricate your throat you push her cock further in and continue sucking and pumping.</p><br><p>You feel her breasts growing, pressing around your head as another throb travels down the massive rod. You can feel your stomach starting to stretch as she cums again and again. You start too loose track of time as your world is enveloped by Bessie's swelling breasts, too late you realize you're trapped between them. Bessie starts thrusting, pushing her cock deeper and deeper into you as you fill with more and more cum.</p><br><p>You come to later, Bessie's breasts empty and her cock gone soft. Your stomach feels about to burst from the load of milky cum.</p><br>";
 				
+				playerCharacter.stomachCurrent = (playerCharacter.stomachCap * 1.49);
+				if (playerCharacter.balls || playerCharacter.hasPerk("inbal"))
+					playerCharacter.cumCurrent = (playerCharacter.cumCap * 1.49);
+				
+				btns[0].setButton("Release", "She's done, let her out", "release", milkMachine);
+				btns[1].setButton("Leave", "She looks like she could use a break, leave her in there", null, movePlayer);
 			case "unstrap":
 				//Unstrap Bessie's hands
+				message = "<p>You watch and wait until you see Bessie's arms start struggling towards her hard throbbing cock. With a mischievous grin you unbuckle the straps on her arms. Without any delay her hands fly to her cock and start pumping it. She starts cumming moments later and doesn't stop, a seemingly endless stream of milky cum pouring from her hard shaft.</p>";
 				
+				if (playerCharacter.quest[9].stage == 0) {
+					message += "<br><p>This gives you an idea. Now to figure out how to pull it off.</p>";
+					playerCharacter.quest[9].stage = 1;
+				}
+				
+				playerCharacter.quest[5].stage = 7;
+				playerCharacter.quest[5].questData = playerCharacter.day;
+				
+				btns[11].setButton("Leave", "She's enjoying herself. Leave her to it", null, movePlayer);
 			}
 		case "icecream":
+			title = "Make Ice Cream";
 			switch (value) {
 			case "start":
 				//Make some ice cream
@@ -3391,7 +3429,24 @@ class Main {
 			title += "Buy";
 		case "free":
 			//List the ice cream choices for the player to eat
-			
+			switch (value) {
+			case "0":
+				message += "&nbsp;&nbsp;&nbsp;Vanilla<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ah, the classic vanilla flavor.<br>&nbsp;&nbsp;&nbsp;Chocolate<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tastes just like… Chocolate.<br>&nbsp;&nbsp;&nbsp;Strawberry<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;There are real strawberry bits inside!<br>&nbsp;&nbsp;&nbsp;Caramel<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;With veins of pure caramel within, it must be hard to resist.<br>&nbsp;&nbsp;&nbsp;Blue Bubblegum<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The color pink was taken, so bubblegum will just settle on blue.<br>&nbsp;&nbsp;&nbsp;Cookies & Cream<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;It even has bits of cookies mashed in!<br>";
+				message += "&nbsp;&nbsp;&nbsp;Neapolitan Blast<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Couldn’t decide? Have some vanilla, chocolate, AND strawberry!<br>&nbsp;&nbsp;&nbsp;Peanut Butter<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;You could almost swear it’s literally a tub of peanut butter, just frozen.<br>&nbsp;&nbsp;&nbsp;Quadruple Chocolate<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Its chocolate, times 4, with chocolate pieces!";
+				message += "</p><br><p>More...</p>";
+				
+				btns[0].setButton("Vanilla", "Classic Vanilla", "eat|vanilla", iceCreamShop);
+				btns[1].setButton("Chocolate", "Tasty Chocolate", "eat|chocolate", iceCreamShop);
+				btns[2].setButton("Strawberry", "With Real Strawberries!", "eat|strawberry", iceCreamShop);
+				btns[3].setButton("Caramel", "Classic Vanilla with pure caramel mixed in", "eat|caramel", iceCreamShop);
+				btns[4].setButton("Bubblegum", "Blue bubblegum; strange, but tasty", "eat|bubblegum", iceCreamShop);
+				btns[5].setButton("Cookies & Cream", "With bits of real cookie!", "eat|c&c", iceCreamShop);
+				btns[6].setButton("Neapolitan", "All three classic choices", "eat|neap", iceCreamShop);
+				btns[7].setButton("Peanut Butter", "Still looks like a tub of peanut butter", "eat|peanut", iceCreamShop);
+				btns[8].setButton("4x Chocolate", "Chocolate, only more", "eat|4choc", iceCreamShop);
+				btns[9].setButton("Glutton", "A little of everything", "free|glutton", iceCreamShop);
+			}
+			title = "Free Ice Cream";
 		case "buy":
 			//First screen of buy
 			message += "<p>Buy ";
@@ -3584,6 +3639,64 @@ class Main {
 				playerCharacter.addMoney( -4);
 				playerCharacter.stomachCurrent += 7;
 			}
+		case "eat":
+			message += "<p>Consume ";
+			
+			switch (value) {
+			case "vanilla":
+				message += "vanilla";
+			case "chocolate":
+				message += "chocolate";
+			case "strawberry":
+				message += "strawberry";
+			case "caramel":
+				message += "caramel";
+			case "bubblegum":
+				message += "blue bubblegum";
+			case "c&c":
+				message += "cookies and cream";
+			case "neap":
+				message += "neapolitan";
+			case "peanut":
+				message += "peanut butter";
+			case "4choc":
+				message += "quadruple chocolate";
+			case "glutton":
+				message += "glutton's delight";
+			}
+			
+			message += "?</p>";
+			
+			btns[0].setButton("Yes", null, "consume|" + value, iceCreamShop);
+			btns[2].setButton("No", null, "free|0", iceCreamShop);
+		case "consume":
+			switch (value) {
+			case "vanilla":
+				flavor = "vanilla";
+			case "chocolate":
+				flavor = "chocolate";
+			case "strawberry":
+				flavor = "strawberry";
+			case "caramel":
+				flavor = "caramel";
+			case "bubblegum":
+				flavor = "blue bubblegum";
+			case "c&c":
+				flavor = "cookies and cream";
+			case "neap":
+				flavor = "neapolitan";
+			case "peanut":
+				flavor = "peanut butter";
+			case "4choc":
+				flavor = "quadruple chocolate";
+			case "glutton":
+				foodMass = 40;
+				flavor = "glutton's delight";
+			}
+			
+			message += "A whole tub of " + flavor + " vanishes into your maw almost before you've even made the decision to eat it. Since you didn't taste the first tub, you pick up a second and eat that one too, only slower this time so you can savor the taste.</p>";
+			
+			playerCharacter.stomachCurrent += (foodMass * 2);
 		}
 		
 		btns[10].setButton("Leave", "Step away from the counter", null, movePlayer);
@@ -6795,10 +6908,11 @@ class Main {
 		quests[2] = ["gym",		"Gym Membership",	false,		["", "Joined the gym", "Gold membership is avalible", "Became a gold member", "Spoke with Shay", "Spoke to Shay a second time", "Agreed to help Shay with his machine", "Became fuckbuddies with Shay"],	[0, 1]];
 		quests[3] = ["death",	"A Deal With Death", true,		["", "Spoke with Hir", "Agreed to Hir deal", "Turned down the deal"], null];
 		quests[4] = ["cv",		"Pleasing The Wolf", false,		["", "You tried to slip past the bouncer, it wasn't a good idea."], null];
-		quests[5] = ["milk",	"Milking the Cow",	false,		["", "Tweaked her nipple", "Drunk after tweaking", "Milked her", "Agreed to help with her machine", "Heard instructions on using the chair", "Bessie is in the chair", "Eaten"]];
+		quests[5] = ["milk",	"Milking the Cow",	false,		["", "Tweaked her nipple", "Drunk after tweaking", "Milked her", "Agreed to help with her machine", "Heard instructions on using the chair", "Bessie is in the chair", "You left Bessie with her arms unstrapped", "You ate Bessie"]];
 		quests[6] = ["job",		"Part Time Job",	false,		["You need one", "Accecpted the job in the general store"], null];
 		quests[7] = ["foxboi",	"Guffin's Fate",	true,		["", "You've been fucking Guffin", "You've eaten Guffin. He was as tasty as you'd hoped."], null];
 		quests[8] = ["lac",		"Lactation",		true,		["", "Your breasts are producting milk"], null];
+		quests[9] = ["bescock",	"Bessie's Cum Milking", true,	["", "You've gotten the idea to modify Bessie's Milking machine to include a cock cup, now you just need to figure out how", "You've built the cock cup, now to install it", "Installed the cup"], null];
 		
 		
 		/* Conversation flags;
