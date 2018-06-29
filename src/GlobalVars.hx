@@ -98,6 +98,8 @@ class GlobalVars extends Sprite {
 		welcomeMessage.push("Let us engage in jolly cooperation!");
 		welcomeMessage.push("\\[T]/");
 		welcomeMessage.push("Don't give up, skeleton!");
+		welcomeMessage.push("If only I could be as gloriously incandescent.");
+		
 		
 	}
 	

@@ -554,6 +554,11 @@ class Main {
 		
 	}
 	
+	static function createSewer( e:MouseEvent ) {
+		//Entrance into the dynamically generated sewer systems
+		
+	}
+	
 	static function milkMachine( e:MouseEvent ) {
 		var message:String = "";
 		var title:String = "";
