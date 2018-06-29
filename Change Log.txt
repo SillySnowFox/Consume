@@ -1,11 +1,10 @@
 Support the game on Pateron! https://www.patreon.com/SillySnowFox?ty=h
 
-v0.51
+v0.52
 
 New
 
- * Bessie's quest is mostly finished. The remaining two events will be finished shortly.
- * 
+ *
 
 Changes
 
@@ -14,6 +13,14 @@ Changes
 Bugfixes
 
  *
+
+
+v0.51
+
+New
+
+ * Bessie's quest is mostly finished. The remaining two events will be finished shortly.
+ * Ice cream shop fully in place
 
 
 v0.50
