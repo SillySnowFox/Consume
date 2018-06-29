@@ -7,6 +7,7 @@ class MyQuest {
 	public var stage:Int; //Quest stage
 	public var keyID:Array<Int>; //ID of a key the player needs to be given/have
 	public var stageDesc:Array<String> = new Array(); //Description of each quest stage, for multi-step quests
+	public var questData:Int = 0; //Various quest-related data
 	
 	public var hidden:Bool; //If the quest should be hidden from the player or not
 	

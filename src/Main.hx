@@ -262,6 +262,7 @@ class Main {
 			 * 9 - Gold Room
 			 * 10 - Staff Room
 			 * 11 - Hospital, buying additional perks
+			 * 12 - Ice cream shop office/Bessie's Milking Machine
 			 * 
 			 */
 			
@@ -303,11 +304,14 @@ class Main {
 					if (playerCharacter.hour >= 8 && playerCharacter.hour < 20) {
 						roomNPC = new MyNPC();
 						message += "The freezer case filled with ice cream is here, ";
+						
+						//Guffin's shift is from 8am to 2pm, unless Bessie is 'missing'
+						if ((playerCharacter.hour >= 8 && playerCharacter.hour < 14) || (playerCharacter.quest[5].stage >= 6 && playerCharacter.quest[7].stage != 2))
+							roomNPC.newNPC(nonPlayerCharacters[3]);
+						//Bessie's shift is from 2pm to 8pm, unless Giffin is 'missing'
+						if ((playerCharacter.hour >= 14 && playerCharacter.hour < 20) || (playerCharacter.quest[7].stage == 2 && playerCharacter.quest[5].stage < 6))
+							roomNPC.newNPC(nonPlayerCharacters[4]);
 					}
-					if (playerCharacter.hour >= 8 && playerCharacter.hour < 14)
-						roomNPC.newNPC(nonPlayerCharacters[3]);
-					if (playerCharacter.hour >= 14 && playerCharacter.hour < 20)
-						roomNPC.newNPC(nonPlayerCharacters[4]);
 					
 					if (roomNPC != null) {
 						btns[9].setButton("Buy", "Buy some tasty Ice Cream.", "list|0", iceCreamShop);
@@ -402,6 +406,61 @@ class Main {
 				message += "A small odd machine sits here. There is a place for you to insert your arm.<br>";
 				btns[11 - i].setButton("Machine", "Use the machine", "list|0");
 				btns[11 - i].setClickFunc(doPerk);
+			case 12:
+				//Bessie's Milk Machine
+				//If the quest stage is 6, Bessie is currently sitting in the chair
+				if (playerCharacter.quest[5].stage == 4 && playerCharacter.quest[7].stage != 2 && ((playerCharacter.hour >= 0 && playerCharacter.hour < 14) || (playerCharacter.hour >= 20 && playerCharacter.hour < 24))) {
+					//The player hasn't gotten the instructions on the chair yet
+					message += "<p>Bessie is sitting at her desk, she looks up and blushes slightly when she sees you.</p>";
+					btns[11].setButton("Talk", "She looks like she wants to talk to you first", "talk|0", milkMachine);
+				} else if (playerCharacter.quest[5].stage == 5 && playerCharacter.quest[7].stage != 2 && ((playerCharacter.hour >= 0 && playerCharacter.hour < 14) || (playerCharacter.hour >= 20 && playerCharacter.hour < 24))) {
+					//The player knows how to use the chair
+					message += "<p>Bessie is sitting at her desk, she looks up when you enter, then goes back to her paperwork. &quot;Just let me know when you're ready and I'll get in the chair.&quot;</p>";
+					btns[11].setButton("Talk", null, "talk|1", milkMachine);
+					btns[10].setButton("Ready", "Tell her you're ready", "milk|in", milkMachine);
+					btns[9].setButton("Ice Cream", "Make some ice cream", "icecream|start", milkMachine);
+				} else if (playerCharacter.quest[5].stage == 6) {
+					//Bessie is strapped in the chair
+					if (playerCharacter.day > playerCharacter.quest[5].questData) {
+						//Player left Bessie in the chair overnight
+						message += "<p>Bessie glares at you from the chair and struggles slightly. &quot;Let me out of this thing!&quot;</p>";
+					} else {
+						message += "<p>Bessie sits in the chair, waiting for you to turn the machine on.</p>";
+					}
+					btns[9].setButton("Release", null, "release", milkMachine);
+					btns[10].setButton("Milk", "Turn the machine on", "milk|bessie", milkMachine);
+					btns[11].setButton("Ice Cream", "Make some ice cream", "icecream|start", milkMachine);
+				} else if (playerCharacter.quest[5].stage == 7) {
+					//Bessie has been left in the chair with her hands unstrapped
+					message += "<p>Bessie sits in the char, her hands wrapped around her cock.";
+					
+					if (playerCharacter.quest[9].stage == 3) {
+						//The cup is on Bessie
+						message += " The machine's tone is slightly higher then you're used to as the added volume from her cock is added to the mix. This next batch of ice cream is going to be something special.";
+					} else {
+						message += " The cum shooting from her cock threatens to overpower the drains.";
+					}
+					
+					message += "</p>";
+					
+					btns[11].setButton("Release", "You think you've got enough for now, let Bessie loose", "release", milkMachine);
+					btns[9].setButton("Ice Cream", "Make some ice cream", "icecream|start", milkMachine);
+				} else if (playerCharacter.quest[5].stage == 8) {
+					//Bessie has been eaten
+					message += "<p>The room is empty.</p>";
+					btns[11].setButton("Milk", "You're pretty sure you can get yourself into the machine.", "milk|player", milkMachine);
+					btns[9].setButton("Ice Cream", "Make some ice cream", "icecream|start", milkMachine);
+				} else {
+					//The room is empty while Bessie is working
+					message += "<p>The room is empty while Bessie is working.</p>";
+					btns[11].setButton("Milk", "You're pretty sure you can get yourself into the machine.", "milk|player", milkMachine);
+					btns[9].setButton("Ice Cream", "Make some ice cream", "icecream|start", milkMachine);
+				}
+			case 13:
+				//Sewer Entrance
+				
+			case 14:
+				//Sewers
 				
 			}
 		}
@@ -493,6 +552,756 @@ class Main {
 		}
 		
 		
+	}
+	
+	static function doVend( e:MouseEvent ) {
+		//Give the player a bottle of BouncyButt (item 4) with a small chance to get a BouncyButt+ (item 5)
+		var tempItem:MyItem_Food = new MyItem_Food();
+		var choice:String = e.currentTarget.btnID;
+		var message:String = "<p>You stand before the vending machine, the graphics depict a horse girl with a very large butt dressed in a tiny pair of exercise shorts. You can't quite be sure, because of how she's turned, but you suspect she isn't wearing a top at all. Explains why the vending machine is tucked away back here and not out on the floor. The name on the machine is &quot;BouncyButt Sports drinks! Put some Bounce in your Butt today!&quot;</p><br>";
+		
+		if (optionsBtn.visible) {
+			optionsBtn.visible = false;
+			charDesc.visible = false;
+			newRoom = false;
+		}
+		
+		clearAllEvents();
+		
+		switch choice {
+		case "list":
+			message += "<p>A bottle costs $1</p><br><p>Buy a bottle?</p>";
+			btns[0].setButton("Buy", null, "buy", doVend);
+		case "buy":
+			if (playerCharacter.getMoney() >= 1) {
+				message += "<p>You feed your dollar into the machine and push the button. The machine rattles and thunks and a bottle drops into the slot. ";
+				
+				if (Math.round(Math.random() * 3) == 0) {
+					message += "You pull it out and discover the machine has given you a bottle of BouncyButt+ rather then the regular stuff it was supposed to.</p>";
+					tempItem = globals.food[5].copyItem();
+				} else {
+					message += "You pull it out and look the bottle over, BouncyButt figures the gym would have a 'health' drink stocked.</p>";
+					tempItem = globals.food[4].copyItem();
+				}
+				
+				playerCharacter.addMoney( -1);
+				
+				message += "<br><p>Buy another?</p>";
+				
+				btns[0].setButton("Buy", null, "buy", doVend);
+			} else {
+				message += "<p>You check your pockets for the money and find yourself coming up short.</p>";
+			}
+			
+			tempItem.give(playerCharacter);
+		}
+		
+		btns[11].setButton("Leave", null, null, movePlayer);
+		outputText(message, "Gym - Staff Room");
+	}
+	
+	static function doShayMachine( e:MouseEvent ) {
+		var message:String = "<p>You eye the contraption that dominates this room, after a bit of work you figure out how to get yourself into it and start working out. How the thing works confuses you slightly but you manage to get it working and work yourself hard.</p><br>";
+		var effects:Array<String> = new Array();
+		effects = ["height", "weight", "fat", "chest", "waist", "hip", "butt", "breast", "penis length", "penis width", "balls"];
+		var rndEffect:Int = Math.round(Math.random() * (effects.length - 1));
+		var posOrNeg:Int = Math.round(Math.random() * 1);
+		var toChange:Float = -1;
+		var oldValue:Float = -1;
+		
+		if (optionsBtn.visible) {
+			optionsBtn.visible = false;
+			charDesc.visible = false;
+			newRoom = false;
+		}
+		
+		clearAllEvents();
+		
+		switch (posOrNeg) {
+		case 0:
+			posOrNeg = -1;
+		case 1:
+			posOrNeg = 1;
+		}
+		
+		if (playerCharacter.lastGoldTrainDay == playerCharacter.day) {
+			//Player has used a Gold Machine today
+			message = "<p>You're still a little sore from the last time you used one of Shay's machines. You'll have to wait to use another.</p>";
+		} else {
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+			switch(effects[rndEffect]) {
+			case "height":
+				oldValue = playerCharacter.tall;
+				toChange = Math.round(Math.random() * 11) + 1;
+				toChange *= posOrNeg;
+				playerCharacter.tall += toChange;
+				if (playerCharacter.tall < globals.minHeight && oldValue == globals.minHeight) {
+					playerCharacter.tall = globals.minHeight;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else if (playerCharacter.tall > globals.maxHeight && oldValue == globals.maxHeight) {
+					playerCharacter.tall = globals.maxHeight;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>You feel strange, when you step out of the machine you find your self slightly taller.</p>";
+					} else {
+						message += "<p>You feel strange, when you step out of the machine you find your self slightly shorter.</p>";
+					}
+				}
+			case "weight":
+				oldValue = playerCharacter.weight;
+				toChange = Math.round(Math.random() * 100) + 10;
+				toChange *= posOrNeg;
+				playerCharacter.weight += toChange;
+				if (playerCharacter.weight < 40 && oldValue == 40) {
+					playerCharacter.weight = 40;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>You feel odd, when you step free of the machine you find yourself slightly heavier.</p>";
+					} else {
+						message += "<p>You feel odd, when you step free of the machine you find yourself slightly lighter.</p>";
+					}
+				}
+			case "fat":
+				oldValue = playerCharacter.fat;
+				toChange = Math.round(Math.random() * 1000) + 50;
+				toChange *= posOrNeg;
+				playerCharacter.fat += Math.round(toChange);
+				if (playerCharacter.fat < 0 && oldValue == 0) {
+					playerCharacter.fat = 0;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>You feel odd, when you step free of the machine you find yourself slightly heavier.</p>";
+					} else {
+						message += "<p>You feel odd, when you step free of the machine you find yourself slightly lighter.</p>";
+					}
+				}
+			case "chest":
+				oldValue = playerCharacter.chestSize;
+				toChange = Math.round(Math.random() * 11) + 1;
+				toChange *= posOrNeg;
+				playerCharacter.chestSize += Math.round(toChange);
+				if (playerCharacter.chestSize < 18 && oldValue == 18) {
+					playerCharacter.chestSize = 18;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>Your chest feels tight, when you step free you find your torso has broadened.</p>";
+					} else {
+						message += "<p>Your chest feels tight, when you step free you find your torso has narrowed.</p>";
+					}
+				}
+			case "waist":
+				oldValue = playerCharacter.waistSize;
+				toChange = Math.round(Math.random() * 11) + 1;
+				toChange *= posOrNeg;
+				playerCharacter.waistSize += Math.round(toChange);
+				if (playerCharacter.waistSize < 12 && oldValue == 12) {
+					playerCharacter.waistSize = 12;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>You feel something pinch around your waist, when you step out you find your waist has thickened.</p>";
+					} else {
+						message += "<p>You feel something pinch around your waist, when you step out you find your waist has narrowed.</p>";
+					}
+				}
+			case "hip":
+				oldValue = playerCharacter.hipSize;
+				toChange = Math.round(Math.random() * 11) + 1;
+				toChange *= posOrNeg;
+				playerCharacter.hipSize += toChange;
+				if (playerCharacter.hipSize < 12 && oldValue == 12) {
+					playerCharacter.hipSize = 12;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>A sharp pain shoots through your hips, you stumble when you exit the machine not expecting the wider hips you now have.</p>";
+					} else {
+						message += "<p>A sharp pain shoots through your hips, you stumble when you exit the machine not expecting the narrower hips you now have.</p>";
+					}
+				}
+			case "butt":
+				oldValue = playerCharacter.buttSize;
+				toChange = Math.round(Math.random() * 4) + 1;
+				toChange *= posOrNeg;
+				playerCharacter.buttSize += Math.round(toChange);
+				if (playerCharacter.buttSize < 1 && oldValue == 1) {
+					playerCharacter.buttSize = 1;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>A feeling like someone just swatted you from behind hits you just before you step out of the machine. You spin around to find no one there. When you check your rear, you find it has grown.</p>";
+					} else {
+						message += "<p>A feeling like someone just swatted you from behind hits you just before you step out of the machine. You spin around to find no one there. When you check your rear, you find it has shrunk.</p>";
+					}
+				}
+			case "breast":
+				oldValue = playerCharacter.breastSize;
+				toChange = Math.round(Math.random() * 6) + 1;
+				toChange *= posOrNeg;
+				playerCharacter.breastSize += Math.round(toChange);
+				if (playerCharacter.breastSize < 1 && oldValue == 1 && playerCharacter.breasts) {
+					playerCharacter.breastSize = 0;
+					playerCharacter.breasts = false;
+					message += "<p>A very strange feeling of cold rushes through your breasts, when it passes and you manage to get yourself free of the machine, you discover your breasts are gone.</p>";
+				} else if (playerCharacter.breastSize >= 1 && !playerCharacter.breasts) {
+					playerCharacter.breasts = true;
+					message += "<p>A very strange feeling of cold rushes through your chest, when it passes and you manage to get yourself free of the machine, you discover you have breasts!</p>";
+				} else if (playerCharacter.breastSize < 1 && oldValue == 0 && !playerCharacter.breasts) {
+					playerCharacter.breastSize = 0;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else if (playerCharacter.breastSize < 1 && oldValue > 1 && playerCharacter.breasts) {
+					playerCharacter.breastSize = 1;
+					message += "<p>A very strange feeling of cold rushes through your breasts, when it passes and you manage to get yourself free of the machine, you discover your breasts have shrunk.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>A very strange feeling of cold rushes through your breasts, when it passes and you manage to get yourself free of the machine, you discover your breasts have grown.</p>";
+					} else {
+						message += "<p>A very strange feeling of cold rushes through your breasts, when it passes and you manage to get yourself free of the machine, you discover your breasts have shrunk.</p>";
+					}
+				}
+			case "penis length":
+				oldValue = playerCharacter.penisL;
+				toChange = Std.parseFloat(truncateDecimalPlaces(Math.random() * 2)) + .5;
+				toChange *= posOrNeg;
+				playerCharacter.penisL += toChange;
+				if (playerCharacter.penisL < .1 && oldValue == .1 && playerCharacter.penis) {
+					playerCharacter.penisL = 0;
+					playerCharacter.penisW = 0;
+					playerCharacter.penis = false;
+					message += "<p>Your penis feels strange, like you have an errection only different. Once you extract yourself from the machine you discover you no longer have a penis.</p>";
+				} else if (playerCharacter.penisL < .1 && oldValue != .1 && playerCharacter.penis) {
+					playerCharacter.penisL = .1;
+					message += "<p>Your penis feels like it's getting harder, but when you escape the machine and check it, you discover it's gotten shorter.</p>";
+				} else if (playerCharacter.penisL > 0 && oldValue == 0 && !playerCharacter.penis) {
+					playerCharacter.penis = true;
+					if (playerCharacter.penisW < .1)
+						playerCharacter.penisW = .1;
+					message += "<p>Your crotch feels strange, like you're getting aroused only different. Once you extract yourself from the machine you discover you have a penis.</p>";
+				} else if (playerCharacter.penisL < 0 && oldValue == 0 && !playerCharacter.penis) {
+					playerCharacter.penisL = 0;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>Your penis feels like it's getting harder, but when you escape the machine and check it, you discover it's gotten longer.</p>";
+					} else {
+						message += "<p>Your penis feels like it's getting harder, but when you escape the machine and check it, you discover it's gotten shorter.</p>";
+					}
+				}
+			case "penis width":
+				oldValue = playerCharacter.penisW;
+				toChange = Std.parseFloat(truncateDecimalPlaces(Math.random() * 1)) + .1;
+				toChange *= posOrNeg;
+				playerCharacter.penisW += toChange;
+				if (playerCharacter.penisW < .1 && oldValue == .1 && playerCharacter.penis) {
+					playerCharacter.penisW = 0;
+					playerCharacter.penisL = 0;
+					playerCharacter.penis = false;
+					message += "<p>Your penis feels like it's getting harder, but when you escape the machine and check it, you discover it's gotten thinner.</p>";
+				} else if (playerCharacter.penisW < .1 && oldValue != .1 && playerCharacter.penis) {
+					playerCharacter.penisW = .1;
+					message += "<p>Your penis feels like it's getting harder, but when you escape the machine and check it, you discover it's gotten thinner.</p>";
+				} else if (playerCharacter.penisW > 0 && oldValue == 0 && !playerCharacter.penis) {
+					playerCharacter.penis = true;
+					if (playerCharacter.penisL < .1)
+						playerCharacter.penisL = .1;
+					message += "<p>Your crotch feels strange, like you're getting aroused only different. Once you extract yourself from the machine you discover you have a penis.</p>";
+				} else if (playerCharacter.penisW < 0 && oldValue == 0 && !playerCharacter.penis) {
+					playerCharacter.penisW = 0;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>Your penis feels like it's getting harder, but when you escape the machine and check it, you discover it's gotten thicker.</p>";
+					} else {
+						message += "<p>Your penis feels like it's getting harder, but when you escape the machine and check it, you discover it's gotten thinner.</p>";
+					}
+				}
+			case "balls":
+				oldValue = playerCharacter.ballSize;
+				toChange = Std.parseFloat(truncateDecimalPlaces(Math.random() * 2)) + .2;
+				toChange *= posOrNeg;
+				playerCharacter.ballSize += toChange;
+				if (playerCharacter.ballSize < .1 && oldValue == .1 && playerCharacter.balls) {
+					playerCharacter.ballSize = 0;
+					playerCharacter.balls = false;
+					message += "<p>A warm feeling spreads through your balls, when it passes and you get yourself out of the machine, you discover your balls have vanished.</p>";
+				} else if (playerCharacter.ballSize < .1 && oldValue != .1 && playerCharacter.balls) {
+					playerCharacter.ballSize = .1;
+					message += "<p>A warm feeling spreads through your balls, when it passes and you get yourself out of the machine, you discover your balls have shrunk.</p>";
+				} else if (playerCharacter.ballSize > 0 && oldValue == 0 && !playerCharacter.balls) {
+					playerCharacter.balls = true;
+					message += "<p>A warm feeling spreads through your crotch, when it passes and you get yourself out of the machine, you discover you have balls.</p>";
+				} else if (playerCharacter.ballSize < 0 && oldValue == 0 && !playerCharacter.balls) {
+					playerCharacter.ballSize = 0;
+					message += "<p>You step free of the machine, nothing happened.</p>";
+				} else {
+					if (posOrNeg == 1) {
+						message += "<p>A warm feeling spreads through your balls, when it passes and you get yourself out of the machine, you discover your balls have grown.</p>";
+					} else {
+						message += "<p>A warm feeling spreads through your balls, when it passes and you get yourself out of the machine, you discover your balls have shrunk.</p>";
+					}
+				}
+			}
+		}
+		
+		outputText(message, "Gym - Staff Room");
+		
+		btns[11].setButton("Leave", null, null, movePlayer);
+	}
+	
+	static function doGoldRoom( e:MouseEvent ) {
+		var message:String = "";
+		var clicked:Dynamic = e.currentTarget.btnID;
+		var increase:Int = 0;
+		var increaseCock:Float = 0;
+		
+		clearAllEvents();
+		
+		switch (clicked) {
+		case "list":
+			optionsBtn.visible = false;
+			charDesc.visible = false;
+			newRoom = false;
+			
+			if (playerCharacter.lastGoldTrainDay == playerCharacter.day) {
+				message += "<p>You eye the machines in the room, but your body still feels sore for your last session. You'll have to come back tomorrow.</p>";
+				btns[11].setButton("Next", null, null, movePlayer);
+			} else {
+				message += "Which machine would you like to use?";
+				
+				btns[0].setButton("Height", "Increase your height", "height", doGoldRoom);
+				btns[1].setButton("Skinny", "Squeeze yourself skinny", "skinny", doGoldRoom);
+				btns[2].setButton("Cock", "Make your cock bigger", "cock", doGoldRoom);
+				if (!playerCharacter.penis)
+					btns[2].disableButton();
+				btns[3].setButton("Balls", "Make your balls bigger", "balls", doGoldRoom);
+				if (!playerCharacter.balls)
+					btns[3].disableButton();
+				btns[4].setButton("Errection", "Make your cock bigger when you have an errection", "errection", doGoldRoom);
+				if (!playerCharacter.penis)
+					btns[4].disableButton();
+				btns[5].setButton("Hips", "Make your hips slimmer", "hips", doGoldRoom);
+				btns[6].setButton("Butt", "Make your butt tighter", "butt", doGoldRoom);
+			}
+		case "height":
+			//Increase player's height by 3-5 inches
+			message += "<p>You strap yourself into the machine and turn it on. The thing vibrates all over your body, a pleasant tingle going over you which quickly increases to an embarrassing level of enjoyment. All too soon the machine beeps that it's finished. You step out, after carefully untangling yourself from the contraption and see that yes, you are a few inches taller then you were when you went in.</p><br><p>Your body feels oddly sore after your last session with the machine, you're probably going to need to wait before doing another session.</p>";
+			
+			increase = Math.round(Math.random() * 3) + 2;
+			
+			playerCharacter.tall += increase;
+			playerCharacter.arousal += 10;
+			playerCharacter.fat -= Math.round(playerCharacter.fat / 6);
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+		case "skinny":
+			//Make the player very skinny
+			message += "<p>You get yourself into the machine, the top closing on you when you turn it on. It's very claustrophobic and as it closes it squeezes tight on you it feels like something is oozing out of you. While it's not totally uncomfortable, it's not really what you would call pleasant either.</p><br><p>Your body feels oddly sore after your last session with the machine, you're probably going to need to wait before doing another session.</p>";
+			
+			if (playerCharacter.fat > 5)
+				playerCharacter.fat = 5;
+			if (playerCharacter.arousal >= 10)
+				playerCharacter.arousal -= 10;
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+		case "cock":
+			//Make the player's Cock slighlty bigger, a player without a cock shouldn't be able to get to this screen.
+			message += "<p>Feeling very uncomfortable, you slide your cock into the slot on the machine. A few twists of a knob and it's secure and tight. You activate the machine and it starts pumping over your shaft, you feel yourself grow hard very quickly, then the strangest sensation as you continue to swell larger. It feels like you grow to a massive size, but when the machine finally finishes and releases you you find you're only slightly larger then you started.</p><br><p>Your body feels oddly sore after your last session with the machine, you're probably going to need to wait before doing another session.</p>";
+			
+			increaseCock = (Math.round(Math.random() * 3) / 10) + .1;
+			
+			playerCharacter.penisW += increaseCock;
+			playerCharacter.penisL += increaseCock + .2;
+			
+			if (playerCharacter.arousal < 100) {
+				playerCharacter.arousal = 100;
+			} else {
+				playerCharacter.arousal += 30;
+			}
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+		case "balls":
+			//Make the player's balls bigger
+			message += "<p>It takes you a moment, but you manage to figure out where you're supposed to put yourself on this bizarre machine. Once you're settled in you adjust everything until the machine is just gripping your balls, then you turn it on. You feel a strange, warm sensation pour out of the machine, your balls feeling like they want to pull up towards you without actually moving. The strange sensation is rather pleasurable ";
+			if (playerCharacter.penis && !playerCharacter.vagina)
+				message += "and your penis quickly responds, growing painfully hard. ";
+			if (playerCharacter.vagina && !playerCharacter.penis)
+				message += " and your slit grows hot and very wet. ";
+			if (playerCharacter.vagina && playerCharacter.penis)
+				message += " and your cock quickly responds, growing painfully hard. Your slit, not to be outdone, heats and almost spills fluid. ";
+			
+			message += "It's all you can do to resist playing with yourself. When the machine finally finishes and you manage to extract yourself you find your balls slightly larger and heavier.</p><br><p>Your body feels oddly sore after your last session with the machine, you're probably going to need to wait before doing another session.</p>";
+			
+			increaseCock = (Math.round(Math.random() * 2) / 10) + .1;
+			
+			playerCharacter.ballSize += increaseCock;
+			if (playerCharacter.arousal < 100) {
+				playerCharacter.arousal = 100;
+			} else {
+				playerCharacter.arousal += 30;
+			}
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+		case "errection":
+			//Make the player's cock bigger when they're aroused
+			message += "<p>This machine is by far the weirdest and most embarrassing one in the room, but you manage to get yourself placed and the machine closed around you. You turn it on and your cock quickly becomes painfully hard, again it feels like your still getting hard even though you can tell you're as hard as you can get. The machine doesn't seem to care and it keeps making you bigger. When the machine finally releases you you find your erection is much bigger then you're used to. When it finally goes down, you see your the same size soft as you usually are.</p><br><p>Your body feels oddly sore after your last session with the machine, you're probably going to need to wait before doing another session.</p>";
+			
+			increaseCock = (Math.round(Math.random() * 4) / 10) + .1;
+			
+			playerCharacter.errect += increaseCock;
+			if (playerCharacter.arousal < 100) {
+				playerCharacter.arousal = 200;
+			} else {
+				playerCharacter.arousal += 70;
+			}
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+		case "hips":
+			//Make the player's hips narrower
+			message += "<p>You slide your waist into the machine and turn it on, the odd sensations going over your hips feel very strange. You can't decide if you like it or not and by the time the machine is done working you still haven't figured out if it's good or not. The machine releases you and you step out, staggering slightly as your legs have moved slightly closer together.</p><br><p>Your body feels oddly sore after your last session with the machine, you're probably going to need to wait before doing another session.</p>";
+			
+			increase = Math.round(Math.random() * 4) + 1;
+			
+			playerCharacter.hipSize -= increase;
+			if (playerCharacter.hipSize < 15)
+				playerCharacter.hipSize = 15;
+			if (playerCharacter.arousal >= 30)
+				playerCharacter.arousal -= 30;
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+		case "butt":
+			//Make the player's ass smaller
+			message += "<p>You back yourself into the machine, the design forcing you to stick your butt out as you close yourself into it. Your turn it on and a very weird feeling, like thousands of tiny paws, swarms over your rear. The whole contraption vibrates around you until it suddenly shutters to a stop. You extract yourself from it and find your butt is noticeably smaller then it was before.</p><br><p>Your body feels oddly sore after your last session with the machine, you're probably going to need to wait before doing another session.</p>";
+			
+			increase = Math.round(Math.random() * 4) + 1;
+			
+			playerCharacter.buttSize -= increase;
+			if (playerCharacter.buttSize < 1)
+				playerCharacter.buttSize = 1;
+			if (playerCharacter.arousal > 40)
+				playerCharacter.arousal -= 40;
+			playerCharacter.lastGoldTrainDay = playerCharacter.day;
+		}
+		
+		btns[11].setButton("Leave", null, null, movePlayer);
+		
+		outputText(message, "Gym - Gold Room");
+	}
+	
+	static function doPerk( e:MouseEvent ) {
+		//System to allow players to buy additional perks
+		//Perks cost 8 * Pride of fat and 8 * Pride of cash per perk rank
+		var actionChoice:String = e.currentTarget.btnID.split("|")[0];
+		var actionValue:Int = Std.parseInt(e.currentTarget.btnID.split("|")[1]);
+		var title:String = "Perk Selection";
+		var message:String = "The machine lights up as you slide your arm into the cuff. The screen lists a number of perks you can choose from, as well as the cost of each. Looks like it will cost an amount of body fat and money to make the changes.</p><br><p>";
+		var perkCost:Int = 0;
+		
+		var perks:Array<MyPerk> = new Array();
+		
+		var dspItem:Int = 0;
+		var dspFirstItem:Int = 0;
+		
+		newRoom = false;
+		optionsBtn.visible = false;
+		charDesc.visible = false;
+		
+		clearAllEvents();
+		
+		for (i in 0...globals.perks.length) {
+			if (globals.perks[i].showPerk)
+				perks.push(globals.perks[i]);
+		}
+		
+		switch (actionChoice) {
+		case "list":
+			//List of avalible perks
+			if (perks.length > 9) {
+				dspFirstItem = actionValue * 9;
+				dspItem = dspFirstItem + 9;
+			}
+			
+			if (dspItem > perks.length)
+				dspItem = perks.length;
+			
+			if (perks.length != 0) {
+				for (i in dspFirstItem...dspItem) {
+					message += perks[i].dispName + " -- " + perks[i].desc + "<br>";
+					btns[i - dspFirstItem].setButton(perks[i].dispName, null, "perk|" + i);
+					btns[i - dspFirstItem].setClickFunc(doPerk);
+				}
+				if (perks.length > dspItem) {
+					message += "More...";
+					btns[10].setButton("Next", null, "list|" + (actionValue + 1));
+					btns[10].setClickFunc(doPerk);
+				}
+				if (dspFirstItem != 0) {
+					btns[9].setButton("Prev", null, "list|" + (actionValue - 1));
+					btns[9].setClickFunc(doPerk);
+				}
+			}
+		case "perk":
+			message = "Would you like to buy this perk?</p><br><p>";
+			
+			message += perks[actionValue].dispName + " --- " + perks[actionValue].desc + "<br>";
+			
+			if ((!perks[actionValue].multipleLevels && playerCharacter.hasPerk(perks[actionValue].name) == false) || perks[actionValue].multipleLevels) {
+				if (playerCharacter.hasPerk(perks[actionValue].name)) {
+					perkCost = Math.round((globals.perkCostMultiplier * playerCharacter.pride) * playerCharacter.perkCount(globals.perks[actionValue].name)) + 27;
+					message += "Fat Cost: " + perkCost + "  Cash Cost: " + perkCost + "</p><br><p>";
+					message += "Perk count: " + playerCharacter.perkCount(globals.perks[actionValue].name);
+				} else {
+					perkCost = Math.round((globals.perkCostMultiplier * playerCharacter.pride) / 2);
+					message += "Fat Cost: " + perkCost + "  Cash Cost: " + perkCost + "</p><br><p>";
+					message += "Perk Unowned";
+				}
+				
+				if (playerCharacter.getMoney() >= perkCost && playerCharacter.fat >= perkCost) {
+					//Player has enough money and fat to buy the perk
+					btns[0].setButton("Buy", null, "buy|" + actionValue);
+					btns[0].setClickFunc(doPerk);
+				} else if (playerCharacter.getMoney() < perkCost && playerCharacter.fat >= perkCost) {
+					//Player does not have enough money for the perk
+					message += "</p><br><p>Not enough money!";
+					btns[0].setButton("Buy", "Not enough money", "error");
+					btns[0].disableButton();
+				} else if (playerCharacter.getMoney() >= perkCost && playerCharacter.fat < perkCost) {
+					//player does not have enough fat for the perk
+					message += "</p><br><p>Not enough fat!";
+					btns[0].setButton("Buy", "Not enough fat", "error");
+					btns[0].disableButton();
+				} else {
+					//player has neither enough fat or money
+					message += "</p><br><p>Not enough fat or money!";
+					btns[0].setButton("Buy", "Not enough fat or money", "error");
+					btns[0].disableButton();
+				}
+			} else {
+				message += "Perk already owned.";
+			}
+			
+			btns[2].setButton("No", null, "list|0");
+			btns[2].setClickFunc(doPerk);
+		case "buy":
+			message = "You make your selection on the machine's display. It whirrs to life and a sharp pinch travels up your arm, you feel your body change in subtle ways. The display shows the process is complete after a moment.";
+			
+			playerCharacter.addPerk(perks[actionValue].name, globals);
+			
+			if (playerCharacter.hasPerk(perks[actionValue].name)) {
+				perkCost = Math.round((globals.perkCostMultiplier * playerCharacter.pride) * playerCharacter.perkCount(globals.perks[actionValue].name)) + 27;
+			} else {
+				perkCost = Math.round((globals.perkCostMultiplier * playerCharacter.pride + 27) / 2);
+			}
+			
+			playerCharacter.fat -= perkCost;
+			playerCharacter.addMoney( -perkCost);
+			
+			updateHUD();
+			
+			btns[0].setButton("Next", null, "perk|" + actionValue);
+			btns[0].setClickFunc(doPerk);
+		}
+		
+	}
+	
+	static function createSewer( e:MouseEvent ) {
+		//Entrance into the dynamically generated sewer systems
+		
+	}
+	
+	static function milkMachine( e:MouseEvent ) {
+		var message:String = "";
+		var title:String = "";
+		var action:String = e.currentTarget.btnID.split("|")[0];
+		var value:String = e.currentTarget.btnID.split("|")[1];
+		var valueInt:Int = -1;
+		clearAllEvents();
+		
+		if (optionsBtn.visible) {
+			newRoom = false;
+			optionsBtn.visible = false;
+			charDesc.visible = false;
+		}
+		
+		switch (action) {
+		case "talk":
+			//Talk to Bessie
+			valueInt = Std.parseInt(value);
+			title = "Talk to Bessie";
+			
+			switch (valueInt) {
+			case 0:
+				//First conversation with Bessie
+				message = "<p>You step up to the desk and see that Bessie is just pushing papers around nervously without actually doing anything with them. She avoids looking at you for several moments before finally putting down the stack of papers she had just picked up and placing her hands flat on the desk in a clear attempt to stop fidgeting. It's only partly successful.</p><br><p>She looks up, &quot;I'm sure you saw the machine when you walked in, it's a little hard to miss. And I imagine you can guess why I can't really use it by myself. I had help, but, well I don't now.&quot; Her right hand starts playing with a pen, she doesn't appear to notice. &quot;What's worse, I need to um...&quot; The pen starts rapidly tapping on the desk as she looks everywhere but at you, &quot;I need to be strapped in or I'll play with myself.&quot; She says this quickly, as if she's ripping off a verbal band-aid, then continues at a more normal pace, &quot;And once I get going my breasts just keep making more and more milk. If I didn't strap my arms down,&quot; She turns red again, but this time you're pretty sure it's from the idea of being nothing more then a masturbating milk factory rather then embarrassment. After a moment she shakes her head and looks at you, &quot;So I need someone to work the straps and position the milker. Think you can manage that?&quot;</p>";
+				
+				btns[0].setButton("Yes", "Sounds easy enough", "talk|3", milkMachine);
+				btns[1].setButton("How", "Ask how she ended up like this", "talk|4", milkMachine);
+				btns[2].setButton("Who", "Inquire about the missing helper", "talk|5", milkMachine);
+			case 1:
+				//Small talk
+				message = "<p>Bessie glances up from her paperwork as you step up to the desk, &quot;Just let me know if you've got the time and I'll put a hold on this and head over there.&quot; She goes back to her paperwork, &quot;Unless you had something else you wanted to ask about?&quot;</p>";
+				
+				btns[0].setButton("How", "Ask how she ended up like this", "talk|4", milkMachine);
+				btns[1].setButton("Who", "Inquire about the missing helper", "talk|5", milkMachine);
+				btns[2].setButton("Nevermind", null, null, movePlayer);
+			case 3:
+				//Agreeing to help
+				message = "<p>You do your best to shrug nonchalantly and tell her it sounds easy enough. She gives you another glare, though this one is milder then her usual. &quot;Okay then, I guess the only other thing you need to know is that it usually takes me about a day to fill up. So if you could come by daily and help with this it would help me keep from getting so big I can't fit through the doors... Again.&quot; She pauses, blushes and says, &quot;Actually I guess there's one more thing you should be aware of. I, um... I'm not totally female.&quot; She gestures towards her crotch, &quot;I have a penis, no balls though. So don't be surprised when you see it.&quot; At your confused look she clarifies, &quot;If I don't strip before milking I... well it gets really messy, why do you think that area is all tile?&quot; Good point.</p>";
+				
+				playerCharacter.quest[5].stage = 5;
+				
+				btns[11].setButton("Next", null, null, movePlayer);
+			case 4:
+				//Ask how she ended up with such overproductive tits
+				message = "<p>Curious, you ask Bessie how she ended up like this. She sighs and puts her pen down. &quot;I suppose it was inevitable you'd ask that. I could just tell you to fuck off,&quot; she hefts another sigh, each time she does that it makes her breasts smack on the desk. &quot;But something tells me you'd just keep asking. So, well. I wasn't born female. But growing up, that's all I wanted was to be a girl. So I found some of the less then legal potions around and started taking them.&quot;</p><br><p>You know of some of them, you've never heard of them doing this though. You mention this to Bessie, &quot;This was years ago, back when they were first getting made. And some of them had issues.&quot; She gestures at her chest to demonstrate what she's talking about. &quot;It didn't help that none of the potions I took seemed to actually do anything. So I just kept taking more of them. When I finally hit puberty. Well I kinda exploded...&quot; She blushes.</p>";
+				
+				if (playerCharacter.quest[5].stage == 4) {
+					//player has not yet agreed to help
+					message += "<br><p>She clears her throat, &quot;So anyway. Do you think you can handle things with the machine?&quot;</p>";
+					btns[1].setButton("Yes", "Sounds easy enough", "talk|3", milkMachine);
+				}
+				btns[0].setButton("Who", "Inquire about the missing helper", "talk|5", milkMachine);
+				btns[11].setButton("Leave", null, null, movePlayer);
+			case 5:
+				//Ask about the missing helper
+				message = "<p>A helper? You don't remember seeing anyone else while you worked here. You ask about that, Bessie looks a little embarrassed, &quot;I had a deal going of a while there, but it kinda fell apart.&quot; She shrugs, &quot;He didn't want to keep going with it and left. I don't know why really. The point is I don't have any help now.";
+				
+				if (playerCharacter.quest[5].stage == 4) {
+					//player has not yet agreed to help
+					message += " Which is why I need your help, if you're interested?&quot;</p>";
+					btns[1].setButton("Yes", "Sounds easy enough", "talk|3", milkMachine);
+				} else {
+					message += " Which is why I asked you to help.&quot;</p>";
+				}
+				btns[0].setButton("How", "Ask how she ended up like this", "talk|4", milkMachine);
+				btns[11].setButton("Leave", null, null, movePlayer);
+			}
+		case "milk":
+			title = "Milking Bessie";
+			switch (value) {
+			case "in":
+				//Tell Bessie to get in the machine
+				message = "<p>You let Bessie know you're ready and she gets up from behind her desk. She disrobes quickly, reveling her massive firm breasts, tight with milk and her hard cock standing at attention between her legs. She hangs her clothes up on a set of hooks by her desk and quickly moves to the chair, sitting down and placing her arms on the rests. You step up and strap her in, making sure she can't move and lower the milking machine into place. It seals into place easily, all that's left now is to turn it on.</p>";
+				
+				playerCharacter.quest[5].stage = 6;
+				playerCharacter.quest[5].questData = playerCharacter.day;
+				
+				btns[0].setButton("Milk", "Turn the machine on", "milk|bessie", milkMachine);
+				btns[11].setButton("Leave", "She's strapped in, just walk away", null, movePlayer);
+			case "bessie":
+				//Start the machine with Bessie in it
+				message = "<p>You turn the machine on. It hums to life and moments later Bessie is squirming and moaning (and mooing, you didn't think bovines actually did that) in the chair. As you watch, creamy white liquid starts to fill the tubes and run into the tank by the wall. Bessie's cock gets even harder as pre starts to flow from her tip, it almost seems a waste to just wait...</p>";
+				
+				btns[0].setButton("Wait", "Wait for the machine to finish up, it's the polite thing to do", "milk|wait", milkMachine);
+				btns[1].setButton("Play", "You could see how much more milk she'll make if you play with her cock", "milk|play", milkMachine);
+				btns[2].setButton("Suck", "The poor thing looks like it's hardly ever had any attention, why not give Bessie's stick a lick?", "milk|suck", milkMachine);
+				btns[3].setButton("Unstrap", "Unstrap her hands", "milk|unstrap", milkMachine);
+			case "player":
+				//Milk yourself
+				message = "<p>You sit in the chair and move the machine over you. It's quite awkward and you can see how Bessie would have trouble using it herself. You place the cups over your nipples and turn the machine on. Moments later the soft humming and vibrating of the machine coaxes your breasts to release their cargo.</p><br>";
+				title = "Milking Yourself";
+				
+				if (playerCharacter.breastCurrent == 0) {
+					//Player is empty
+					message += "<p>The machine shuts off after a moment, you are already empty.</p>";
+				} else if (playerCharacter.breastCurrent > 0 && playerCharacter.breastCurrent <= playerCharacter.breastCap) {
+					message += "<p>The machine runs for a few minutes and the fullness you had been feeling slowly fades. Your milk getting pumped away into the tanks. It runs another few moments after you're empty before it turns it's self off.</p>";
+				} else if (playerCharacter.breastCurrent > playerCharacter.breastCap) {
+					message += "<p>Your breasts are so full it doesn't take any coaxing at all for them to release their cargo. It nearly sprays forth from your nipples, filling the cups before being whisked away into the tanks. You sigh happily as your tits empty. When they finally finish the machine shuts off.</p>";
+				}
+				
+				message += "<br><p>With the machine off it takes you a few moments to extract yourself from it and stand back up. You pull your clothes back on, adjusting slightly with your no longer engorged breasts.</p>";
+				
+				playerCharacter.breastCurrent = 0;
+				
+				if (playerCharacter.breastContents.length != 0) {
+					for (i in 0...playerCharacter.breastContents.length - 1) {
+						playerCharacter.breastCurrent += playerCharacter.breastContents[i].mass;
+					}
+				}
+				
+				btns[11].setButton("Leave", null, null, movePlayer);
+			case "wait":
+				//Waiting for the machine to finish
+				message = "<p>You watch the machine work, slightly mesmerized by the sight of Bessie's massive tits slowly shrinking down to something closer to a normal size. When they've shrunk about halfway down the moans from Bessie suddenly go up a notch and her cock starts shooting massive gobs of cum. You scoot out of the way and watch as she creates a rather sizable pile of spunk on the far wall. Before you are really aware of it the machine gives a happy little ding and shuts off, Bessie's chest down to the smallest you have ever seen them. She pants slightly, eyes half closed and hands tightly gripping the arms of the chair.</p>";
+				
+				btns[0].setButton("Release", "She's done, let her out", "release", milkMachine);
+				btns[1].setButton("Leave", "She looks like she could use a break, come back later", null, movePlayer);
+			case "play":
+				//Play with Bessie's cock
+				message = "<p>You move up and carefully reach forward to touch one of Bessie's massive breasts. When she doesn't react you stroke it gently, kind of amazed at how firm it is despite being rapidly emptied. She moos again in reaction to your touch and you take that as a sign she is enjoying it, so you keep one hand on her breast and move the other to her cock. All that time working for her and you had no idea she was hiding this. It's a rather impressive penis, even among the naturally large dicked bovines, at least 18 inches now that it's fully hard, and thick enough to make her legs look thin. As soon as you touch her cock it throbs and shoots a load of cum over your shoulder, narrowly missing your face. Bessie moans loudly and her breasts actually gain several inches in size.</p><br><p>Oh, this is going to be fun...</p><br><p>Taking your hand off her tit you bring both wrap around Bessie's huge cock and begin pumping it. As you get going it's like someone turned on a faucet, cum shoots from her faster and faster until it's practically a steady stream splashing against the far wall. Her breasts grow with each orgasm you coax out of her, the poor milking machine working as hard as it can to shrink her back down only to be defeated by whatever crazy mixture of hormones and drugs Bessie has in her system. You keep at it until Bessie's breasts swell to totally fill her lap, covering her cock until just the tip is left exposed. You tease that too, careful to keep out of the flow of cum, until the rising tide of tit covers it.</p><br><p>You step back and take a look at your handiwork, Bessie now looks like a pair of browish balls, each one nearly 5 feet tall, muffled mooing and moaning come from somewhere between them as the milking machine keeps working on it's new load. The machine, once seeming almost too big for her, now looks like a pair of pasties stuck to her nipples. She's more breast then she is person now.</p>";
+				
+				btns[0].setButton("Wait", "It's going to take a while to deal with all that milk", "milk|wait", milkMachine);
+				btns[1].setButton("Drink", "You're pretty sure you can get one of the cups off and drink your fill", "milk|drink", milkMachine);
+			case "drink":
+				//Drink from the overfilled cowgirl
+				message = "<p>It's a little harder then you'd thought to get one of the cups of the milking machine off Bessie's massive tit, there's quite a lot of suction from the little machine. But you do manage to pry it off with a pop and spray of milk. Bessie gives a sharp moan when you free her now tiny looking nipple, milk still dribbling from it. You don't waste any time and wrap your lips around the nipple, letting the warm milk fill your mouth and flow into your stomach. It isn't long before you're lost in the world of milk and your slowly expanding stomach. You're jolted back to the real world by the machine's happy little ding and your stomach, stretched painfully full. You'd apparently had the sense to stop swallowing once you were full, but you kept sucking anyway and are now covered in milk.</p>";
+				
+				playerCharacter.stomachCurrent = (playerCharacter.stomachCap * 1.49);
+				if (!playerCharacter.lac) {
+					playerCharacter.quest[8].questData += 10;
+					if (playerCharacter.quest[8].questData >= 100) {
+						message += "<br><p>You feel a tingle in your chest, your nipples tighten slightly and you feel something start...</p>";
+						playerCharacter.lac = true;
+						playerCharacter.milkGain += .5;
+					}
+				} else {
+					//Increase the player's lactation rate.
+					playerCharacter.milkGain += .1;
+				}
+				
+				btns[0].setButton("Release", "She's done, let her out", "release", milkMachine);
+				btns[1].setButton("Leave", "She looks like she could use a break, leave her in there", null, movePlayer);
+			case "suck":
+				//Suck Bessie off
+				message = "<p>You move up and carefully reach forward to touch one of Bessie's massive breasts. When she doesn't react you stroke it gently, kind of amazed at how firm it is despite being rapidly emptied. She moos again in reaction to your touch and you take that as a sign she is enjoying it, so you keep one hand on her breast and move the other to her cock. All that time working for her and you had no idea she was hiding this. It's a rather impressive penis, even among the naturally large dicked bovines, at least 18 inches now that it's fully hard, and thick enough to make her legs look thin. As soon as you touch her cock it throbs and shoots a load of cum over your shoulder, narrowly missing your face. Bessie moans loudly and her breasts actually gain several inches in size.</p><br><p>Oh, this is going to be fun...</p><br><p>You lean in and lick the tip of Bessie's huge cock slowly, the pre dribbling out has a slight milky taste as if her body makes so much milk it leaks from every part of her. You mildly wonder if her sweat is milky too. The teasing on her cock is enough to cause it to throb in your hand and you quickly close your mouth over her tip, letting the first jet of cum shoot down your throat. Using the cum to help lubricate your throat you push her cock further in and continue sucking and pumping.</p><br><p>You feel her breasts growing, pressing around your head as another throb travels down the massive rod. You can feel your stomach starting to stretch as she cums again and again. You start too loose track of time as your world is enveloped by Bessie's swelling breasts, too late you realize you're trapped between them. Bessie starts thrusting, pushing her cock deeper and deeper into you as you fill with more and more cum.</p><br><p>You come to later, Bessie's breasts empty and her cock gone soft. Your stomach feels about to burst from the load of milky cum.</p><br>";
+				
+				playerCharacter.stomachCurrent = (playerCharacter.stomachCap * 1.49);
+				if (playerCharacter.balls || playerCharacter.hasPerk("inbal"))
+					playerCharacter.cumCurrent = (playerCharacter.cumCap * 1.49);
+				
+				btns[0].setButton("Release", "She's done, let her out", "release", milkMachine);
+				btns[1].setButton("Leave", "She looks like she could use a break, leave her in there", null, movePlayer);
+			case "unstrap":
+				//Unstrap Bessie's hands
+				message = "<p>You watch and wait until you see Bessie's arms start struggling towards her hard throbbing cock. With a mischievous grin you unbuckle the straps on her arms. Without any delay her hands fly to her cock and start pumping it. She starts cumming moments later and doesn't stop, a seemingly endless stream of milky cum pouring from her hard shaft.</p>";
+				
+				if (playerCharacter.quest[9].stage == 0) {
+					message += "<br><p>This gives you an idea. Now to figure out how to pull it off.</p>";
+					playerCharacter.quest[9].stage = 1;
+				}
+				
+				playerCharacter.quest[5].stage = 7;
+				playerCharacter.quest[5].questData = playerCharacter.day;
+				
+				btns[11].setButton("Leave", "She's enjoying herself. Leave her to it", null, movePlayer);
+			}
+		case "icecream":
+			title = "Make Ice Cream";
+			switch (value) {
+			case "start":
+				//Make some ice cream
+				message = "<p>You push the button on the machine. It whurrs to life and after a moment the soft tasty ice cream the shop is so well loved for begins to extrude from a slot under the button. It slides down the short try heading for the ground. Hum, seems there's supposed to be something to catch it there.</p>";
+				
+				btns[0].setButton("Tub", "There should be a tub around here somewhere...", "icecream|tub", milkMachine);
+				btns[1].setButton("Mouth", "Why bother with a middle man? It's going to your belly anyway.", "icecream|mouth", milkMachine);
+			case "tub":
+				//Add a tub of ice cream to the player's invintory
+				message = "<p>Looking around you spot an empty tub and put it under the slide. There's a handy little notch near the end where the tub's handle hooks in. You watch as the newly made ice cream slowly fills the tub. When it's completely filled the machine shuts off and you put the lid on it.</p><br><p>You tuck the tub away for later.</p>";
+				
+				globals.food[6].give(playerCharacter);
+				
+				btns[11].setButton("Next", null, null, movePlayer);
+			case "mouth":
+				//Stick your face under the machine and consume the ice cream directly
+				message = "<p>You drop to your knees and open your mouth, the frozen treat slides down the slide and into your mouth. It's a little tasteless, the flavor is apparently added after, but still very good. You manage several mouthfuls before the cold is too much for you and you have to pull away, a sharp pain in your head. The machine detects this and turns off, the already made ice cream plopping to the ground at your knees.</p>";
+				
+				playerCharacter.stomachCurrent += 20;
+				playerCharacter.healPlayer( -2);
+				updateHUD();
+				
+				btns[11].setButton("Next", "Ow", null, movePlayer);
+			}
+		}
+		
+		outputText(message, title);
 	}
 	
 	static function doVend( e:MouseEvent ) {
@@ -2361,6 +3170,127 @@ class Main {
 		outputText(message, title);
 	}
 	
+	static function doQTE( ?e:MouseEvent ) {
+		var message:String = "";
+		var title:String = "Erik the Mighty";
+		
+		clearAllEvents();
+		Lib.current.removeEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+		if (optionsBtn.visible) {
+			optionsBtn.visible = false;
+			charDesc.visible = false;
+			if (globals.debugMode) {
+				txtDebug.removeEventListener(MouseEvent.CLICK, debugMenu);
+				txtDebug.visible = false;
+			}
+		}
+		
+		switch (QTEstage) {
+		case 0:
+			message = "<p>You make your decision and rush forward in an attempt to grab a hold of Erik. He somehow senses you moving towards him and evades your initial rush, his own hand swiping towards your head.</p>";
+			
+			timerQTE = new MyTimer(10, "s", 1, 2);
+			Lib.current.addChild(timerQTE);
+			Lib.current.addEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+			timerQTE.tmrQuick.addEventListener(TimerEvent.TIMER_COMPLETE, timerFailEvent);
+		case 1:
+			message = "<p>You quickly evade his sweeping hand and catch it, pinning his arm to his side. The motion is enough to knock the two of you over with you landing on top. His other, still free arm comes towards you fast.</p>";
+			
+			timerQTE = new MyTimer(9, "d", 3, 4);
+			Lib.current.addChild(timerQTE);
+			Lib.current.addEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+			timerQTE.tmrQuick.addEventListener(TimerEvent.TIMER_COMPLETE, timerFailEvent);
+		case 2:
+			message = "<p>You move to dodge the hand heading towards your head, but you're not quite fast enough. The huge hand closes around your head before you can evade it and he lifts you into the air, starting to squeeze tightly. Fortuitously, his lift brings your foot level with his crotch.</p>";
+			
+			timerQTE = new MyTimer(15, "a", 8, 9);
+			Lib.current.addChild(timerQTE);
+			Lib.current.addEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+			timerQTE.tmrQuick.addEventListener(TimerEvent.TIMER_COMPLETE, timerFailEvent);
+		case 3:
+			message = "<p>You dodge his second sweep, catching his arm and using your weight to pin him to the ground. He struggles under you, kicking with his legs as he attempts to get free. His strength is so great you can tell he will be free in moments.</p>";
+			
+			timerQTE = new MyTimer(11, "e", 5, 6);
+			Lib.current.addChild(timerQTE);
+			Lib.current.addEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+			timerQTE.tmrQuick.addEventListener(TimerEvent.TIMER_COMPLETE, timerFailEvent);
+		case 4:
+			message = "<p>You duck to avoid the second swing, but in doing so you release his other arm which he uses to grab you tightly about the waist. He lifts you and stands in one motion, showing off his power muscles as he holds you before him, one hand closing around your face as he starts to squeeze tightly. Fortuitously, his lift brings your foot level with his crotch.</p>";
+			
+			timerQTE = new MyTimer(11, "x", 8, 9);
+			Lib.current.addChild(timerQTE);
+			Lib.current.addEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+			timerQTE.tmrQuick.addEventListener(TimerEvent.TIMER_COMPLETE, timerFailEvent);
+		case 5:
+			//Eventually add in options to allow other forms of vore for this guy. Getting crammed into a cock would be a fitting end for him.
+			message = "<p>With only moments before Erik manages to escape your grasp you lunge, mouth open as wide as you can and take his head into it. You begin to swallow powerfully, his neck and shoulders vanishing just as quickly down your throat. With his arms now pinned by your mouth you are able to slow down and take your time getting the rest of the huge man down. It's quite a challenge, his bulk paired with his struggling make you nearly loose him several times, but soon the giant jackass has been reduced to nothing more then a very large bulge in your stomach.</p><br><p>You sit on the ground for a moment, processing what just happened, slightly amazed that you managed to get him down. The struggles and kicks from your stomach slowly lessen and finally stop. Soon Erik the mighty will be nothing more then another layer on your mighty body. Once you think you can manage it, you stand, staggering from the sudden addition of weight in your front, and head home to sleep off your big meal.</p>";
+			
+			title = "Erik the Digested";
+			
+			playerCharacter.stomachContents.push(roomNPC);
+			playerCharacter.stomachCurrent += roomNPC.mass;
+			playerCharacter.numEaten++;
+			playerCharacter.gluttony++;
+			playerCharacter.arousal += 1;
+			
+			playerCharacter.quest[2].stage = 2; //Gold Membership is now avalible
+			
+			newRoom = true;
+			
+			btns[0].setButton("Next", null, 0, movePlayer);
+		case 6:
+			message = "<p>You struggle, trying to get him pinned enough to force him down your throat. Unfortunately his struggles prove too much for you and he kicks you off him. By the time you regain your feet he is rushing towards you, murder in his eyes.</p>";
+			
+			timerQTE = new MyTimer(6, "w", 11, 12);
+			Lib.current.addChild(timerQTE);
+			Lib.current.addEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+			timerQTE.tmrQuick.addEventListener(TimerEvent.TIMER_COMPLETE, timerFailEvent);
+		case 7:
+			//Legecy option
+		case 8:
+			message = "<p>You swing your foot back and throw it forward with all your might. The strike landing square in his massively swollen cock. He bellows in pain and drops and you take the chance to pin his arms to his sides and hold him down. He recovers quickly and starts struggling under you, his strength such that he will be free in moments.</p>";
+			
+			timerQTE = new MyTimer(11, "e", 5, 6);
+			Lib.current.addChild(timerQTE);
+			Lib.current.addEventListener(KeyboardEvent.KEY_UP, timerKeyEvent);
+			timerQTE.tmrQuick.addEventListener(TimerEvent.TIMER_COMPLETE, timerFailEvent);
+		case 9:
+			message = "<p>You swing your foot towards his crotch, but he moves at the last moment and you miss, only striking his thigh. He grunts in pain but tightens his grip on you as everything starts to go black. A low growl comes from him and the last thing you hear is something important in your head crack.</p>";
+			
+			playerDied = "Erik";
+			
+			btns[9].setButton("Next", null, null, doDeath);
+		case 10:
+			//Legecy option
+		case 11:
+			message = "<p>Thinking fast you rush forward, leaping to catch him in your open mouth just before he would have hit you. The speed of his rush pushes you back against the far wall, but also shoves him down your throat to his waist. You are able to swallow his struggling lower half quickly, his continuing struggles nearly causing you to loose him several times, but soon the giant jackass has been reduced to nothing more then a very large bulge in your stomach.</p><br><p>You sit on the ground for a moment, processing what just happened, slightly amazed that you managed to get him down. The struggles and kicks from your stomach slowly lessen and finally stop. Soon Erik the mighty will be nothing more then another layer on your mighty body. Once you think you can manage it, you stand, staggering from the sudden addition of weight in your front, and head home to sleep off your big meal.</p>";
+			
+			title = "Erik the Digested";
+			
+			playerCharacter.stomachContents.push(roomNPC);
+			playerCharacter.stomachCurrent += roomNPC.mass;
+			playerCharacter.numEaten++;
+			playerCharacter.gluttony++;
+			playerCharacter.arousal += 1;
+			
+			playerCharacter.quest[2].stage = 2; //Gold Membership is now avalible
+			
+			newRoom = true;
+			
+			btns[0].setButton("Next", null, 0, movePlayer);
+		case 12:
+			message = "<p>You dodge to the side, only to find your path blocked by one of the large machines in the room. Your struggles have gotten you trapped and Erik hits you like a linebacker, shoulder to your chest. You feel something break as he slams you into the far wall. The roundhouse punch that follows is almost overkill, but it does bring on the black that much faster.</p>";
+			
+			playerDied = "Erik";
+			
+			btns[9].setButton("Next", null, null, doDeath);
+		default:
+			new AlertBox("QuickTime Event Failure, Unknown QTE Stage; " + QTEstage + ".");
+		}
+		
+		outputText(message, title);
+	}
+	
 	static function doPoop( e:MouseEvent ) {
 		var message:String = "";
 		var title:String = "";
@@ -2471,6 +3401,56 @@ class Main {
 	static function doSleep( e:MouseEvent ) {
 		
 		outputText("Sleep", "Sleep");
+	}
+	
+	static function doMasterbate( e:MouseEvent ) {
+		//Player jerks off
+		var message:String = "{Placeholder} ";
+		
+		//Player has only a penis
+		if (playerCharacter.penis && !playerCharacter.vagina) {
+			message += "You wrap your hand around your shaft and begin slowly stroking along your length. ";
+			if (playerCharacter.balls) {
+				message += "Your other hand cups your balls and you tease your length, toying with your head until you feel your orgasm building. With a surge you shoot cum from your cock.";
+			} else {
+				message += "You stroke along your length, toyin with the head of your cock until you feel your orgasm building.";
+				if (playerCharacter.hasPerk("inbal")) {
+					message += " With a surge you shoot cum from your cock.";
+				}
+			}
+		}
+		
+		//Player has only a vagina
+		if (!playerCharacter.penis && playerCharacter.vagina) {
+			message += "You slide a finger inside your slit finding your clit and teasing it until you orgasm.";
+		}
+		
+		//Player has both a vagina and penis
+		if (playerCharacter.penis && playerCharacter.vagina) {
+			message += "You wrap one hand around your cock and slide the other into your vagina teasing both until you shutter and cum hard.";
+		}
+		
+		//Player has neither a vagina or a penis
+		if (!playerCharacter.penis && !playerCharacter.vagina) {
+			if (playerCharacter.breasts) {
+				message += "You cup your breasts and massage them, teasing your nipples until you drive yourself to orgasm.";
+			} else {
+				message += "You slide a finder into your ass, teasing and toying with your prostate until you manage to acheive something close to an orgasm.";
+			}
+		}
+		
+		playerCharacter.arousal = 0;
+		playerCharacter.cumCurrent = 0;
+		
+		charDesc.visible = false;
+		optionsBtn.visible = false;
+		newRoom = false;
+		
+		clearAllEvents();
+		updateHUD();
+		outputText(message, "Masterbation");
+		
+		btns[0].setButton("Next", null, null, movePlayer);
 	}
 	
 	static function doMasterbate( e:MouseEvent ) {
@@ -3104,6 +4084,7 @@ class Main {
 		var title:String = "Ice Cream Shop - ";
 		var action:String = e.currentTarget.btnID.split("|")[0];
 		var value:String = e.currentTarget.btnID.split("|")[1];
+		var shakeFlavor:String = e.currentTarget.btnID.split("|")[2];
 		var page:String = "0";
 		var price:Int = 0;
 		var flavor:String = "";
@@ -3160,19 +4141,34 @@ class Main {
 			case "1":
 				message += "<br>&nbsp;&nbsp;&nbsp;Banana Split, $4<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A banana, cut in half, with some ice cream and whipped cream, topped with a cherry!<br>&nbsp;&nbsp;&nbsp;Milkshake, $3<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Milk and ice cream and syrup, shaken up in a tall cup. Comes in multiple flavors!<br>&nbsp;&nbsp;&nbsp;Glutton’s Delight, $15<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The sweetest of the sweets, a bit of every flavor put into one huge tub.";
 				
-				btns[0].setButton("Banana Split", "Banana and ice cream", "buy|split", iceCreamShop);
+				btns[0].setButton("Banana Split", "Banana and ice cream", "split|conf", iceCreamShop);
 				btns[1].setButton("Milkshake", "Milk and ice cream", "shake|list", iceCreamShop);
-				btns[1].disableButton();
 				btns[2].setButton("Glutton", "A little of everything", "buy|glutton", iceCreamShop);
 				
 				btns[9].setButton("Prev", null, "list|0", iceCreamShop);
 			}
 			
-			
 			title += "Buy";
 		case "free":
 			//List the ice cream choices for the player to eat
-			
+			switch (value) {
+			case "0":
+				message += "&nbsp;&nbsp;&nbsp;Vanilla<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ah, the classic vanilla flavor.<br>&nbsp;&nbsp;&nbsp;Chocolate<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tastes just like… Chocolate.<br>&nbsp;&nbsp;&nbsp;Strawberry<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;There are real strawberry bits inside!<br>&nbsp;&nbsp;&nbsp;Caramel<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;With veins of pure caramel within, it must be hard to resist.<br>&nbsp;&nbsp;&nbsp;Blue Bubblegum<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The color pink was taken, so bubblegum will just settle on blue.<br>&nbsp;&nbsp;&nbsp;Cookies & Cream<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;It even has bits of cookies mashed in!<br>";
+				message += "&nbsp;&nbsp;&nbsp;Neapolitan Blast<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Couldn’t decide? Have some vanilla, chocolate, AND strawberry!<br>&nbsp;&nbsp;&nbsp;Peanut Butter<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;You could almost swear it’s literally a tub of peanut butter, just frozen.<br>&nbsp;&nbsp;&nbsp;Quadruple Chocolate<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Its chocolate, times 4, with chocolate pieces!";
+				message += "</p><br><p>More...</p>";
+				
+				btns[0].setButton("Vanilla", "Classic Vanilla", "eat|vanilla", iceCreamShop);
+				btns[1].setButton("Chocolate", "Tasty Chocolate", "eat|chocolate", iceCreamShop);
+				btns[2].setButton("Strawberry", "With Real Strawberries!", "eat|strawberry", iceCreamShop);
+				btns[3].setButton("Caramel", "Classic Vanilla with pure caramel mixed in", "eat|caramel", iceCreamShop);
+				btns[4].setButton("Bubblegum", "Blue bubblegum; strange, but tasty", "eat|bubblegum", iceCreamShop);
+				btns[5].setButton("Cookies & Cream", "With bits of real cookie!", "eat|c&c", iceCreamShop);
+				btns[6].setButton("Neapolitan", "All three classic choices", "eat|neap", iceCreamShop);
+				btns[7].setButton("Peanut Butter", "Still looks like a tub of peanut butter", "eat|peanut", iceCreamShop);
+				btns[8].setButton("4x Chocolate", "Chocolate, only more", "eat|4choc", iceCreamShop);
+				btns[9].setButton("Glutton", "A little of everything", "free|glutton", iceCreamShop);
+			}
+			title = "Free Ice Cream";
 		case "buy":
 			//First screen of buy
 			message += "<p>Buy ";
@@ -3205,10 +4201,6 @@ class Main {
 			case "4choc":
 				price = 5;
 				message += "quadruple chocolate";
-			case "split":
-				price = 4;
-				message += "a banana split";
-				page = "1";
 			case "glutton":
 				price = 15;
 				message += "glutton's delight";
@@ -3261,11 +4253,6 @@ class Main {
 				price = 5;
 				flavor = "quadruple chocolate";
 				eat += "quadruple chocolate ice cream.</p><br><p>This ice cream is so thick, it feels like someone had sex in your mouth, leaving their cold chocolate love in your mouth. Plus, there's chocolate chips, which are nice too.";
-			case "split":
-				price = 4;
-				foodMass = 7;
-				flavor = "a banana split";
-				page = "1";
 			case "glutton":
 				price = 15;
 				foodMass = 40;
@@ -3294,7 +4281,144 @@ class Main {
 			playerCharacter.addMoney( -price);
 			updateHUD();
 		case "shake":
+			switch (value) {
+			case "list":
+				if (roomNPC.name == "Guffin") {
+					message = "<p>You ask about milkshakes, &quot;W-what flavor?&quot; Guffin asks. &quot;W-we have chocolate, vanilla, strawberry a-and caramel.&quot;</p>";
+				} else {
+					message = "<p>You ask about milkshakes, Bessie just glares at you. &quot;You know what we sell. Which one do you want?&quot;</p>";
+				}
+				btns[0].setButton("Chocolate", "Buy a chocolate milkshake for $3", "shake|conf|choc", iceCreamShop);
+				btns[1].setButton("Vanilla", "Buy a vanilla milkshake for $3", "shake|conf|van", iceCreamShop);
+				btns[2].setButton("Strawberry", "Buy a strawberry milkshake for $3", "shake|conf|straw", iceCreamShop);
+				btns[3].setButton("Caramel", "Buy a caramel milkshake for $3", "shake|conf|cara", iceCreamShop);
+				btns[8].setButton("List", "Back to the main list", "list|1", iceCreamShop);
+			case "conf":
+				switch (shakeFlavor) {
+				case "choc":
+					flavor = "chocolate";
+				case "van":
+					flavor = "vanilla";
+				case "straw":
+					flavor = "strawberry";
+				case "cara":
+					flavor = "caramel";
+				}
+				message = "You want a " + flavor + " shake?";
+				
+				btns[0].setButton("Yes", null, "shake|buy|" + shakeFlavor, iceCreamShop);
+				if (playerCharacter.getMoney() < price)
+					btns[0].disableButton();
+				btns[2].setButton("No", null, "shake|list", iceCreamShop);
+			case "buy":
+				switch (shakeFlavor) {
+				case "choc":
+					flavor = "chocolate";
+					price = 3;
+					foodMass = 3;
+				case "van":
+					flavor = "vanilla";
+					price = 3;
+					foodMass = 3;
+				case "straw":
+					flavor = "strawberry";
+					price = 3;
+					foodMass = 3;
+				case "cara":
+					flavor = "caramel";
+					price = 3;
+					foodMass = 3;
+				}
+				
+				if (roomNPC.name == "Guffin") {
+					message = "<p>You pass him the money and Guffin turns around, giving you a look at his cute plump butt. He works on making your " + flavor + " milkshake, mixing it well. He does it by hand, and as he shakes the ingredients together, he shakes his flabby body. He turns back around, passing you back your milkshake.</p><br><p>You sit at a nearby table and enjoy your " + flavor + " milkshake, it's cold and smooth and full of flavor. The glass is empty before you realize and you make sure you've gotten all of it before returning the glass, the mass of cold feeling good in your stomach.</p>";
+				} else {
+					message = "<p>You pass her the money and Bessie turns around, showing how big her breasts really are as she works around them. She works on making your " + flavor + " milkshake, mixing it well. She does it by hand, and as she shakes the ingredients together, her breasts start a wobbling motion. She turns back around, passing you back your milkshake, her tits take a few more moments to stop moving.</p><br><p>You sit at a nearby table and enjoy your " + flavor + " milkshake, it's cold and smooth and full of flavor. The glass is empty before you realize and you make sure you've gotten all of it before returning the glass, the mass of cold feeling good in your stomach.</p>";
+				}
+				playerCharacter.addMoney( -price);
+				playerCharacter.stomachCurrent += foodMass;
+			}
+		case "split":
+			switch (value) {
+			case "conf":
+				message = "<p>You want to buy a banana split for $4?</p>";
+				
+				btns[0].setButton("Yes", null, "split|buy", iceCreamShop);
+				if (playerCharacter.getMoney() < 4)
+					btns[0].disableButton();
+				btns[2].setButton("No", null , "list|1", iceCreamShop);
+			case "buy":
+				message = "<p>";
+				
+				if (roomNPC.name == "Guffin") {
+					message += "You pass over $4, and Guffin turns around, and you get a look at his cute plush butt. He cuts the banana and makes the split, and turns around, giving it to you.</p><br><p>You sit and enjoy your split. The banana is fresh and perfectly ripe, the ice cream and sauce going together perfectly. It seems like you've only started in on it before you're scraping the bottom, trying to get every last bit of the melted goo.";
+				} else {
+					message += "You pass over $4, and Bessie turns around, and you get a look at her rather nice butt, the little tail of her bovine heritage swinging slightly. She cuts the banana and makes the split, her motions stiff and annoyed. She turns around and gives it to you.</p><br><p>You sit and enjoy your split. The banana is fresh and perfectly ripe, the ice cream and sauce going together perfectly. It seems like you've only started in on it before you're scraping the bottom, trying to get every last bit of the melted goo.";
+				}
+				
+				message += "</p>";
+				
+				playerCharacter.addMoney( -4);
+				playerCharacter.stomachCurrent += 7;
+			}
+		case "eat":
+			message += "<p>Consume ";
 			
+			switch (value) {
+			case "vanilla":
+				message += "vanilla";
+			case "chocolate":
+				message += "chocolate";
+			case "strawberry":
+				message += "strawberry";
+			case "caramel":
+				message += "caramel";
+			case "bubblegum":
+				message += "blue bubblegum";
+			case "c&c":
+				message += "cookies and cream";
+			case "neap":
+				message += "neapolitan";
+			case "peanut":
+				message += "peanut butter";
+			case "4choc":
+				message += "quadruple chocolate";
+			case "glutton":
+				message += "glutton's delight";
+			}
+			
+			message += "?</p>";
+			
+			btns[0].setButton("Yes", null, "consume|" + value, iceCreamShop);
+			btns[2].setButton("No", null, "free|0", iceCreamShop);
+		case "consume":
+			switch (value) {
+			case "vanilla":
+				flavor = "vanilla";
+			case "chocolate":
+				flavor = "chocolate";
+			case "strawberry":
+				flavor = "strawberry";
+			case "caramel":
+				flavor = "caramel";
+			case "bubblegum":
+				flavor = "blue bubblegum";
+			case "c&c":
+				flavor = "cookies and cream";
+			case "neap":
+				flavor = "neapolitan";
+			case "peanut":
+				flavor = "peanut butter";
+			case "4choc":
+				flavor = "quadruple chocolate";
+			case "glutton":
+				foodMass = 40;
+				flavor = "glutton's delight";
+			}
+			
+			message += "A whole tub of " + flavor + " vanishes into your maw almost before you've even made the decision to eat it. Since you didn't taste the first tub, you pick up a second and eat that one too, only slower this time so you can savor the taste.</p>";
+			
+			playerCharacter.stomachCurrent += (foodMass * 2);
 		}
 		
 		btns[10].setButton("Leave", "Step away from the counter", null, movePlayer);
@@ -6390,7 +7514,7 @@ class Main {
 		globals.rooms[27] = ["Ice Cream Shop - Backroom", null, 40,		null,	38,		41,		null,	39,		null,	[0],		false,		true,		null,		"The back room of the ice cream shop set up as a break room, with a table and several chairs. The old TV you remember from when you worked here is still sitting on top of the refrigerator. From here there are three doors, one is the tiny rest room, one is the large walk-in freezer that holds the extra ice cream. The third door was always locked, but now you have a key for it."];
 		globals.rooms[28] = ["Ice Cream Shop - Freezer", null,	37,		null,	null,	null,	null,	null,	null,	[0],		true,		false,		null,		"The freezer, it's very cold, naturally. And it's filled with tub after tub of ice cream ready to be sold in the shop. A quick look around and you're pretty sure there's enough here the shop will never run out, even at the rates people around here eat the stuff. Or at least it'll take a long time."];
 		globals.rooms[29] = ["Ice Cream Shop - Restroom", null,	null,	null,	null,	null,	null,	37,		null,	[5],		true,		true,		null,		"A standard single-occupancy restroom. The door locks."];
-		globals.rooms[30] = ["Ice Cream Shop - Office",	null,	null,	null,	37,		null,	null,	null,	null,	[0],		false,		false,		null,		"While you worked here you were never allowed into this room, you were pretty sure it was just an office since Bessie was usually in here when she was at the shop at all. Now that you can get in here you see that you were mostly correct. The area right inside the door looks like your typical office, a desk sits facing the door and covered in papers and files. An old computer monitor takes up one corner of the desk. You're pretty sure there's a keyboard somewhere under the papers, but you'd have to dig to find it. A pair of filing cabinets rest against the back wall, flanking the desk to either side.</p><br><p>Where the idea of a typical office breaks down is the area to the left of the desk. A raised lip separates the two areas and probably helps keep any spills from reaching the office or escaping out the door. The floor is tiled and gently slops towards the center where a drain is placed in the floor. Slightly offset from the center is a large wooden chair. It looks vaguely like a toilet, with a hole cut in the seat, but is lacking a bowl or tank. Instead it has long, very solid arms with straps hanging off them. The legs likewise have straps placed to go around the occupant's ankles. Behind the chair on a complicated hinge system is what appears to be an automatic milking machine, it looks like it can be moved over the chair and positioned in front of who ever is sitting in the chair. The hoses run to the far corner of the room where a large tank waits to be filled, there's also a machine next to the tank labeled 'Automatic Ice Cream Maker v2.0'"];
+		globals.rooms[30] = ["Ice Cream Shop - Office",	null,	null,	null,	37,		null,	null,	null,	null,	[12],		false,		false,		null,		"While you worked here you were never allowed into this room, you were pretty sure it was just an office since Bessie was usually in here when she was at the shop at all. Now that you can get in here you see that you were mostly correct. The area right inside the door looks like your typical office, a desk sits facing the door and covered in papers and files. An old computer monitor takes up one corner of the desk. You're pretty sure there's a keyboard somewhere under the papers, but you'd have to dig to find it. A pair of filing cabinets rest against the back wall, flanking the desk to either side.</p><br><p>Where the idea of a typical office breaks down is the area to the left of the desk. A raised lip separates the two areas and probably helps keep any spills from reaching the office or escaping out the door. The floor is tiled and gently slops towards the center where a drain is placed in the floor. Slightly offset from the center is a large wooden chair. It looks vaguely like a toilet, with a hole cut in the seat, but is lacking a bowl or tank. Instead it has long, very solid arms with straps hanging off them. The legs likewise have straps placed to go around the occupant's ankles. Behind the chair on a complicated hinge system is what appears to be an automatic milking machine, it looks like it can be moved over the chair and positioned in front of who ever is sitting in the chair. The hoses run to the far corner of the room where a large tank waits to be filled, there's also a machine next to the tank labeled 'Automatic Ice Cream Maker v2.0'"];
 		globals.rooms[31] = ["General Store - Warehouse", null, 43,		null,	null,	null,	null,	null,	null,	[4],		true,		false,		null,		"A massive warehouse under the main shop filled with more stuff then you could possibly sort through in several lifetimes."];
 		globals.rooms[32] = ["Hospital - Backroom",		null,	null,	null,	null,	25,		null,	null,	null,	[11],		true,		false,		null,		"A small room tucked away in the back of the hospital, almost a closet. The only item of note in here is a small machine, examining it closely it seems like you can use it to gain new perks for a small fee."];
 		
@@ -6423,6 +7547,7 @@ class Main {
 		foods.push(["Chocolate Cake", 20, 7, "A huge chocolate cake, you're not really going to eat the whole thing are you?", ["heal|.01"], "Chocolate cake eat"]);
 		foods.push(["BouncyButt", 5, 1, "A popular 'health' drink. It's basically just sugar and water.", ["heal|.05"], "You crack the top open on the bottle of BouncyButt and drink it down. It tastes mostly like water with just a little flavoring, though you can't quite pin down what it's supposed to be. You do feel a little better after drinking it. Curious you shake your butt a little, disappointed as you don't seem to have any more bounce then you did before."]);
 		foods.push(["BouncyButt+", 5, 250, "A bottle of a popular 'health' drink, BouncyButt, that has been modified in some way.", ["heal|.05", "butt|1"], "You crack the top open on the bottle of BouncyButt and drink it down. It tastes mostly like water with just a little flavoring, though you can't quite pin down what it's supposed to be. You do feel a little better after drinking it. Curious you shake your butt a little and find there's just a little more bounce then there was before."]);
+		foods.push(["Tub of Ice Cream", 10, 50, "A tub of ice cream from the town's ice cream shop", ["heal|.01"], "You pull the lid off the tub and start scooping the fresh ice cream into your mouth. Despite being unflavored it is delicious and filling, your stomach is quickly full of cold milky goodness."]);
 		
 		
 		for (i in 0...foods.length) {
@@ -6505,10 +7630,11 @@ class Main {
 		quests[2] = ["gym",		"Gym Membership",	false,		["", "Joined the gym", "Gold membership is avalible", "Became a gold member", "Spoke with Shay", "Spoke to Shay a second time", "Agreed to help Shay with his machine", "Became fuckbuddies with Shay"],	[0, 1]];
 		quests[3] = ["death",	"A Deal With Death", true,		["", "Spoke with Hir", "Agreed to Hir deal", "Turned down the deal"], null];
 		quests[4] = ["cv",		"Pleasing The Wolf", false,		["", "You tried to slip past the bouncer, it wasn't a good idea."], null];
-		quests[5] = ["milk",	"Milking the Cow",	false,		["", "Tweaked her nipple", "Drunk after tweaking", "Milked her", "Agreed to help with her machine", "Heard instructions on using the chair", "Bessie is in the chair", "Eaten"]];
+		quests[5] = ["milk",	"Milking the Cow",	false,		["", "Tweaked her nipple", "Drunk after tweaking", "Milked her", "Agreed to help with her machine", "Heard instructions on using the chair", "Bessie is in the chair", "You left Bessie with her arms unstrapped", "You ate Bessie"]];
 		quests[6] = ["job",		"Part Time Job",	false,		["You need one", "Accecpted the job in the general store"], null];
 		quests[7] = ["foxboi",	"Guffin's Fate",	true,		["", "You've been fucking Guffin", "You've eaten Guffin. He was as tasty as you'd hoped."], null];
-		
+		quests[8] = ["lac",		"Lactation",		true,		["", "Your breasts are producting milk"], null];
+		quests[9] = ["bescock",	"Bessie's Cum Milking", true,	["", "You've gotten the idea to modify Bessie's Milking machine to include a cock cup, now you just need to figure out how", "You've built the cock cup, now to install it", "Installed the cup"], null];
 		
 		
 		/* Conversation flags;

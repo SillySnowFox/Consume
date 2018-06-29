@@ -1,11 +1,19 @@
 Support the game on Pateron! https://www.patreon.com/SillySnowFox?ty=h
 
+v0.51
+
+New
+
+ * Bessie's quest is mostly finished. The remaining two events will be finished shortly.
+ * Ice cream shop fully in place
+
+
 v0.50
 
 New
 
  * Buying a Gold Membership actually buys it now.
- * Gold Room machines are avalile to use.
+ * Gold Room machines are available to use.
  * Staff room machine and vending in place. Shay's quest will be finished soon.
  * Ice Cream can be bought and eaten in the shop.
  * Bessie's quest can be progressed to allow you into the staff room. The rest of her quest is coming soon.

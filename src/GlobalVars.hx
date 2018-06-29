@@ -25,7 +25,7 @@ class GlobalVars extends Sprite {
 	public var perkCostMultiplier:Int = 13;
 	
 	//Changes the number that displays in the corner of the play field
-	public var buildVersion:String = "0.50";
+	public var buildVersion:String = "0.52";
 	
 	//Global vars holding temp data
 	public var backTo:String;
@@ -98,6 +98,8 @@ class GlobalVars extends Sprite {
 		welcomeMessage.push("Let us engage in jolly cooperation!");
 		welcomeMessage.push("\\[T]/");
 		welcomeMessage.push("Don't give up, skeleton!");
+		welcomeMessage.push("If only I could be as gloriously incandescent.");
+
 		
 	}
 	
